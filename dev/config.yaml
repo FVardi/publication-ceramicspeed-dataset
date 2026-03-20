@@ -1,0 +1,145 @@
+# =============================================================================
+# CeramicSpeed Analysis — Configuration
+# =============================================================================
+# All paths, signal-processing parameters, and analysis settings in one place.
+# Scripts load this file via own_utils.config.load_config().
+#
+# To switch between machines, change the paths section only.
+# To run a different experiment variant, copy this file and point the script
+# at the copy:  python 01_feature_generation.py --config my_variant.yaml
+
+# --- Machine-specific paths --------------------------------------------------
+# load_config() detects the current machine by matching Path.home() against
+# the 'home' key below and automatically populates cfg['paths'].
+# Add a new entry here for each machine; the key is just a human-readable label.
+machines:
+  work:
+    home: "C:/Users/au808956"
+    paths:
+      input_dir:  "C:/Users/au808956/Documents/Repos/PhD/data/ceramicspeed/"
+      output_dir: "C:/Users/au808956/Documents/Repos/PhD/CeramicSpeed_analysis/features/"
+
+  home:
+    home: "C:/Users/Bruger"
+    paths:
+      input_dir:  "C:/Users/Bruger/Documents/Repos/PhD/data/CeramicSpeed/"
+      output_dir: "C:/Users/Bruger/Documents/Repos/PhD/CeramicSpeed_analysis/features/"
+
+# --- Paths (resolved automatically from 'machines' above) --------------------
+# Kept as a fallback; overwritten at load time if the current machine is found.
+paths:
+  input_dir:  "C:/Users/au808956/Documents/Repos/PhD/data/ceramicspeed/"
+  output_dir: "C:/Users/au808956/Documents/Repos/PhD/CeramicSpeed_analysis/features/"
+
+# --- Bearing geometry --------------------------------------------------------
+bearing:
+  d_pw_mm: 38.0            # Mean pitch diameter [mm]
+
+# --- Sensor frequency ranges [Hz] -------------------------------------------
+sensors:
+  AE:
+    f_min:  0
+    f_max:  800_000
+  Ultrasound:
+    f_min:  0
+    f_max:  800_000
+
+# --- Frequency band strategy ------------------------------------------------
+band_width_hz: 800_000       # Width of each fixed-width frequency band [Hz]
+
+# --- Welch PSD parameters (used by frequency_band_analysis) -----------------
+welch:
+  nperseg:  4096
+  noverlap: 2048
+  window:   "hann"
+
+# --- Signal-level cleaning (applied to raw voltage BEFORE feature extraction)
+# These settings are passed to cleaning.clean_signal() via loading.py.
+# Set 'enabled: false' to skip signal cleaning entirely (old behaviour).
+signal_cleaning:
+  enabled: false
+  min_length: 64               # Reject signals shorter than this [samples]
+  fix_nan_inf: true            # Interpolate NaN/Inf samples
+  check_clipping: true         # Detect DAQ rail clipping
+  clip_fraction_threshold: 0.01  # Fraction of samples at rail to flag
+  check_saturation: true       # Detect suspiciously flat regions
+  saturation_min_run: 50       # Minimum flat-run length to flag [samples]
+  remove_outliers_z: 6.0       # Z-score threshold for spike removal (null to skip)
+  outlier_window: 5            # Half-width of local median window for replacement
+  reject_clipped: false        # Set true to DROP clipped sweeps entirely
+  reject_saturated: false      # Set true to DROP saturated sweeps entirely
+
+# --- Data quality filters (feature-level) ------------------------------------
+filters:
+  rpm_max: 10_000            # Discard sweeps with RPM above this value
+
+# --- Kappa regime boundaries (for visualisation colouring) ------------------
+kappa:
+  boundaries: [0.5, 1.0]
+  labels:     ["κ < 0.5", "0.5 < κ < 1", "1 ≤ κ"]
+  colors:     ["#d62728", "#ff7f0e", "#2ca02c"]
+
+# --- Modelling --------------------------------------------------------------
+modelling:
+  # Hold-out split
+  test_size: 0.2               # Fraction of data held out for final evaluation
+
+  # Cross-validation (single-level, on training set only)
+  cv_n_splits: 5               # Number of KFold splits for tuning + evaluation
+
+  # Elastic Net hyperparameter search (tuned via ElasticNetCV)
+  elastic_net:
+    alphas: [0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 5.0, 10.0, 100.0]
+    l1_ratios: [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
+    max_iter: 10000
+
+  # Polynomial Regression (PolynomialFeatures + Ridge, tuned via RidgeCV)
+  polynomial:
+    degree: 2                  # Polynomial degree
+    alphas: null               # Ridge alpha grid; null uses log-spaced default [1e-3, 1e4]
+
+  # Bayesian Ridge (tuned via GridSearchCV on training set)
+  bayesian_ridge:
+    max_iter: 300              # Max EM iterations
+    param_grid:
+      alpha_1: [1.0e-7, 1.0e-6, 1.0e-5]
+      lambda_1: [1.0e-7, 1.0e-6, 1.0e-5]
+
+  # LightGBM (tuned via grid search with CV on training set)
+  lightgbm:
+    n_estimators: 500          # Max boosting rounds (early stopping may reduce)
+    learning_rate: 0.05
+    max_depth: 6
+    num_leaves: 31
+    min_child_samples: 10
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.0             # L1 regularisation on leaf weights
+    reg_lambda: 1.0            # L2 regularisation on leaf weights
+    early_stopping_rounds: 50
+    param_grid:
+      learning_rate: [0.01, 0.05, 0.1]
+      num_leaves: [15, 31, 63]
+      max_depth: [4, 6, -1]
+
+# --- Feature override (optional) --------------------------------------------
+# When set, these feature lists are used in 04_modelling.py INSTEAD of the
+# automatically retained set produced by 02_feature_analysis.py.
+# Any feature name present in 'all_columns' (i.e. produced by
+# 01_feature_generation.py) is valid here.
+#
+# Example — use only three hand-picked AE features and all auto-retained US:
+#
+# feature_override:
+#   AE:
+#     - mobility
+#     - spectral_flatness
+#   Ultrasound:        # omit a sensor key to keep its auto-retained set
+#     - mobility
+#     - spectral_flatness
+#
+# Leave the section commented out (or remove it entirely) to use the
+# auto-retained features from 02_feature_analysis for both sensors.
+
+# --- Reproducibility --------------------------------------------------------
+random_state: 42

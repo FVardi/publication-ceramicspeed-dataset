@@ -1,0 +1,13 @@
+feature,importance,abs_importance
+mobility,411,411
+complexity,374,374
+kurtosis,223,223
+spectral_kurtosis,185,185
+skewness,182,182
+dominant_frequency,160,160
+crest_factor,152,152
+shape_factor,140,140
+center_frequency,36,36
+rms_frequency,5,5
+spectral_flatness,0,0
+peak_frequency,0,0
