@@ -18,12 +18,12 @@ import pandas as pd
 # Get files paths
 
 # Work dirs
-# INPUT_DIR = "C:/Users/au808956/Documents/Repos/PhD/data/ceramicspeed/"
-# OUTPUT_FILE = "C:/Users/au808956/Documents/Repos/PhD/CeramicSpeed_analysis/features/features.parquet"
+INPUT_DIR = "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/data/"
+OUTPUT_FILE = "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/dev/features/features.parquet"
 
 # Home dirs
-INPUT_DIR = "C:/Users/Bruger/Documents/Repos/PhD/data/ceramicspeed/"
-OUTPUT_FILE = "C:/Users/Bruger/Documents/Repos/PhD/CeramicSpeed_analysis/features/features.parquet"
+# INPUT_DIR = "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"
+# OUTPUT_FILE = "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/dev/features/features.parquet"
 
 files = []
 files.extend(Path(INPUT_DIR).glob("*hdf5"))

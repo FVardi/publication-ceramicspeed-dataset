@@ -178,7 +178,7 @@ plot_pca_kappa(us_pca_coords, us_kappa, us_pca,
                ax=axes[1], title="Ultrasound — PCA colored by κ regime")
 
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "pca_kappa_regimes.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "pca_kappa_regimes.png", dpi=600)
 plt.show()
 print("Saved: pca_kappa_regimes.png")
 

@@ -238,7 +238,7 @@ axes[1].set_title("κ distribution")
 axes[1].legend(fontsize=8)
 
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_operating_conditions.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_operating_conditions.png", dpi=600)
 plt.show()
 print("Saved: eda_operating_conditions.png")
 
@@ -283,9 +283,68 @@ fig.suptitle(
     fontsize=11,
 )
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_waveforms.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_waveforms.png", dpi=600)
 plt.show()
 print("Saved: eda_waveforms.png")
+
+# %%
+# =============================================================================
+# Figure EDA2b — All time-series in sweep sequence (time vs voltage)
+# Sweeps are sorted by sweep name (sweep_000, sweep_001, …) which reflects
+# recording order.  A short excerpt from each sweep is placed on a continuous
+# time axis; boundaries are marked with vertical lines.
+# =============================================================================
+
+_cmap_all = colormaps["viridis"]
+_kappa_vals = [r["kappa"] for r in valid_sweeps]
+_kappa_min, _kappa_max = np.nanmin(_kappa_vals), np.nanmax(_kappa_vals)
+_kappa_range = _kappa_max - _kappa_min if _kappa_max != _kappa_min else 1.0
+
+# Sort all sweeps (including those without kappa) by sweep name for recording order
+_seq_sweeps = sorted(sweeps, key=lambda r: r["sweep"])
+
+fig_all, axes_all = plt.subplots(
+    len(SENSORS), 1,
+    figsize=(20, 4 * len(SENSORS)),
+    sharex=False,
+)
+if len(SENSORS) == 1:
+    axes_all = [axes_all]
+
+for row_i, sensor in enumerate(SENSORS):
+    ax = axes_all[row_i]
+    t_offset_ms = 0.0
+    sensor_sweeps = [r for r in _seq_sweeps if sensor in r]
+
+    for r in sensor_sweeps:
+        v = r[sensor]
+        fs = r["fs"]
+        n_show = min(len(v), int(WAVEFORM_MS * 1e-3 * fs))
+        t_ms = np.arange(n_show) / fs * 1e3 + t_offset_ms
+        kap = r.get("kappa", np.nan)
+        color = _cmap_all(
+            float((kap - _kappa_min) / _kappa_range) if not np.isnan(kap) else 0.5
+        )
+        ax.plot(t_ms, v[:n_show], lw=0.3, alpha=0.7, color=color)
+        ax.axvline(t_offset_ms, color="gray", lw=0.4, alpha=0.4)
+        t_offset_ms += t_ms[-1] - t_ms[0] + (WAVEFORM_MS * 0.05)  # small gap
+
+    sm = plt.cm.ScalarMappable(
+        cmap=_cmap_all,
+        norm=plt.Normalize(vmin=_kappa_min, vmax=_kappa_max),
+    )
+    sm.set_array([])
+    fig_all.colorbar(sm, ax=ax, label="κ")
+    ax.set_xlabel("Cumulative time [ms]  (first {:.0f} ms per sweep, sweeps in recording order)".format(WAVEFORM_MS))
+    ax.set_ylabel("Voltage [V]")
+    ax.set_title(f"{sensor} — {len(sensor_sweeps)} sweeps in sequence (coloured by κ)")
+    ax.grid(ls=":", alpha=0.3)
+
+fig_all.suptitle("All time-series — recording sequence, time vs voltage", fontsize=11)
+fig_all.tight_layout()
+plt.savefig(OUTPUT_DIR / "eda_all_timeseries.png", dpi=600)
+plt.show()
+print("Saved: eda_all_timeseries.png")
 
 # %%
 # =============================================================================
@@ -330,7 +389,7 @@ for row_i, sensor in enumerate(SENSORS):
         ax.grid(ls=":", alpha=0.4)
 
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_time_domain_stats.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_time_domain_stats.png", dpi=600)
 plt.show()
 print("Saved: eda_time_domain_stats.png")
 
@@ -369,7 +428,7 @@ for row_i, sensor in enumerate(SENSORS):
         ax.grid(ls=":", alpha=0.4)
 
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_time_domain_stats_bp10k_500k.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_time_domain_stats_bp10k_500k.png", dpi=600)
 plt.show()
 print("Saved: eda_time_domain_stats_bp10k_500k.png")
 
@@ -443,7 +502,7 @@ for col_i, sensor in enumerate(SENSORS):
     ax.grid(ls=":", which="both", alpha=0.3)
 
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_psd_kappa_regimes.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_psd_kappa_regimes.png", dpi=600)
 plt.show()
 print("Saved: eda_psd_kappa_regimes.png")
 
@@ -517,7 +576,7 @@ for row_i, sensor in enumerate(SENSORS):
 
 fig10.suptitle("EDA10 — Envelope analysis per κ regime", fontsize=11)
 fig10.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_envelope.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_envelope.png", dpi=600)
 plt.show()
 print("Saved: eda_envelope.png")
 
@@ -560,7 +619,7 @@ for row_i, sensor in enumerate(SENSORS):
 
 fig11.suptitle("EDA11 — Hilbert envelope PSD per κ regime", fontsize=11)
 fig11.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_envelope_psd.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_envelope_psd.png", dpi=600)
 plt.show()
 print("Saved: eda_envelope_psd.png")
 
@@ -615,7 +674,7 @@ for col_i, sensor in enumerate(SENSORS):
 
 fig12.suptitle("EDA12 — Envelope spectral flatness vs κ", fontsize=11)
 fig12.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_envelope_spectral_flatness.png", dpi=150)
+plt.savefig(OUTPUT_DIR / "eda_envelope_spectral_flatness.png", dpi=600)
 plt.show()
 print("Saved: eda_envelope_spectral_flatness.png")
 

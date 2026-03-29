@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run python -c \":*)",
+      "Bash(conda run -n base python -c \":*)",
+      "Bash(python3 -c 'import h5py')",
+      "Read(//c/Users/au808956/AppData/Local/Programs//**)",
+      "Read(//c/ProgramData/Miniconda3/**)",
+      "Read(//c/ProgramData//**)",
+      "Bash(/c/Users/au808956/AppData/Local/Programs/Python/Python313/python.exe -c \"import h5py; print\\(''''ok''''\\)\")"
+    ]
+  }
+}

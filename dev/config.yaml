@@ -16,20 +16,20 @@ machines:
   work:
     home: "C:/Users/au808956"
     paths:
-      input_dir:  "C:/Users/au808956/Documents/Repos/PhD/data/ceramicspeed/"
-      output_dir: "C:/Users/au808956/Documents/Repos/PhD/CeramicSpeed_analysis/features/"
+      input_dir:  "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/data/"
+      output_dir: "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/dev/features/"
 
   home:
     home: "C:/Users/Bruger"
     paths:
-      input_dir:  "C:/Users/Bruger/Documents/Repos/PhD/data/CeramicSpeed/"
-      output_dir: "C:/Users/Bruger/Documents/Repos/PhD/CeramicSpeed_analysis/features/"
+      input_dir:  "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"
+      output_dir: "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/dev/features/"
 
 # --- Paths (resolved automatically from 'machines' above) --------------------
 # Kept as a fallback; overwritten at load time if the current machine is found.
 paths:
-  input_dir:  "C:/Users/au808956/Documents/Repos/PhD/data/ceramicspeed/"
-  output_dir: "C:/Users/au808956/Documents/Repos/PhD/CeramicSpeed_analysis/features/"
+  input_dir:  "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/data/"
+  output_dir: "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/dev/features/"
 
 # --- Bearing geometry --------------------------------------------------------
 bearing:
