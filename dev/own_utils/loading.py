@@ -54,6 +54,21 @@ __all__ = [
 #: Default sensor channels present in every sweep group.
 DEFAULT_SENSORS: tuple[str, ...] = ("AE", "Ultrasound")
 
+# Older files use "Ultrasound"; newer scope files renamed it "UL".
+# These mappings normalise both to the canonical names used everywhere else.
+_CHANNEL_ALIASES: dict[str, str] = {"UL": "Ultrasound"}
+_SWEEP_ATTR_ALIASES: dict[str, str] = {
+    "telem_rpm_meas":   "rpm",
+    "telem_omron_pv_c": "temperature_c",
+    "telem_mass_g":     "load_g",
+}
+
+# Fallback viscosity data keyed on lubricant product_name, for files that
+# omit viscosity_40c_cst / viscosity_100c_cst from their metadata.
+_VISCOSITY_FALLBACK: dict[str, dict[str, float]] = {
+    "Keratech 22": {"viscosity_40c_cst": 22.0, "viscosity_100c_cst": 4.1},
+}
+
 #: Default signal-cleaning settings.  Callers can override individual
 #: keys via the ``signal_clean_cfg`` parameter.
 DEFAULT_SIGNAL_CLEAN_CFG: dict[str, Any] = {
@@ -114,22 +129,57 @@ def load_hdf5_file(
     with h5py.File(file_path, "r") as f:
         sweeps_grp = f["sweeps"]
 
+        # Build a reverse alias map so we can find each canonical sensor in the
+        # file regardless of whether it uses the old or new channel name.
+        # e.g. canonical "Ultrasound" may be stored as "UL".
+        _alias_to_canonical = {v: k for k, v in _CHANNEL_ALIASES.items()}  # {"Ultrasound": "UL"}
+
+        def _file_channel(canonical: str, sweep_grp) -> str:
+            """Return the name actually present in *sweep_grp* for *canonical*."""
+            if canonical in sweep_grp:
+                return canonical
+            alias = _alias_to_canonical.get(canonical)
+            if alias and alias in sweep_grp:
+                return alias
+            raise KeyError(f"Channel '{canonical}' (or alias) not found in sweep")
+
         # Sampling frequency — identical across all sweeps and sensors
         first_sweep = sweeps_grp[list(sweeps_grp.keys())[0]]
-        time_axis: np.ndarray = first_sweep[sensors[0]]["time"][()]
+        first_ch = _file_channel(sensors[0], first_sweep)
+        time_axis: np.ndarray = first_sweep[first_ch]["time"][()]
         fs: float = 1.0 / float(np.mean(np.diff(time_axis)))
 
         lubricant_metadata = dict(f["metadata"]["lubricant"].attrs)
+        if "viscosity_40c_cst" not in lubricant_metadata:
+            product = lubricant_metadata.get("product_name", "")
+            fallback = _VISCOSITY_FALLBACK.get(product, {})
+            if fallback:
+                lubricant_metadata.update(fallback)
+                logger.info(
+                    "%s: viscosity data missing for '%s', using fallback values",
+                    file_path.name, product,
+                )
+            else:
+                logger.warning(
+                    "%s: viscosity data missing for '%s' and no fallback found",
+                    file_path.name, product,
+                )
         bearing_metadata = dict(f["metadata"]["bearing"].attrs)
 
         sweep_list: list[dict[str, Any]] = []
         for sweep_name, sweep in sweeps_grp.items():
+            # Normalise sweep-level telemetry attribute names
+            raw_attrs = dict(sweep.attrs)
+            norm_attrs = {
+                _SWEEP_ATTR_ALIASES.get(k, k): v for k, v in raw_attrs.items()
+            }
             sweep_data: dict[str, Any] = {
                 "name": sweep_name,
-                "test_parameters": dict(sweep.attrs),
+                "test_parameters": norm_attrs,
             }
             for sensor_name in sensors:
-                sweep_data[sensor_name] = sweep[sensor_name]["voltage"][()]
+                file_ch = _file_channel(sensor_name, sweep)
+                sweep_data[sensor_name] = sweep[file_ch]["voltage"][()]
             sweep_list.append(sweep_data)
 
     return {
@@ -354,13 +404,20 @@ def load_parquet_pair(
 # ---------------------------------------------------------------------------
 
 
-def discover_hdf5_files(input_dir: str | Path) -> list[Path]:
+def discover_hdf5_files(
+    input_dir: str | Path,
+    file_patterns: list[str] | None = None,
+) -> list[Path]:
     """Return a sorted list of HDF5 file paths in a directory.
 
     Parameters
     ----------
     input_dir:
         Directory to search for ``.hdf5`` files.
+    file_patterns:
+        Optional list of glob patterns matched against file *stems*
+        (filename without extension), e.g. ``["scope_*", "firstOil_T75_*"]``.
+        When ``None`` or empty all ``.hdf5`` files are returned.
 
     Returns
     -------
@@ -370,10 +427,22 @@ def discover_hdf5_files(input_dir: str | Path) -> list[Path]:
     Raises
     ------
     FileNotFoundError
-        If no HDF5 files are found.
+        If no HDF5 files are found (after filtering).
     """
+    import fnmatch
+
     input_dir = Path(input_dir)
-    files = sorted(input_dir.glob("*.hdf5"))
-    if not files:
-        raise FileNotFoundError(f"No .hdf5 files found in {input_dir}")
-    return files
+    all_files = sorted(input_dir.glob("*.hdf5"))
+
+    if file_patterns:
+        all_files = [
+            f for f in all_files
+            if any(fnmatch.fnmatch(f.stem, pat) for pat in file_patterns)
+        ]
+
+    if not all_files:
+        raise FileNotFoundError(
+            f"No .hdf5 files found in {input_dir}"
+            + (f" matching patterns {file_patterns}" if file_patterns else "")
+        )
+    return all_files

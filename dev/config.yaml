@@ -71,7 +71,14 @@ signal_cleaning:
 
 # --- Data quality filters (feature-level) ------------------------------------
 filters:
+  rpm_min: 300               # Discard startup/transient sweeps below this RPM
   rpm_max: 10_000            # Discard sweeps with RPM above this value
+  # Optional glob patterns to restrict which HDF5 files are loaded.
+  # Matched against file stems (filename without extension).
+  # If omitted or empty, all .hdf5 files in input_dir are used.
+  # Example — use only the long scope run:
+  file_patterns:
+    - "scope_*"
 
 # --- Kappa regime boundaries (for visualisation colouring) ------------------
 kappa:

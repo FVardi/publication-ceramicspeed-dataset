@@ -69,6 +69,7 @@ cfg = load_config(args.config)
 INPUT_DIR = get_input_dir(cfg)
 OUTPUT_DIR = get_output_dir(cfg)
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
+RPM_MIN: float = cfg["filters"].get("rpm_min", 0.0)
 RPM_MAX: float = cfg["filters"]["rpm_max"]
 SENSORS: tuple[str, ...] = ("AE", "Ultrasound")
 
@@ -110,7 +111,7 @@ def _load_sweeps(file_paths: list[Path]) -> list[dict]:
         for sw in data["sweeps"]:
             tp = sw["test_parameters"]
             rpm = float(tp.get("rpm", np.nan))
-            if rpm > RPM_MAX:
+            if rpm < RPM_MIN or rpm > RPM_MAX:
                 continue
 
             temp_c = float(tp.get("temperature_c", np.nan))
@@ -141,13 +142,15 @@ def _load_sweeps(file_paths: list[Path]) -> list[dict]:
     return records
 
 
-hdf5_files = discover_hdf5_files(INPUT_DIR)
+FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
+
+hdf5_files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
 if args.max_files:
     hdf5_files = hdf5_files[: args.max_files]
 
 print(f"Loading {len(hdf5_files)} HDF5 file(s) from {INPUT_DIR} …")
 sweeps = _load_sweeps(hdf5_files)
-print(f"Loaded {len(sweeps)} sweeps (after RPM filter < {RPM_MAX})")
+print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
 
 # %%
 # =============================================================================
@@ -172,10 +175,10 @@ def _time_stats(v: np.ndarray, fs: float) -> dict:
     }
 
 _BP_LOW_HZ  = 10e3   # 10 kHz
-_BP_HIGH_HZ = 500e3  # 500 kHz
+_BP_HIGH_HZ = 200e3  # 500 kHz
 
 
-def _hp_filter(v: np.ndarray, fs: float) -> np.ndarray:
+def _bp_filter(v: np.ndarray, fs: float) -> np.ndarray:
     nyq = fs / 2
     lo, hi = _BP_LOW_HZ / nyq, _BP_HIGH_HZ / nyq
     if lo <= 0 or hi >= 1.0:
@@ -185,7 +188,7 @@ def _hp_filter(v: np.ndarray, fs: float) -> np.ndarray:
 
 
 stat_rows: list[dict] = []
-hp_stat_rows: list[dict] = []
+bp_stat_rows: list[dict] = []
 for rec in sweeps:
     for sensor in SENSORS:
         if sensor not in rec:
@@ -199,10 +202,10 @@ for rec in sweeps:
             "kappa": rec["kappa"],
         }
         stat_rows.append({**base, **_time_stats(rec[sensor], rec["fs"])})
-        hp_stat_rows.append({**base, **_time_stats(_hp_filter(rec[sensor], rec["fs"]), rec["fs"])})
+        bp_stat_rows.append({**base, **_time_stats(_bp_filter(rec[sensor], rec["fs"]), rec["fs"])})
 
 stats_df = pd.DataFrame(stat_rows)
-hp_stats_df = pd.DataFrame(hp_stat_rows)
+hp_stats_df = pd.DataFrame(bp_stat_rows)
 
 # %%
 # =============================================================================
@@ -395,7 +398,7 @@ print("Saved: eda_time_domain_stats.png")
 
 # %%
 # =============================================================================
-# Figure EDA3b — Time-domain statistics vs κ (HP-filtered at 500 kHz)
+# Figure EDA3b — Time-domain statistics vs κ (BP-filtered)
 # =============================================================================
 
 fig, axes = plt.subplots(
