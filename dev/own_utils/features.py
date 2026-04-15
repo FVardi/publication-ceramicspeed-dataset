@@ -60,9 +60,13 @@ def bandpass_filter(
     low = f_lo / nyq
     high = min(f_hi / nyq, 0.9999)  # guard against Nyquist
 
+    if low >= 1.0:
+        # Band entirely above Nyquist — no signal content; return zeros.
+        return np.zeros_like(signal_data)
     if low <= 0:
         sos = butter(order, high, btype="low", output="sos")
-    elif high >= 1.0:
+    elif low >= high:
+        # f_lo clipped to Nyquist makes low >= high — treat as highpass.
         sos = butter(order, low, btype="high", output="sos")
     else:
         sos = butter(order, [low, high], btype="band", output="sos")

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python -c \"import numpy\")",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/python.exe -m pip install --upgrade pip setuptools wheel)",
+      "Bash(.venv/Scripts/python.exe -m pip install -e \"dev/[dev]\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(C:\\\\Users\\\\Bruger\\\\Documents\\\\Repos\\\\publication-ceramicspeed-dataset\\\\.venv\\\\Scripts\\\\python.exe -c \"import h5py; print\\(h5py.__file__\\)\")",
+      "Bash(python -c \"import h5py; print\\(h5py.__file__\\)\")",
+      "Bash(where python:*)",
+      "Bash(where conda:*)",
+      "Read(//c//**)",
+      "Read(//c/Program Files/**)",
+      "Bash(\"C:\\\\Users\\\\Bruger\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -c \"import h5py; print\\('h5py OK:', h5py.__version__\\)\")",
+      "Bash(\"C:\\\\Users\\\\Bruger\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -c \"import ctypes; ctypes.WinDLL\\('C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/.venv/Lib/site-packages/h5py/h5g.cp310-win_amd64.pyd'\\)\")",
+      "Bash(powershell -Command 'Get-CIPolicy -FilePath $env:SystemRoot\\\\System32\\\\CodeIntegrity\\\\SIPolicy.p7b 2>&1; \\(Get-ItemProperty '\\\\''HKLM:\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\DeviceGuard'\\\\'' -ErrorAction SilentlyContinue\\) | Select-Object *; whoami /groups 2>&1 | grep -i '\\\\''admin'\\\\''')",
+      "Bash(powershell -Command \"whoami /groups | Select-String -Pattern 'Admin'\")",
+      "Bash(powershell -Command \"whoami /groups\")",
+      "Bash(powershell -Command \"\\([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent\\(\\)\\).IsInRole\\([Security.Principal.WindowsBuiltInRole]::Administrator\\)\")",
+      "Bash(powershell -Command \"Get-ItemProperty 'HKLM:\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\CI\\\\Policy' -ErrorAction SilentlyContinue; reg query 'HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\CI\\\\Policy' 2>&1\")",
+      "Bash(python -c ':*)"
+    ]
+  }
+}

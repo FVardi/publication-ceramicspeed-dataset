@@ -52,22 +52,46 @@ __all__ = [
 ]
 
 #: Default sensor channels present in every sweep group.
-DEFAULT_SENSORS: tuple[str, ...] = ("AE", "Ultrasound")
+DEFAULT_SENSORS: tuple[str, ...] = ("AE", "UL")
 
-# Older files use "Ultrasound"; newer scope files renamed it "UL".
-# These mappings normalise both to the canonical names used everywhere else.
-_CHANNEL_ALIASES: dict[str, str] = {"UL": "Ultrasound"}
-_SWEEP_ATTR_ALIASES: dict[str, str] = {
-    "telem_rpm_meas":   "rpm",
-    "telem_omron_pv_c": "temperature_c",
-    "telem_mass_g":     "load_g",
+#: Keratech 22 (Kerax) viscosity constants — used as fallback when the HDF5
+#: file's lubricant metadata does not include viscosity data.
+_VISCOSITY_FALLBACK: dict[str, float] = {
+    "viscosity_40c_cst": 22.0,
+    "viscosity_100c_cst": 4.1,
 }
 
-# Fallback viscosity data keyed on lubricant product_name, for files that
-# omit viscosity_40c_cst / viscosity_100c_cst from their metadata.
-_VISCOSITY_FALLBACK: dict[str, dict[str, float]] = {
-    "Keratech 22": {"viscosity_40c_cst": 22.0, "viscosity_100c_cst": 4.1},
-}
+
+def _normalize_sweep_params(params: dict) -> dict:
+    """Map scope-format telemetry keys to the canonical column names.
+
+    The scope-based HDF5 format stores telemetry under prefixed keys
+    (``telem_*``).  This function copies those values to the canonical
+    names expected by the rest of the pipeline so downstream code is
+    unaffected by the format difference.
+    """
+    out = dict(params)
+    if "rpm" not in out and "telem_rpm_meas" in out:
+        out["rpm"] = out["telem_rpm_meas"]
+    if "temperature_c" not in out and "telem_omron_pv_c" in out:
+        out["temperature_c"] = out["telem_omron_pv_c"]
+    if "load_g" not in out and "telem_mass_g" in out:
+        out["load_g"] = out["telem_mass_g"]
+    return out
+
+
+def _ensure_viscosity(meta: dict) -> dict:
+    """Inject hardcoded viscosity values when absent from lubricant metadata.
+
+    The scope-format HDF5 files omit viscosity data.  Since the lubricant
+    is the same (Keratech 22, Kerax), the values from the earlier files
+    are used as constants.
+    """
+    out = dict(meta)
+    for key, value in _VISCOSITY_FALLBACK.items():
+        if key not in out:
+            out[key] = value
+    return out
 
 #: Default signal-cleaning settings.  Callers can override individual
 #: keys via the ``signal_clean_cfg`` parameter.
@@ -129,57 +153,24 @@ def load_hdf5_file(
     with h5py.File(file_path, "r") as f:
         sweeps_grp = f["sweeps"]
 
-        # Build a reverse alias map so we can find each canonical sensor in the
-        # file regardless of whether it uses the old or new channel name.
-        # e.g. canonical "Ultrasound" may be stored as "UL".
-        _alias_to_canonical = {v: k for k, v in _CHANNEL_ALIASES.items()}  # {"Ultrasound": "UL"}
-
-        def _file_channel(canonical: str, sweep_grp) -> str:
-            """Return the name actually present in *sweep_grp* for *canonical*."""
-            if canonical in sweep_grp:
-                return canonical
-            alias = _alias_to_canonical.get(canonical)
-            if alias and alias in sweep_grp:
-                return alias
-            raise KeyError(f"Channel '{canonical}' (or alias) not found in sweep")
-
         # Sampling frequency — identical across all sweeps and sensors
         first_sweep = sweeps_grp[list(sweeps_grp.keys())[0]]
-        first_ch = _file_channel(sensors[0], first_sweep)
-        time_axis: np.ndarray = first_sweep[first_ch]["time"][()]
+        time_axis: np.ndarray = first_sweep[sensors[0]]["time"][()]
         fs: float = 1.0 / float(np.mean(np.diff(time_axis)))
 
-        lubricant_metadata = dict(f["metadata"]["lubricant"].attrs)
-        if "viscosity_40c_cst" not in lubricant_metadata:
-            product = lubricant_metadata.get("product_name", "")
-            fallback = _VISCOSITY_FALLBACK.get(product, {})
-            if fallback:
-                lubricant_metadata.update(fallback)
-                logger.info(
-                    "%s: viscosity data missing for '%s', using fallback values",
-                    file_path.name, product,
-                )
-            else:
-                logger.warning(
-                    "%s: viscosity data missing for '%s' and no fallback found",
-                    file_path.name, product,
-                )
+        lubricant_metadata = _ensure_viscosity(
+            dict(f["metadata"]["lubricant"].attrs)
+        )
         bearing_metadata = dict(f["metadata"]["bearing"].attrs)
 
         sweep_list: list[dict[str, Any]] = []
         for sweep_name, sweep in sweeps_grp.items():
-            # Normalise sweep-level telemetry attribute names
-            raw_attrs = dict(sweep.attrs)
-            norm_attrs = {
-                _SWEEP_ATTR_ALIASES.get(k, k): v for k, v in raw_attrs.items()
-            }
             sweep_data: dict[str, Any] = {
                 "name": sweep_name,
-                "test_parameters": norm_attrs,
+                "test_parameters": _normalize_sweep_params(dict(sweep.attrs)),
             }
             for sensor_name in sensors:
-                file_ch = _file_channel(sensor_name, sweep)
-                sweep_data[sensor_name] = sweep[file_ch]["voltage"][()]
+                sweep_data[sensor_name] = sweep[sensor_name]["voltage"][()]
             sweep_list.append(sweep_data)
 
     return {
@@ -201,6 +192,7 @@ def load_and_process_file(
     frequency_bands: dict[str, list[tuple[float, float, str]]] | None = None,
     sensors: tuple[str, ...] | None = None,
     signal_clean_cfg: dict[str, Any] | None = None,
+    sensor_prefilter: dict[str, tuple[float, float]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load an HDF5 file, clean signals, and extract features.
 
@@ -209,8 +201,15 @@ def load_and_process_file(
     1. **Signal cleaning** — NaN/Inf interpolation, spike removal,
        clipping/saturation detection (see :func:`cleaning.clean_signal`).
        Sweeps that fail validation are skipped entirely.
-    2. **Feature extraction** — broadband and (optionally) per-band
-       features from the cleaned signal.
+    2. **Sensor pre-filtering** (optional) — a per-sensor bandpass filter
+       is applied to the cleaned signal *before* broadband feature
+       extraction.  This restricts spectral features to the sensor's
+       effective bandwidth (e.g. <10 kHz for the heterodyned UL probe)
+       so that out-of-band noise does not bias features such as
+       ``center_frequency`` or ``rms_frequency``.
+    3. **Feature extraction** — broadband features from the (optionally
+       pre-filtered) signal, plus per-band features when
+       ``frequency_bands`` is supplied.
 
     Parameters
     ----------
@@ -218,15 +217,23 @@ def load_and_process_file(
         Path to the ``.hdf5`` measurement file.
     frequency_bands:
         Optional dict mapping sensor name to a list of
-        ``(f_lo, f_hi, label)`` tuples.  When ``None`` only broadband
+        ``(f_lo, f_hi, label)`` tuples.  When provided, an additional set
+        of bandpass-filtered features is extracted for each band and
+        stored with a ``"{label}__"`` prefix, e.g.
+        ``"AE_50-200kHz__mobility"``.  When ``None`` only broadband
         features are extracted.
     sensors:
-        Sensor channel names to process.  Defaults to
-        ``("AE", "Ultrasound")``.
+        Sensor channel names to process.  Defaults to ``("AE", "UL")``.
     signal_clean_cfg:
         Dict of keyword overrides for :func:`cleaning.clean_signal`.
         Set ``{"enabled": False}`` to skip signal cleaning entirely
         (replicates the old behaviour).
+    sensor_prefilter:
+        Optional dict ``{sensor_name: (f_lo_hz, f_hi_hz)}``.  When
+        supplied, the corresponding bandpass filter is applied to the
+        cleaned signal before broadband feature extraction.  Does not
+        affect the per-band features in ``frequency_bands`` (those always
+        filter from the original cleaned signal).
 
     Returns
     -------
@@ -268,10 +275,22 @@ def load_and_process_file(
             else:
                 sig_report = SignalQualityReport()
 
-            # ---- Broadband features (no prefix) ----
-            features = extract_features(voltage, fs)
+            # ---- Optional sensor pre-filter (before broadband features) ----
+            # Restricts the signal to the sensor's effective bandwidth so
+            # that spectral features are not biased by out-of-band noise.
+            # Example: the heterodyned UL probe has content only below
+            # ~10 kHz; without this filter, center_frequency and
+            # rms_frequency would be computed over 800 kHz of noise.
+            if sensor_prefilter and sensor_name in sensor_prefilter:
+                f_lo_pre, f_hi_pre = sensor_prefilter[sensor_name]
+                broadband_signal = bandpass_filter(voltage, fs, f_lo_pre, f_hi_pre)
+            else:
+                broadband_signal = voltage
 
-            # ---- Band-specific features (prefixed) ----
+            # ---- Broadband features (computed on pre-filtered signal) ----
+            features = extract_features(broadband_signal, fs)
+
+            # ---- Band-specific features (prefixed, from raw cleaned signal) ----
             if frequency_bands and sensor_name in frequency_bands:
                 for f_lo, f_hi, band_label in frequency_bands[sensor_name]:
                     filtered = bandpass_filter(voltage, fs, f_lo, f_hi)
@@ -321,6 +340,7 @@ def load_and_process_files_parallel(
     frequency_bands: dict[str, list[tuple[float, float, str]]] | None = None,
     sensors: tuple[str, ...] | None = None,
     signal_clean_cfg: dict[str, Any] | None = None,
+    sensor_prefilter: dict[str, tuple[float, float]] | None = None,
     n_jobs: int = -1,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load and process multiple HDF5 files in parallel.
@@ -335,9 +355,13 @@ def load_and_process_files_parallel(
     frequency_bands:
         Optional per-sensor frequency band definitions.
     sensors:
-        Sensor channel names.  Defaults to ``("AE", "Ultrasound")``.
+        Sensor channel names.  Defaults to ``("AE", "UL")``.
     signal_clean_cfg:
         Signal-cleaning overrides (passed to each worker).
+    sensor_prefilter:
+        Optional per-sensor pre-filter limits ``{sensor: (f_lo, f_hi)}``.
+        Applied before broadband feature extraction.  See
+        :func:`load_and_process_file` for details.
     n_jobs:
         Number of parallel workers (default ``-1`` = all CPUs).
 
@@ -348,7 +372,7 @@ def load_and_process_files_parallel(
     """
     results = Parallel(n_jobs=n_jobs, backend="loky", verbose=5)(
         delayed(load_and_process_file)(
-            fp, frequency_bands, sensors, signal_clean_cfg
+            fp, frequency_bands, sensors, signal_clean_cfg, sensor_prefilter
         )
         for fp in file_paths
     )

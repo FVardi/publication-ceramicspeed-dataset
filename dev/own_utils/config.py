@@ -117,6 +117,70 @@ def get_sensor_freq_limits(cfg: dict[str, Any]) -> dict[str, tuple[float, float]
     }
 
 
+def get_sensor_prefilter(
+    cfg: dict[str, Any],
+) -> dict[str, tuple[float, float]] | None:
+    """Return per-sensor pre-filter limits from the ``sensor_prefilter`` section.
+
+    The pre-filter is applied to each sensor's signal *before* the broadband
+    ``extract_features`` call, constraining the spectrum to the sensor's
+    effective bandwidth.  This prevents out-of-band noise from biasing
+    spectral features (e.g. ``center_frequency``, ``rms_frequency``) for
+    sensors whose usable content is much narrower than the DAQ Nyquist limit.
+
+    Parameters
+    ----------
+    cfg:
+        Loaded configuration dictionary.
+
+    Returns
+    -------
+    dict or None
+        ``{sensor_name: (f_lo_hz, f_hi_hz)}`` if the section exists,
+        ``None`` otherwise (no pre-filtering applied).
+    """
+    pf = cfg.get("sensor_prefilter")
+    if not pf:
+        return None
+    return {
+        name: (float(limits["f_lo"]), float(limits["f_hi"]))
+        for name, limits in pf.items()
+    }
+
+
+def get_frequency_bands_config(
+    cfg: dict[str, Any],
+) -> dict[str, list[tuple[float, float, str]]] | None:
+    """Return physics-motivated frequency bands from the ``frequency_bands`` section.
+
+    These bands are used by ``01_feature_generation.py`` to extract a second
+    set of bandpass-filtered features *in addition to* the broadband set.
+    Each band produces features prefixed with its label, e.g.
+    ``"AE_50-200kHz__mobility"``.
+
+    Parameters
+    ----------
+    cfg:
+        Loaded configuration dictionary.
+
+    Returns
+    -------
+    dict or None
+        ``{sensor_name: [(f_lo, f_hi, label), ...]}`` if the section exists,
+        ``None`` otherwise.
+    """
+    fb = cfg.get("frequency_bands")
+    if not fb:
+        return None
+    return {
+        sensor_name: [
+            (float(b["f_lo"]), float(b["f_hi"]), str(b["label"]))
+            for b in bands
+        ]
+        for sensor_name, bands in fb.items()
+    }
+
+
 def make_frequency_bands(
     cfg: dict[str, Any],
 ) -> dict[str, list[tuple[float, float, str]]]:

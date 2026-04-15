@@ -178,9 +178,9 @@ def analyse_bands(
 # Data loading
 # =============================================================================
 
-files = sorted(INPUT_DIR.glob("*.hdf5"))
+files = sorted(INPUT_DIR.glob("scope_*.hdf5"))
 if not files:
-    raise FileNotFoundError(f"No .hdf5 files found in {INPUT_DIR}")
+    raise FileNotFoundError(f"No scope_*.hdf5 files found in {INPUT_DIR}")
 
 print(f"Found {len(files)} HDF5 file(s).")
 print(f"\nBand width: {cfg['band_width_hz'] / 1e3:.0f} kHz")
@@ -206,18 +206,28 @@ for file_path in tqdm(files, desc="Loading files"):
 
         for sweep_name, sweep in sweeps.items():
             test_params = dict(sweep.attrs)
-            rpm = float(test_params.get("rpm", 0))
-            temp_c = float(test_params.get("temperature_c", 25))
+            # Support both the old format (rpm, temperature_c) and the new
+            # scope format (telem_rpm_meas, telem_omron_pv_c).
+            rpm = float(
+                test_params.get("rpm", test_params.get("telem_rpm_meas", 0))
+            )
+            temp_c = float(
+                test_params.get("temperature_c", test_params.get("telem_omron_pv_c", 25))
+            )
 
             if rpm >= RPM_MAX:
                 continue
+
+            # Keratech 22 (Kerax) viscosity fallback for files that omit it.
+            nu_40 = float(lubricant_meta.get("viscosity_40c_cst", 22.0))
+            nu_100 = float(lubricant_meta.get("viscosity_100c_cst", 4.1))
 
             kappa_val = calculate_kappa.calculate_kappa(
                 rpm=rpm,
                 temp_c=temp_c,
                 d_pw=D_PW_MM,
-                nu_40=float(lubricant_meta.get("viscosity_40c_cst", 1)),
-                nu_100=float(lubricant_meta.get("viscosity_100c_cst", 1)),
+                nu_40=nu_40,
+                nu_100=nu_100,
             )
 
             for sensor_name in SENSOR_NAMES:

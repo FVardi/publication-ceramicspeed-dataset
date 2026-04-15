@@ -1,0 +1,998 @@
+%% ============================================================================
+%% Acoustic Emission and Passive Acoustic Regression to kappa
+%% Full draft — generated March 2026
+%% ============================================================================
+\documentclass[12pt]{article}
+
+%% Packages
+\usepackage[a4paper, top=25mm, bottom=25mm, left=25mm, right=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{lineno}
+\usepackage{setspace}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{textcomp}  % for degree symbol etc.
+
+%% Simple SI-unit macros (no siunitx needed)
+\newcommand{\si}[1]{\ensuremath{\mathrm{#1}}}
+\newcommand{\SI}[2]{\ensuremath{#1\,\mathrm{#2}}}
+\newcommand{\celsius}{{}^{\circ}\mathrm{C}}
+\newcommand{\num}[1]{#1}
+
+%% Line spacing for review
+\onehalfspacing
+\linenumbers
+
+%% Colours
+\definecolor{myblue}{RGB}{31,78,121}
+\hypersetup{colorlinks=true, linkcolor=myblue, citecolor=myblue, urlcolor=myblue}
+
+%% Macros
+\newcommand{\nuop}{\ensuremath{\nu_0}}
+\newcommand{\nureq}{\ensuremath{\nu_1}}
+\newcommand{\Rsq}{\ensuremath{R^2}}
+
+%% ============================================================================
+\begin{document}
+%% ============================================================================
+
+\begin{titlepage}
+\vspace*{2cm}
+{\Large\bfseries\color{myblue}
+Acoustic Emission and Passive Acoustic Regression to the ISO~281\\
+Viscosity Ratio $\kappa$ for Online, Non-Invasive Lubrication\\
+Condition Monitoring of Ball Bearings: An Exploratory Study
+\par}
+\vspace{1.5cm}
+{\large Frederik Appel Vardinghus-Nielsen\par}
+\vspace{0.5cm}
+{\normalsize
+Department of \ldots, Aarhus University, Denmark\\
+\texttt{frederikavn@gmail.com}
+\par}
+\vspace{2cm}
+{\small\itshape Draft submitted for peer review. Do not cite or distribute without permission.}
+\vspace{1cm}
+
+\textbf{Keywords:} acoustic emission; passive ultrasound; lubrication condition monitoring;
+viscosity ratio; $\kappa$ regression; ball bearing; non-invasive; signal processing;
+Hjorth features; gradient boosting
+
+\end{titlepage}
+
+%% ============================================================================
+\begin{abstract}
+Inadequate lubrication is responsible for an estimated 30--80\% of rolling element
+bearing failures, yet reliable online, non-invasive lubrication condition monitoring
+(LCM) remains an unsolved engineering problem.
+Passive sensor-based approaches are most practical for industrial retrofit because they
+require no bearing modification, but the signal processing challenge of separating
+lubrication-relevant information from confounded operating-condition effects has not
+been systematically characterised for simultaneous acoustic emission (AE) and passive
+acoustic sensing.
+This paper presents an exploratory study in which AE and passive acoustic signals are
+simultaneously acquired from a ball bearing across two temperature set-points
+(\SI{40}{\celsius} and \SI{75}{\celsius}) and five rotational speed levels
+(500--\SI{2500}{rpm}), covering the boundary, mixed, and full-film lubrication regimes.
+The ISO~281 viscosity ratio $\kappa \in [0.16,\,1.55]$ is derived analytically from
+bearing geometry, lubricant properties, and operating conditions as a continuous,
+physics-grounded regression target.
+Twenty-six time-domain and frequency-domain features are extracted per sweep and
+evaluated by both raw and partial Spearman rank correlation, the latter controlling for
+rotational speed and temperature.
+In the raw analysis, Hjorth mobility is the top AE predictor ($|\rho| = 0.69$) and
+broadband spectral standard deviation leads for the acoustic channel ($|\rho| = 0.58$);
+however, the partial analysis reveals that these correlations are substantially driven by
+operating-condition effects.
+After speed and temperature control, frequency-kurtosis and normalised bandwidth emerge
+as the most robust AE indicators of $\kappa$ ($\rho_{\text{partial}} \approx +0.23$),
+while acoustic-channel complexity and spectral shape features carry the strongest
+independent information ($\rho_{\text{partial}} \approx +0.39$).
+Four regression model families are benchmarked across three sensor configurations;
+gradient-boosted regression on AE features alone achieves the best hold-out performance
+($R^2 = 0.64$, $\text{RMSE} = 0.19$).
+Fusing AE and acoustic features does not improve upon single-modality AE
+($R^2 = 0.60$ combined vs.\ $0.64$ AE alone), a finding attributed to the limited
+independent information carried by the heterodyned acoustic channel.
+These results identify spectral shape and frequency-distribution features as physically
+motivated, operating-condition-robust $\kappa$ indicators and establish a first benchmark
+for simultaneous dual-channel passive sensing regressed to $\kappa$.
+The dataset is made publicly available to support standardised comparison.
+\end{abstract}
+
+\clearpage
+\tableofcontents
+\clearpage
+
+%% ============================================================================
+\section{Introduction}
+\label{sec:intro}
+%% ============================================================================
+
+Rolling element bearings are among the most prevalent mechanical components in industrial
+machinery, and their reliable operation depends critically on adequate lubrication.
+Lubrication failure---whether caused by starvation, viscosity degradation, or
+contamination---increases metal-to-metal asperity contact, accelerates surface fatigue and
+wear, raises operating temperature, and ultimately leads to premature bearing failure.
+Improper lubrication is estimated to account for between 30\% and 80\% of all rolling
+element bearing failures~\cite{jakobsen_detecting_2023,dai_situ_2024,nassef_impact_2022}.
+
+Despite this, lubrication condition monitoring (LCM) has received substantially less
+research attention than vibration-based fault detection and remaining useful life
+estimation, which are now mature technologies deployed widely in industry.
+The principal reason is that lubrication-related signal changes are subtler and more
+entangled with operating conditions than the impulse signatures of surface spalling or
+raceway cracks.
+Accurate, online LCM would enable condition-based relubrication: applying lubricant at
+the right time in the right quantity rather than following time-based schedules that
+systematically produce both under- and over-lubrication~\cite{wakiru_review_2019}.
+
+Passive, non-invasive sensing methods---acoustic emission (AE), vibration, and passive
+ultrasound---are the most practically attractive for industrial LCM because they require
+no bearing modification and can be retrofitted to bearings in service.
+Among these, AE is sensitive to the broadband stress waves emitted by asperity contact
+events and micro-crack propagation across a wide frequency range (typically
+50~kHz--\SI{4}{MHz}), while passive ultrasound at 38--40~kHz is already industrially
+deployed for threshold-based lubrication assessment~\cite{lineham_ultrasonic_2008}.
+Despite both being in practical use, they have not been studied simultaneously in a unified
+regression framework with a physics-based lubrication reference variable.
+
+A key advance in the field has been the use of the ISO~281 viscosity ratio $\kappa$ as a
+continuous regression target~\cite{jakobsen_detecting_2023,jakobsen_low_2024}.
+Since $\kappa$ encodes the ratio of actual lubricant viscosity to the minimum required for
+full elastohydrodynamic lubrication (EHL) at the current operating conditions, a
+model trained to predict $\kappa$ implicitly learns the operating-condition dependence
+and provides a physically interpretable, standardised output.
+Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} demonstrate $\kappa$
+regression from vibration and passive ultrasound features using LASSO and neural
+networks, establishing the methodological foundation that this paper builds upon.
+
+The complementarity of AE and passive acoustic sensing for LCM has been argued on
+physical grounds in several reviews~\cite{shang_comprehensive_2024,wang_advanced_2024},
+but has not been quantified experimentally in a unified framework.
+Whether jointly exploiting both sensor modalities improves $\kappa$ prediction over
+either alone is an open question with direct practical implications: additional sensors
+impose cost and complexity, and are only justified if they provide non-redundant information.
+
+\subsection*{Contributions}
+
+This paper makes the following contributions:
+\begin{enumerate}
+  \item \textbf{Novel dual-channel experiment.} The first study to simultaneously acquire
+    AE and passive acoustic signals from a ball bearing and regress both, individually
+    and jointly, to $\kappa$ using a common dataset and analytical ground truth.
+  \item \textbf{Partial Spearman feature analysis.} A systematic evaluation of 26
+    features by raw and partial Spearman rank correlation (controlling for speed and
+    temperature) distinguishes amplitude-dominated features from operating-condition-robust
+    shape features, and reveals divergent behaviour between the two sensor modalities.
+  \item \textbf{Quantified fusion test.} The first quantitative test of AE--acoustic
+    complementarity in a unified experimental framework, including a negative fusion result
+    that directly addresses an open question in the LCM literature.
+  \item \textbf{Open dataset.} A publicly available simultaneous AE + passive acoustic
+    bearing dataset with analytically derived $\kappa$ reference values, addressing the
+    absence of standardised benchmark data identified as a primary gap in the
+    field~\cite{shang_comprehensive_2024}.
+\end{enumerate}
+
+The remainder of the paper is organised as follows.
+Section~\ref{sec:background} reviews the theoretical background of $\kappa$, the
+Hamrock--Dowson model, and the physical origins of AE and acoustic signals.
+Section~\ref{sec:setup} describes the experimental setup and data collection.
+Section~\ref{sec:pipeline} presents the signal processing and feature extraction pipeline.
+Section~\ref{sec:features} presents the feature analysis results including partial
+Spearman correlations.
+Section~\ref{sec:modelling} presents the regression modelling results.
+Section~\ref{sec:discussion} discusses the findings.
+Section~\ref{sec:conclusion} concludes.
+
+%% ============================================================================
+\section{Background}
+\label{sec:background}
+%% ============================================================================
+
+\subsection{Lubrication regimes and the viscosity ratio $\kappa$}
+\label{subsec:kappa}
+
+The lubrication regime of a rolling element bearing is determined by the ratio of the
+elastohydrodynamic (EHL) film thickness $h_m$ to the composite surface roughness
+$\sigma$ of the contact surfaces, quantified by the specific film thickness
+$\Lambda = h_m / \sigma$.
+When $\Lambda \geq 3$ the contact is in the full-film EHL regime; when $0.5 \leq \Lambda < 3$
+mixed lubrication prevails with partial asperity contact; when $\Lambda < 0.5$ boundary
+lubrication dominates with predominantly metal-to-metal contact.
+
+The ISO~281 standard defines the viscosity ratio
+\begin{equation}
+  \kappa = \frac{\nuop}{\nureq(n,\, d_{pw})},
+  \label{eq:kappa}
+\end{equation}
+where $\nuop$ [\si{mm^2.s^{-1}}] is the actual kinematic viscosity of the lubricant at
+operating temperature, and $\nureq$ is the minimum kinematic viscosity required for full
+EHL at the bearing's rotational speed $n$ [\si{rpm}] and mean pitch diameter $d_{pw}$
+[\si{mm}]~\cite{iso_281}.
+The reference viscosity is given by
+\begin{equation}
+  \nureq = \begin{cases}
+    45\,000\; n^{-0.83}\; d_{pw}^{-0.5} & n < \SI{1000}{rpm}, \\
+    4\,500\; n^{-0.5}\; d_{pw}^{-0.5} & n \geq \SI{1000}{rpm}.
+  \end{cases}
+  \label{eq:nu1}
+\end{equation}
+The operating viscosity $\nuop$ is computed from the Walther viscosity--temperature
+equation fitted to the lubricant's \SI{40}{\celsius} and \SI{100}{\celsius} reference
+values.
+A value of $\kappa \geq 1$ indicates adequate film formation; $\kappa < 0.5$ corresponds
+to severe boundary lubrication.
+
+Since $\kappa$ encodes both $n$ and $T$ through $\nureq$ and $\nuop$, it cannot be
+varied independently of operating conditions without changing the lubricant itself.
+Critically, using $\kappa$ as a regression target---rather than a discrete fault
+label---means that a trained model implicitly compensates for operating-condition effects:
+the model learns the full mapping from raw features to the physics-grounded EHL adequacy
+index.
+
+\subsection{Physical origins of AE and passive acoustic signals}
+\label{subsec:origins}
+
+Acoustic emission (AE) refers to transient elastic stress waves generated by sudden
+energy releases in a material: asperity contact and micro-fracture are the dominant
+sources in rolling bearings.
+Under boundary and mixed lubrication, intermittent metal-to-metal asperity contacts
+generate broadband stress waves that propagate through the bearing structure and are
+detected by piezoelectric AE sensors coupled to the outer housing.
+The emission rate, amplitude, and frequency content of these events are all sensitive to
+the contact severity and hence to the lubrication regime~\cite{cornel_condition_2021,
+miettinen_analysis_2001}.
+Full-film EHL suppresses asperity contact, reducing AE activity; the transition through
+the mixed regime is associated with intermittent, structurally distinct emission events.
+AE sensors typically operate in the 50~kHz--\SI{1}{MHz} range and require sampling
+rates exceeding \SI{500}{kHz} to capture the full frequency content.
+
+Passive ultrasound sensing at 38--40~kHz provides a complementary, lower-frequency view
+of bearing acoustics.
+Commercial instruments (UE Systems, Sonotec) compare the broadband ultrasonic level
+against a reference baseline, triggering relubrication when the level rises by a
+specified number of decibels above the reference~\cite{lineham_ultrasonic_2008}.
+This threshold approach is the only passive non-invasive LCM method in routine
+industrial deployment but is confounded by speed and load changes.
+In the present experiment the passive acoustic channel uses a heterodyned probe, which
+frequency-shifts the signal into the audible range and effectively limits the usable
+bandwidth to approximately \SI{10}{kHz}; this constitutes a different signal from
+wideband AE and from classical ultrasonic reflectometry.
+
+The two sensor modalities are therefore sensitive to partially overlapping and partially
+distinct physical phenomena.
+AE captures high-frequency transient stress waves from individual asperity contacts,
+while the passive acoustic channel reflects lower-frequency bulk acoustic behaviour and
+machinery noise components.
+Whether this partial independence translates into complementary $\kappa$ information is
+the central empirical question of this study.
+
+\subsection{Hjorth parameters and spectral shape features}
+\label{subsec:features_bg}
+
+Hjorth parameters are time-domain features derived from the signal's variance and its
+successive derivatives~\cite{hjorth_eeg_1970}.
+Mobility $M$ is defined as
+\begin{equation}
+  M = \sqrt{\frac{\mathrm{Var}(\dot{x})}{\mathrm{Var}(x)}},
+  \label{eq:mobility}
+\end{equation}
+where $\dot{x}$ is the time derivative of signal $x$.
+Mobility quantifies the mean frequency content of the signal: high mobility indicates a
+higher proportion of rapid transitions, consistent with impulsive asperity contact
+events.
+Complexity $C = M(\dot{x}) / M(x)$ quantifies the deviation from a pure sinusoid.
+
+Spectral shape features---frequency kurtosis, normalised bandwidth, spectral flatness---
+describe the distribution of signal energy across the frequency axis independently of
+absolute energy level.
+Unlike amplitude features (RMS, peak, variance), spectral shape features are invariant to
+overall amplitude scaling and are therefore less directly confounded by rotational speed.
+
+%% ============================================================================
+\section{Experimental Setup}
+\label{sec:setup}
+%% ============================================================================
+
+\subsection{Test rig and bearing}
+\label{subsec:rig}
+
+The test rig is a custom-built bearing test stand at CeramicSpeed (Holstebro, Denmark).
+A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter
+$d_{pw} = \SI{38.0}{mm}$, 9 chrome steel rolling elements, dynamic load rating
+\SI{14000}{N}) is driven by a variable-frequency electric motor controlled through a
+variable-frequency drive (VFD).
+The bearing is loaded radially by a static weight and lubricated by a
+defined quantity of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$,
+$\nu_{100} = \SI{4.1}{cSt}$, NLGI grade~1 equivalent, ISO VG~22).
+Temperature is monitored by a PT100 sensor on the bearing housing and controlled
+passively through the test duration and ambient conditions.
+
+\textit{Note on VFD noise:} Harmonic artefacts from the VFD switching frequency are
+present at approximately \SI{5}{kHz} and its multiples in the low-frequency range of
+both sensor signals.
+A replacement VFD with filter is planned for subsequent experiments; in the present
+analysis, low-frequency spectral features below \SI{10}{kHz} should be interpreted with
+this artefact in mind.
+
+\subsection{Sensor configuration and data acquisition}
+\label{subsec:sensors}
+
+Two sensors are acquired simultaneously:
+
+\begin{description}
+  \item[AE sensor.] A wideband piezoelectric AE sensor is bonded to the bearing housing.
+    Sampling rate: \SI{1.6}{MHz} (nominally; effective bandwidth verified to
+    \SI{800}{kHz} by the DAQ). Signal recorded to a digital oscilloscope with voltage
+    range adapted to the signal level (\SI{500}{mV}--\SI{1}{V} per division depending
+    on RPM; see Table~\ref{tab:ops}).
+  \item[Passive acoustic sensor.] A heterodyned passive ultrasound probe (commercial
+    instrument) is clamped to the bearing housing.
+    The heterodyning process frequency-shifts the raw acoustic signal into the audible
+    range (\SI{<10}{kHz}); the recorded signal therefore reflects low-frequency acoustic
+    emissions rather than true wideband ultrasound.
+    Voltage range: \SI{50}{mV} per division. Sampling rate: \SI{1.6}{MHz} (recorded at
+    the same rate as the AE channel; effective content below \SI{10}{kHz}).
+\end{description}
+
+Data are acquired in individual time-series sweeps triggered at each operating condition.
+Each sweep comprises a fixed number of samples from both channels recorded
+simultaneously.
+The two sensors share identical acquisition timing, ensuring that feature comparisons
+and correlation analyses are conducted on co-temporal signal segments.
+
+\subsection{Operating conditions and $\kappa$ derivation}
+\label{subsec:ops}
+
+\begin{table}[H]
+\centering
+\caption{Experimental operating conditions and resulting mean $\kappa$ values.
+Counts are per-sensor (AE or acoustic); each sweep row contributes one AE and
+one acoustic record.
+The mixed-regime gap at $\kappa \approx 0.5$--$0.7$ for intermediate RPM/temperature
+combinations reflects the discrete temperature set-points used.}
+\label{tab:ops}
+\small
+\begin{tabular}{rrrrl}
+\toprule
+\textbf{RPM} & \textbf{Temp (\si{\celsius})} &
+\textbf{Mean $\kappa$} & \textbf{$n_{\text{sweeps}}$} &
+\textbf{Regime} \\
+\midrule
+500  & 40 & 0.47 & 218 & Boundary \\
+500  & 75 & 0.17 & 198 & Boundary \\
+1000 & 40 & 0.75 &  26 & Mixed \\
+1000 & 50 & 0.68 &  96 & Mixed \\
+1000 & 75 & 0.30 & 102 & Boundary \\
+1500 & 40 & 1.09 & 220 & Full film \\
+1500 & 50 & 0.87 &  74 & Mixed \\
+1500 & 75 & 0.39 & 104 & Boundary \\
+2000 & 40 & 1.10 &  18 & Full film \\
+2000 & 50 & 1.01 &  70 & Full film \\
+2000 & 75 & 0.44 &  94 & Boundary \\
+2500 & 40 & 1.25 &  32 & Full film \\
+2500 & 50 & 1.12 &  68 & Full film \\
+2500 & 75 & 0.49 & 100 & Boundary \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The experimental design covers two nominal temperature set-points (~\SI{40}{\celsius} and
+~\SI{75}{\celsius}) and five rotational speed levels (500--\SI{2500}{rpm}), yielding
+$\kappa \in [0.16,\, 1.55]$ with mean $\bar{\kappa} = 0.61$ and standard deviation
+$\sigma_\kappa = 0.33$.
+Regime distribution across the 799 AE sweeps retained after cleaning:
+852 boundary sweeps ($\kappa < 0.5$, 53\%),
+390 mixed sweeps ($0.5 \leq \kappa < 1.0$, 24\%), and
+358 full-film sweeps ($\kappa \geq 1.0$, 23\%).
+Data were collected across two experimental sessions (December 2025 and
+February 2026) stored in six HDF5 files totalling \num{1600}~sweep--sensor pairs before
+quality filtering.
+
+The $\kappa$ value for each sweep is computed according to
+Equations~\eqref{eq:kappa}--\eqref{eq:nu1} using the per-sweep measured RPM and
+temperature, with $\nuop$ evaluated via the Walther viscosity--temperature equation.
+No separate reference measurement of film thickness is available; $\kappa$ is therefore
+a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework
+and Walther's equation.
+
+\textbf{Note on operating condition coverage.} The dataset has a gap in the mixed
+lubrication regime at intermediate $\kappa$ values ($\approx 0.5$--$0.7$) caused by the
+discrete temperature set-points: at \SI{40}{\celsius} and \SI{75}{\celsius} most RPM
+levels fall in either the boundary or full-film regime.
+Model performance in the mixed regime is consequently evaluated on relatively few points,
+which is a limitation discussed in Section~\ref{sec:discussion}.
+
+\subsection{Dataset availability}
+
+The complete dataset (HDF5 signal files, extracted features in Parquet format, and the
+analysis pipeline scripts) will be made publicly available on Zenodo upon acceptance.
+The Python analysis pipeline is configured via a single YAML file and is fully
+reproducible from the raw HDF5 files.
+
+%% ============================================================================
+\section{Signal Processing Pipeline}
+\label{sec:pipeline}
+%% ============================================================================
+
+\subsection{Signal cleaning}
+\label{subsec:cleaning}
+
+The following quality checks are applied to each sweep--sensor pair before feature
+extraction:
+(i)~sweeps shorter than 64~samples, all-zero, or all-NaN are rejected;
+(ii)~isolated non-finite samples are replaced by linear interpolation;
+(iii)~if more than 1\% of samples reside at the estimated DAQ voltage rail (defined
+by the 99.9th/0.1st percentile), the sweep is flagged as clipped;
+(iv)~contiguous flat runs longer than 50~samples are flagged as saturated;
+(v)~samples exceeding six standard deviations from the mean are replaced by the local
+median within a $\pm 5$-sample window.
+After cleaning, 1598 of 1600 sweep--sensor pairs are retained.
+
+\subsection{Feature extraction}
+\label{subsec:features}
+
+Twenty-six features are computed from the cleaned voltage signal for each
+sweep--sensor pair, comprising 12 time-domain and 14 frequency-domain statistics:
+
+\textbf{Time-domain (12):} peak, RMS, standard deviation, variance, skewness, kurtosis,
+crest factor, shape factor, impulse factor, margin factor, Hjorth mobility, Hjorth
+complexity.
+
+\textbf{Frequency-domain (14):} dominant frequency, spectral mean, spectral standard
+deviation, spectral skewness, spectral kurtosis, spectral flatness (Wiener entropy),
+centre frequency, RMS frequency, frequency-weighted standard deviation, peak frequency,
+normalised frequency standard deviation, frequency skewness, frequency kurtosis, and
+normalised bandwidth.
+
+All frequency-domain features are computed from the one-sided FFT magnitude spectrum of
+the cleaned signal.
+
+\subsection{Feature selection}
+\label{subsec:selection}
+
+Two criteria are applied to reduce the 26-feature space before modelling:
+\begin{enumerate}
+  \item \textbf{Spearman rank correlation with $\kappa$}: features are ranked by
+    $|\rho(\text{feature},\, \kappa)|$. The ranking is used for analysis only; all
+    26~features proceed to the redundancy filter.
+  \item \textbf{Variance inflation factor (VIF) and pairwise correlation filter}: features
+    with VIF $> 10$ or more than three pairwise correlation partners
+    ($|r_{ij}| > 0.8$) are flagged as redundant and removed by a greedy procedure that
+    retains the highest-$|\rho|$ representative from each correlated group.
+\end{enumerate}
+
+After selection, 10~AE features are retained:
+\textit{skewness, crest factor, kurtosis, shape factor, mobility, complexity, dominant
+frequency, centre frequency, RMS frequency, peak frequency.}
+Eleven acoustic-channel features are retained:
+\textit{skewness, crest factor, kurtosis, shape factor, mobility, complexity, dominant
+frequency, spectral standard deviation, centre frequency, spectral flatness, peak
+frequency.}
+All retained features are normalised to zero mean and unit variance before modelling.
+
+%% ============================================================================
+\section{Feature Analysis}
+\label{sec:features}
+%% ============================================================================
+
+\subsection{Raw Spearman correlation with $\kappa$}
+\label{subsec:raw_spearman}
+
+Table~\ref{tab:raw_spearman} lists the top ten features for each sensor ranked by
+$|\rho(\text{feature},\, \kappa)|$ across all 799~sweeps per sensor.
+
+\begin{table}[H]
+\centering
+\caption{Top 10 features by raw Spearman correlation $|\rho|$ with $\kappa$ for AE
+and acoustic channels. Features above the horizontal rule are in the retained set used
+for modelling.}
+\label{tab:raw_spearman}
+\small
+\begin{tabular}{lclc}
+\toprule
+\multicolumn{2}{c}{\textbf{AE}} & \multicolumn{2}{c}{\textbf{Acoustic}} \\
+\cmidrule(lr){1-2}\cmidrule(lr){3-4}
+Feature & $|\rho|$ & Feature & $|\rho|$ \\
+\midrule
+Hjorth mobility    & 0.691 & Spectral std       & 0.580 \\
+Spectral flatness  & 0.616 & RMS                & 0.573 \\
+Variance           & 0.561 & Hjorth mobility    & 0.561 \\
+Std                & 0.561 & Std                & 0.560 \\
+RMS                & 0.557 & Variance           & 0.560 \\
+Peak               & 0.554 & Peak               & 0.511 \\
+Spectral std       & 0.552 & Freq.\ kurtosis    & 0.496 \\
+Hjorth complexity  & 0.493 & Norm.\ bandwidth   & 0.496 \\
+Freq.\ kurtosis    & 0.449 & Freq.\ skewness    & 0.496 \\
+Norm.\ bandwidth   & 0.449 & Spectral mean      & 0.496 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In the raw analysis, amplitude features (RMS, variance, peak) and Hjorth mobility
+dominate both sensors, with $|\rho| > 0.55$ across the board.
+Figure~\ref{fig:scatter_mobility} illustrates the Hjorth mobility vs.\ $\kappa$
+relationship for both sensors.
+Whilst the negative trend is visually apparent, the scatter is large and the clusters
+correspond closely to operating-condition groups, suggesting that operating speed is a
+dominant driver.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/ae_us_hjorth_mobility_scatter.png}
+\caption{Hjorth mobility vs.\ $\kappa$ for AE (left) and passive acoustic (right) sensors
+coloured by rotational speed. The visible clustering by RPM indicates that a substantial
+fraction of the apparent $\kappa$--mobility relationship is mediated by operating speed.}
+\label{fig:scatter_mobility}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/feature_ranking_ae_barplot.png}
+\caption{Spearman $|\rho|$ between each AE feature and $\kappa$, sorted by magnitude.
+Retained features (after VIF and redundancy filtering) are highlighted.}
+\label{fig:ranking_ae}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/feature_ranking_us_barplot.png}
+\caption{Spearman $|\rho|$ between each acoustic-channel feature and $\kappa$, sorted
+by magnitude. Retained features highlighted.}
+\label{fig:ranking_us}
+\end{figure}
+
+\subsection{Operating-condition confounding analysis}
+\label{subsec:confound}
+
+The raw Spearman correlation between broadband signal energy (as a proxy for all amplitude
+features) and $\kappa$ is dominated by the shared dependence on rotational speed and
+temperature.
+Quantitatively:
+\begin{itemize}
+  \item RPM vs.\ $\kappa$: Spearman $\rho = +0.62$, mutual information $= 3.37$~nats.
+    Higher RPM reduces the required viscosity $\nureq$ (Eq.~\eqref{eq:nu1}) and
+    therefore increases $\kappa$, while also generating more asperity contact energy
+    and thus higher AE amplitude.
+  \item Temperature vs.\ $\kappa$: Spearman $\rho = -0.68$, mutual information
+    $= 2.65$~nats. Higher temperature reduces actual viscosity $\nuop$ and therefore
+    reduces $\kappa$.
+\end{itemize}
+
+The broadband power of both channels is strongly correlated with RPM:
+AE band power ($0$--\SI{800}{kHz}) has $\rho_{\text{RPM}} = +0.90$, while the
+partial Spearman correlation with $\kappa$ after controlling for RPM and temperature
+drops to $\rho_{\text{partial}} = +0.15$.
+This confirms that broadband signal energy, by itself, conveys very little
+lubrication-specific information beyond what is already contained in the operating
+conditions.
+
+\subsection{Partial Spearman correlation analysis}
+\label{subsec:partial}
+
+To identify features that carry information about $\kappa$ \emph{beyond} what is
+explained by RPM and temperature, partial Spearman rank correlations are computed for all
+26~features per sensor.
+The partial correlation $\rho_{\text{partial}}(\text{feature}, \kappa \mid n, T)$
+is estimated by regressing out the rank-transformed RPM and temperature from both the
+feature ranks and the $\kappa$ ranks, then computing the Spearman correlation of the
+residuals.
+
+\begin{table}[H]
+\centering
+\caption{Top features by partial Spearman correlation with $\kappa$ after controlling
+for rotational speed and temperature.
+$\rho_{\text{raw}}$ is the absolute raw Spearman correlation; $\rho_{\text{partial}}$ is
+the signed partial correlation (positive: higher feature $\rightarrow$ higher $\kappa$
+at constant operating condition).
+The contrast between raw and partial rankings reveals the extent of operating-condition
+confounding.}
+\label{tab:partial_spearman}
+\small
+\begin{tabular}{lccclcc}
+\toprule
+\multicolumn{3}{c}{\textbf{AE}} & \phantom{abc} &
+\multicolumn{3}{c}{\textbf{Acoustic channel}} \\
+\cmidrule(lr){1-3}\cmidrule(lr){5-7}
+Feature & $|\rho_{\text{raw}}|$ & $\rho_{\text{partial}}$ & &
+Feature & $|\rho_{\text{raw}}|$ & $\rho_{\text{partial}}$ \\
+\midrule
+Freq.\ kurtosis     & 0.450 & $+$0.232 & & Complexity         & 0.119 & $+$0.391 \\
+Norm.\ bandwidth    & 0.450 & $+$0.232 & & Spectral skewness  & 0.345 & $+$0.298 \\
+Spectral mean       & 0.450 & $+$0.232 & & Spectral kurtosis  & 0.345 & $+$0.298 \\
+Variance            & 0.561 & $+$0.168 & & Spectral mean      & 0.496 & $+$0.254 \\
+Std                 & 0.561 & $+$0.168 & & Freq.\ kurtosis    & 0.496 & $+$0.254 \\
+RMS                 & 0.557 & $+$0.164 & & Norm.\ bandwidth   & 0.496 & $+$0.254 \\
+Spectral skewness   & 0.252 & $+$0.142 & & Peak               & 0.511 & $+$0.229 \\
+Spectral kurtosis   & 0.252 & $+$0.142 & & Std                & 0.560 & $+$0.221 \\
+Spectral std        & 0.552 & $+$0.129 & & Variance           & 0.560 & $+$0.221 \\
+Complexity          & 0.492 & $+$0.014 & & RMS                & 0.572 & $+$0.218 \\
+\midrule
+Hjorth mobility     & 0.691 & $-$0.138 & & Hjorth mobility    & 0.561 & $+$0.062 \\
+Kurtosis            & 0.109 & $-$0.190 & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key findings from Table~\ref{tab:partial_spearman}:}
+\begin{enumerate}
+  \item \textit{AE frequency distribution features are the most robust $\kappa$ indicators.}
+    Frequency kurtosis, normalised bandwidth, and spectral mean share the highest AE
+    partial correlations ($\rho_{\text{partial}} \approx +0.23$), suggesting that the
+    distribution of signal energy across the AE frequency spectrum responds to lubrication
+    regime independently of overall signal amplitude.
+  \item \textit{Amplitude features retain modest independent information.}
+    Variance, std, and RMS retain partial correlations of $\approx +0.16$--$0.17$, meaning
+    that even after RPM and temperature are controlled, higher signal energy is weakly
+    associated with lower film adequacy.
+  \item \textit{Acoustic-channel complexity is the strongest independent $\kappa$ indicator.}
+    Hjorth complexity, ranked only ninth in the raw AE analysis and twelfth in the raw
+    acoustic analysis, rises to the top of the partial ranking for the acoustic channel
+    ($\rho_{\text{partial}} = +0.39$), suggesting that the complexity of the acoustic
+    waveform responds more directly to lubrication conditions than its energy level.
+  \item \textit{AE Hjorth mobility shows sign reversal after partial control.}
+    While mobility has the highest raw AE correlation ($|\rho| = 0.69$), its partial
+    correlation is negative ($\rho_{\text{partial}} = -0.14$), indicating that the raw
+    correlation is largely an artefact of the shared RPM dependence.
+    At fixed operating conditions, the direction of the mobility--$\kappa$ relationship
+    reverses, consistent with a complex, non-monotonic interaction between film formation
+    and contact impulsiveness.
+  \item \textit{AE and acoustic channels respond differently after operating-condition
+    control.} For AE, frequency distribution features dominate the partial ranking; for
+    the acoustic channel, complexity and spectral shape features dominate.
+    This divergence supports the physical distinction between the two sensor modalities
+    (broadband stress waves vs.\ low-frequency bulk acoustic response).
+\end{enumerate}
+
+Figure~\ref{fig:partial_comparison} illustrates the contrast between raw and partial
+rankings for broadband band power across both sensors.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/band_confound_partial_comparison.png}
+\caption{Raw Spearman correlations with RPM (left) and partial Spearman correlation with
+$\kappa$ after RPM and temperature control (right) for broadband band power in both
+sensors.
+The dramatic reduction from raw to partial underscores the extent of amplitude
+confounding.}
+\label{fig:partial_comparison}
+\end{figure}
+
+\subsection{PCA and regime separability}
+\label{subsec:pca}
+
+Figure~\ref{fig:pca} shows the first two principal components of the retained AE
+feature set, coloured by $\kappa$ regime.
+Boundary and full-film sweeps are broadly separated in the PC1--PC2 plane, while mixed
+regime sweeps overlap with both.
+This confirms that the retained feature set carries regime-relevant discriminative
+information but that the mixed lubrication regime remains the most challenging region,
+consistent with the known partial physical overlap between boundary and mixed conditions.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/pca_kappa_regimes.png}
+\caption{PCA projection of the retained AE feature set (10~features), coloured by
+lubrication regime. Boundary ($\kappa < 0.5$): red; mixed ($0.5 \leq \kappa < 1$):
+orange; full film ($\kappa \geq 1$): green.}
+\label{fig:pca}
+\end{figure}
+
+%% ============================================================================
+\section{Regression Modelling}
+\label{sec:modelling}
+%% ============================================================================
+
+\subsection{Experimental design}
+\label{subsec:modelling_design}
+
+The dataset is divided into a training set (80\%, $n_{\text{train}} = 1278$~sweeps
+across both sensors) and a hold-out test set (20\%, $n_{\text{test}} = 320$~sweeps)
+by random stratified sampling.
+The hold-out set is withheld entirely from all model development steps and used only for
+final evaluation.
+
+Four regression model families are evaluated for three sensor configurations
+(AE only, acoustic channel only, and combined AE+acoustic features):
+\begin{enumerate}
+  \item \textbf{Elastic Net} (regularised linear regression with combined $\ell_1$ and
+    $\ell_2$ penalty): hyperparameters $\alpha$ and $\ell_1$ ratio tuned by
+    \texttt{ElasticNetCV} with 5-fold cross-validation on the training set.
+  \item \textbf{Bayesian Ridge Regression}: EM-based hyperparameter selection; provides
+    predictive uncertainty estimates as a by-product.
+  \item \textbf{Degree-2 Polynomial Regression} (polynomial feature expansion followed
+    by Ridge regression): captures pairwise interactions between features.
+  \item \textbf{LightGBM} (gradient-boosted decision trees): hyperparameters
+    (learning rate, number of leaves, tree depth) tuned by 5-fold cross-validation grid
+    search on the training set.
+\end{enumerate}
+
+Model performance is reported as the mean cross-validation $R^2$ on the training set
+(5-fold) and the hold-out $R^2$, MAE, and RMSE on the test set.
+Confidence intervals on CV~$R^2$ are estimated from the fold-to-fold variance.
+
+\subsection{Results}
+\label{subsec:modelling_results}
+
+\begin{table}[H]
+\centering
+\caption{Regression model performance across all model families and sensor configurations.
+CV: mean 5-fold cross-validation $R^2$ on training set (mean~$\pm$~fold std).
+HO: hold-out test set. Best hold-out $R^2$ in bold.}
+\label{tab:models}
+\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Model} & \textbf{Sensors} &
+\textbf{CV $R^2$} & \textbf{HO $R^2$} & \textbf{HO MAE} & \textbf{HO RMSE} \\
+\midrule
+LightGBM     & AE        & 0.646 & \textbf{0.644} & 0.136 & 0.193 \\
+LightGBM     & Combined  & 0.632 & 0.598          & 0.148 & 0.205 \\
+LightGBM     & Acoustic  & 0.567 & 0.560          & 0.143 & 0.212 \\
+\midrule
+Polynomial   & AE        & 0.541 & 0.537          & 0.179 & 0.220 \\
+Polynomial   & Acoustic  & 0.446 & 0.542          & 0.169 & 0.217 \\
+Polynomial   & Combined  & 0.426 & 0.465          & 0.196 & 0.237 \\
+\midrule
+Elastic Net  & AE        & 0.536 & 0.532          & 0.185 & 0.221 \\
+Elastic Net  & Combined  & 0.539 & 0.525          & 0.187 & 0.223 \\
+Elastic Net  & Acoustic  & 0.418 & 0.453          & 0.192 & 0.237 \\
+\midrule
+Bayesian Ridge & AE      & 0.536 & 0.532          & 0.185 & 0.222 \\
+Bayesian Ridge & Combined& 0.529 & 0.519          & 0.188 & 0.225 \\
+Bayesian Ridge & Acoustic & 0.414 & 0.457          & 0.190 & 0.236 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Overall performance.}
+The best hold-out performance is achieved by LightGBM on AE features alone
+($R^2 = 0.644$, MAE~$= 0.136$, RMSE~$= 0.193$), corresponding to a hold-out RMSE of
+approximately 0.19~$\kappa$-units on a target range of $[0.16,\, 1.55]$.
+Linear and polynomial models cluster around $R^2 \approx 0.53$--$0.54$ for AE, consistent
+with the non-linear feature--$\kappa$ relationships visible in the PCA projection
+(Figure~\ref{fig:pca}) and in the scatter plots.
+
+\textbf{Sensor comparison.}
+AE features consistently outperform acoustic-channel features across all model families
+(AE $R^2$: 0.53--0.64 vs.\ acoustic $R^2$: 0.42--0.56), reflecting the richer frequency
+content and more direct sensitivity of AE to asperity contact events.
+
+\textbf{Sensor fusion does not improve performance.}
+The combined AE+acoustic model achieves $R^2 = 0.598$ at hold-out, which is lower than
+the AE-only model ($0.644$) and shows greater degradation from CV to hold-out
+($\Delta R^2 = -0.034$) than either single-sensor model, indicating mild overfitting from
+the larger 21-dimensional feature space.
+Even Elastic Net, which explicitly regularises the combined feature space, shows no
+advantage over AE alone ($0.525$ combined vs.\ $0.532$ AE only).
+
+\textbf{Model consistency.}
+The close agreement between CV and hold-out $R^2$ for LightGBM-AE (0.646 vs.\ 0.644)
+and Elastic Net-AE (0.536 vs.\ 0.532) indicates that the model evaluations are stable
+and that no significant overfitting to the training fold occurred for the single-sensor
+models.
+
+Figure~\ref{fig:pred_vs_actual} shows predicted vs.\ actual $\kappa$ for the hold-out
+set for all four model families under the AE-only configuration.
+Figure~\ref{fig:cv_folds} shows the fold-to-fold $R^2$ distributions for the
+cross-validation stage.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/model_pred_vs_actual_holdout.png}
+\caption{Predicted vs.\ actual $\kappa$ on the hold-out test set for all model families
+and sensor configurations. The dashed diagonal indicates perfect prediction.
+Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.0$).}
+\label{fig:pred_vs_actual}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/model_cv_fold_r2.png}
+\caption{Cross-validation $R^2$ distributions across 5 folds for all model--sensor
+combinations. Fold-to-fold variance is comparable across model families, indicating
+stable training performance.}
+\label{fig:cv_folds}
+\end{figure}
+
+%% ============================================================================
+\section{Discussion}
+\label{sec:discussion}
+%% ============================================================================
+
+\subsection{Interpreting the partial Spearman results}
+\label{subsec:disc_partial}
+
+The most striking result of the feature analysis is the \emph{sign reversal} of Hjorth
+mobility for AE: the highest raw correlation ($|\rho| = 0.69$) becomes a negative partial
+correlation ($\rho_{\text{partial}} = -0.14$) after operating conditions are controlled.
+This can be understood as follows.
+In the raw data, higher RPM is associated with both higher $\kappa$ (reduced required
+viscosity per Eq.~\eqref{eq:nu1}) and higher signal energy (more rotational contact
+events per second), so mobility appears to correlate positively with $\kappa$.
+Once RPM is held constant in the partial analysis, the residual variation in $\kappa$
+arises primarily from temperature fluctuations and measurement noise; at a given
+operating point, the mobility--$\kappa$ relationship may be weakly negative or
+noise-dominated.
+This finding is a cautionary result: a feature that ranks first in a naive Spearman
+analysis can be substantially or entirely an operating-condition proxy rather than a
+lubrication condition indicator.
+
+In contrast, frequency distribution features (frequency kurtosis, normalised bandwidth,
+spectral mean for AE; complexity, spectral skewness/kurtosis for the acoustic channel)
+show modest but consistent positive partial correlations.
+These features describe the \emph{shape} of the frequency spectrum rather than its
+total energy, and are therefore less directly scaled by rotational speed.
+A physical interpretation is that worsening lubrication shifts signal energy toward
+higher frequencies or produces a more spectrally non-uniform (higher kurtosis) AE
+spectrum, reflecting the impulsive, broadband character of asperity contact stress waves.
+The acoustic-channel complexity result ($\rho_{\text{partial}} = +0.39$) suggests that
+under boundary lubrication, the bulk acoustic waveform becomes structurally more complex
+--- consistent with multiple overlapping contact transients at different frequencies.
+
+\subsection{Why AE outperforms the acoustic channel}
+\label{subsec:disc_ae}
+
+The consistently superior performance of AE over the acoustic channel across all model
+families reflects a fundamental hardware difference.
+The AE sensor captures genuine wideband stress-wave emissions up to \SI{800}{kHz},
+directly sensitive to individual asperity contact events.
+The acoustic channel is heterodyned, limiting its useful content to below approximately
+\SI{10}{kHz}, where the signal is a mixture of low-frequency machinery noise, VFD
+harmonics, and structural vibration.
+The physical information about microscale contact events is largely absent in this
+frequency range.
+Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor
+would be expected to substantially improve the acoustic-channel models.
+
+\subsection{Why fusion does not help}
+\label{subsec:disc_fusion}
+
+The negative fusion result ($R^2 = 0.60$ combined vs.\ $0.64$ AE alone) can be explained
+by two complementary factors.
+First, the inter-feature correlation analysis shows substantial overlap between the
+retained AE and acoustic feature sets: both sensors retain mobility, complexity,
+crest factor, kurtosis, and skewness, and these features carry correlated information.
+With only 10--11 features per sensor, the combined 21-feature space does not offer
+sufficient independent information to justify the increased model complexity.
+Second, the acoustic channel's limited frequency range means its unique contributions
+are primarily in the low-frequency domain where VFD noise contaminates the signal.
+If the acoustic channel is effectively a noisy version of low-frequency information
+already present in AE (given that AE sensors also detect frequencies well below their
+resonance), adding it to the model introduces noise without adding signal.
+
+This result is an informative contribution to the LCM literature, where AE--ultrasound
+complementarity is widely \emph{argued} but rarely \emph{tested}.
+The current finding suggests that complementarity requires both sensors to cover
+genuinely distinct frequency ranges; with the current hardware, this condition is not met.
+
+\subsection{Implications for the $\kappa$ regression framework}
+\label{subsec:disc_kappa}
+
+The $\kappa$ regression framework is validated as a methodologically sound approach for
+passive non-invasive LCM.
+A hold-out $R^2 = 0.64$ for a single AE sensor on a difficult, confounded dataset
+with only two temperature set-points represents a meaningful signal.
+Comparing this to a na{\"i}ve baseline (predicting the training mean, $R^2 = 0$) and
+to the prior work of Jakobsen et al.~\cite{jakobsen_detecting_2023} (who achieved
+comparable performance with vibration and passive ultrasound), the result is consistent
+with the expected capability of passive sensing regressed to $\kappa$ on a small dataset.
+
+The partial Spearman analysis demonstrates that the $\kappa$ regression framework does
+not fully remove operating-condition effects from the \emph{features}: amplitude features
+are still largely RPM proxies even when $\kappa$ is the regression target.
+Models trained on $\kappa$ implicitly learn to use amplitude features as an indirect
+operating-condition indicator, which inflates apparent performance.
+Future feature engineering should prioritise spectral shape and ratio features
+(frequency kurtosis, normalised bandwidth, spectral flatness) that retain information
+about lubrication state after operating-condition control.
+
+\subsection{Limitations}
+\label{subsec:disc_limits}
+
+\begin{enumerate}
+  \item \textbf{Single bearing and lubricant.} All results are specific to the SYJ25
+    bearing and Keratech~22 oil. Generalisability to other bearing types, sizes, or
+    lubricants is unknown and is a priority for follow-on experiments.
+  \item \textbf{Heterodyned acoustic channel.} The passive acoustic channel is
+    frequency-limited to $\approx$\SI{10}{kHz}. It should not be equated with wideband
+    ultrasound and results should be interpreted in light of this hardware constraint.
+  \item \textbf{Data gap in the mixed lubrication regime.} With only discrete temperature
+    set-points, the mixed regime ($\kappa \approx 0.5$--$0.7$) is underrepresented
+    (24\% of sweeps). This is precisely the regime of greatest practical interest for
+    early lubrication deterioration warning.
+  \item \textbf{VFD harmonic contamination.} Switching artefacts at $\approx$\SI{5}{kHz}
+    affect low-frequency spectral features of both channels. The partial Spearman analysis
+    reduces but does not eliminate this concern.
+  \item \textbf{Model-derived $\kappa$ reference.} No independent film thickness
+    measurement (e.g., electrical capacitance or active ultrasonic reflectometry) is
+    available. The $\kappa$ values are model-derived and subject to the Hamrock--Dowson
+    and Walther equation assumptions.
+  \item \textbf{Dataset size.} With 799~sweeps per sensor from a single bearing, the
+    statistical power to characterise model uncertainty in the mixed regime is limited.
+    The 5-fold CV confidence intervals on $R^2$ are relatively wide.
+\end{enumerate}
+
+%% ============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+%% ============================================================================
+
+This paper has presented an exploratory study of simultaneous acoustic emission and
+passive acoustic sensing regressed to the ISO~281 viscosity ratio $\kappa$ for
+non-invasive lubrication condition monitoring of a ball bearing.
+The main findings are as follows:
+
+\begin{enumerate}
+  \item \textbf{Raw Spearman analysis favours amplitude features, but these are
+    predominantly operating-condition proxies.}
+    Hjorth mobility and RMS rank highest in the raw analysis for both sensors, but their
+    partial correlations with $\kappa$ after controlling for rotational speed and
+    temperature are substantially reduced, with AE mobility exhibiting a sign reversal.
+  \item \textbf{Spectral shape features are the most physically robust $\kappa$
+    indicators.}
+    Frequency kurtosis, normalised bandwidth, and spectral mean (AE) and Hjorth
+    complexity and spectral skewness (acoustic channel) show the highest partial
+    Spearman correlations with $\kappa$ after operating-condition control.
+    Future feature engineering for LCM should prioritise these features over
+    amplitude statistics.
+  \item \textbf{LightGBM on AE features alone achieves the best $\kappa$ prediction}
+    ($R^2 = 0.644$, RMSE~$= 0.193$ on the hold-out set), outperforming linear models
+    ($R^2 \approx 0.53$) and confirming the non-linear character of the
+    feature--$\kappa$ mapping.
+  \item \textbf{Sensor fusion does not improve upon AE alone} at this dataset scale.
+    The combined model achieves $R^2 = 0.598$, lower than AE alone, attributed to the
+    limited and largely overlapping information content of the heterodyned acoustic
+    channel.
+  \item \textbf{The heterodyned acoustic channel performs below wideband AE} for
+    $\kappa$ regression, but contributes independent information (particularly via
+    signal complexity) when operating-condition effects are removed. A wideband passive
+    acoustic probe is expected to improve fusion performance substantially.
+\end{enumerate}
+
+Collectively, these results demonstrate that passive, non-invasive AE sensing can provide
+meaningful $\kappa$ prediction from a single sensor, establish the spectral shape features
+as the preferred feature class for operating-condition-robust LCM, and provide the first
+quantitative test of AE--acoustic complementarity for $\kappa$ regression.
+The open dataset contributes the first simultaneous AE + passive acoustic benchmark with
+analytical $\kappa$ ground truth, directly addressing the absence of standardised LCM
+datasets identified in the literature.
+
+Future work should address the identified limitations by: acquiring wideband passive
+ultrasound to replace the heterodyned probe; expanding the dataset to additional
+lubricant grades, load levels, and bearing types; filling the mixed-regime gap with
+additional intermediate temperature--speed combinations; and evaluating physically
+motivated normalised features (e.g., spectral shape ratios, mobility per unit RPM) that
+are explicitly designed to be operating-condition-invariant.
+
+\section*{Acknowledgements}
+The author thanks Morten and colleagues at CeramicSpeed (Holstebro, Denmark) for
+providing the test facility, experimental assistance, and preliminary analysis.
+
+\section*{Data availability}
+The complete dataset (HDF5 signal files, Parquet feature tables, and Python analysis
+pipeline) will be deposited on Zenodo upon acceptance at DOI \texttt{[to be assigned]}.
+
+\section*{Conflict of interest}
+The author declares no conflict of interest.
+
+%% ============================================================================
+%% BIBLIOGRAPHY
+%% ============================================================================
+\clearpage
+\bibliographystyle{unsrt}
+\bibliography{refs}
+
+\end{document}

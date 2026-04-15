@@ -1,0 +1,2 @@
+band,spearman,MI,abs_spearman,rank_abs_spearman,rank_MI,combined_rank,spearman_rpm,spearman_temp,partial_spearman_kappa,abs_partial_spearman
+0-800kHz,0.5499604533465523,1.2132514620092003,0.5499604533465523,1.0,1.0,1.0,0.887303877110719,0.06763264415398773,0.17887033286958862,0.17887033286958862

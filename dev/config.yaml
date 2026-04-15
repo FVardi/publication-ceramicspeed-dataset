@@ -28,24 +28,59 @@ machines:
 # --- Paths (resolved automatically from 'machines' above) --------------------
 # Kept as a fallback; overwritten at load time if the current machine is found.
 paths:
-  input_dir:  "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/data/"
-  output_dir: "C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/dev/features/"
+  input_dir:  "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"
+  output_dir: "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/dev/features/"
 
 # --- Bearing geometry --------------------------------------------------------
 bearing:
   d_pw_mm: 38.0            # Mean pitch diameter [mm]
 
 # --- Sensor frequency ranges [Hz] -------------------------------------------
+# Used by 03_frequency_band_analysis.py for PSD axis limits and fixed-width
+# band generation (make_frequency_bands).  Set to the *effective* bandwidth of
+# each sensor, capped at the DAQ Nyquist (fs/2 = 192 kHz for the scope file).
 sensors:
   AE:
     f_min:  0
-    f_max:  800_000
-  Ultrasound:
+    f_max:  190_000   # Nyquist for scope_*.hdf5 is 192 kHz; stay just below
+  UL:
     f_min:  0
-    f_max:  800_000
+    f_max:  10_000    # Heterodyned probe: usable content below ~10 kHz only
 
 # --- Frequency band strategy ------------------------------------------------
-band_width_hz: 800_000       # Width of each fixed-width frequency band [Hz]
+band_width_hz: 100_000       # Width of each fixed-width frequency band [Hz]
+
+# --- Sensor pre-filter (applied BEFORE broadband feature extraction) ---------
+# Constrains the signal to the sensor's *effective* bandwidth so that
+# spectral features (center_frequency, rms_frequency, etc.) are not dominated
+# by out-of-band noise.
+sensor_prefilter:
+  AE:
+    f_lo:    0
+    f_hi:  190_000   # AE broadband features limited to Nyquist
+  UL:
+    f_lo:    0
+    f_hi:  10_000    # Restrict UL to heterodyned content only (<10 kHz)
+
+# --- Physics-motivated frequency bands for bandpass-filtered features --------
+# Each band produces a separate set of features prefixed with the label,
+# e.g.  "AE_50-190kHz__mobility", "UL_0-4kHz__spectral_flatness".
+# These are extracted IN ADDITION to the pre-filtered broadband features.
+#
+# AE bands (Nyquist = 192 kHz for scope_*.hdf5):
+#   0-50 kHz   — lower-frequency AE / overlap with UL carrier range
+#   50-190 kHz — primary asperity-contact AE band (EHL film transitions)
+#
+# UL bands (heterodyned signal, content <10 kHz):
+#   0-4 kHz    — sub-band below VFD switching artefact (~5 kHz fundamental)
+#   6-10 kHz   — sub-band above VFD fundamental; cleaner acoustic content
+frequency_bands:
+  AE:
+    - {f_lo:      0, f_hi:  50_000, label: "AE_0-50kHz"}
+    - {f_lo: 50_000, f_hi: 190_000, label: "AE_50-190kHz"}
+  UL:
+    - {f_lo:     0, f_hi:  4_000, label: "UL_0-4kHz"}
+    - {f_lo: 6_000, f_hi: 10_000, label: "UL_6-10kHz"}
 
 # --- Welch PSD parameters (used by frequency_band_analysis) -----------------
 welch:
@@ -76,7 +111,6 @@ filters:
   # Optional glob patterns to restrict which HDF5 files are loaded.
   # Matched against file stems (filename without extension).
   # If omitted or empty, all .hdf5 files in input_dir are used.
-  # Example — use only the long scope run:
   file_patterns:
     - "scope_*"
 

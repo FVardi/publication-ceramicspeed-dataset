@@ -1,0 +1,2 @@
+[console_scripts]
+ceramicspeed = ceramicspeed.cli.main:cli

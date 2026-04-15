@@ -1,0 +1,75 @@
+\begin{thebibliography}{10}
+
+\bibitem{jakobsen_detecting_2023}
+Morten~Opprud Jakobsen, Eskild~Sune Herskind, Christian~Fischer Pedersen, and
+  Mikael~Bergholz Knudsen.
+\newblock Detecting insufficient lubrication in rolling bearings, using a low
+  cost {MEMS} microphone to measure vibrations.
+\newblock {\em Mechanical Systems and Signal Processing}, 200:110553, 2023.
+
+\bibitem{dai_situ_2024}
+Wei Dai.
+\newblock In {Situ} {Measurement} of {Grease} {Capacitive} {Film} {Thickness}
+  in {Bearings}: {A} {Review}.
+\newblock {\em Lubricants}, 12(10):329, 2024.
+
+\bibitem{nassef_impact_2022}
+Mohamed G.~A. Nassef, Mina Soliman, Belal~Galal Nassef, Mohamed~A. Daha, and
+  Galal~A. Nassef.
+\newblock Impact of {Graphene} {Nano}-{Additives} to {Lithium} {Grease} on the
+  {Dynamic} and {Tribological} {Behavior} of {Rolling} {Bearings}.
+\newblock {\em Lubricants}, 10(2):29, 2022.
+
+\bibitem{wakiru_review_2019}
+James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
+\newblock A review on lubricant condition monitoring information analysis for
+  maintenance decision support.
+\newblock {\em Mechanical Systems and Signal Processing}, 118:108--132, 2019.
+
+\bibitem{lineham_ultrasonic_2008}
+Jeremy Lineham.
+\newblock Ultrasonic probes for inspecting bearings.
+\newblock {\em World Pumps}, 2008(503):34--36, 2008.
+
+\bibitem{jakobsen_low_2024}
+Morten~Opprud Jakobsen.
+\newblock Low cost {MEMS} accelerometer and microphone based condition
+  monitoring sensor, with {LoRa} and {Bluetooth} {Low} {Energy} radio.
+\newblock {\em HardwareX}, 18:e00525, 2024.
+
+\bibitem{shang_comprehensive_2024}
+Fei Shang, Bo~Sun, and Dandan Cai.
+\newblock A comprehensive review of non-destructive methods for bearing
+  lubricating oil film thickness measurement.
+\newblock {\em Industrial Lubrication and Tribology}, 76(3):441--451, 2024.
+
+\bibitem{wang_advanced_2024}
+Ling Wang and Honor Powrie.
+\newblock Advanced techniques for bearing condition monitoring.
+\newblock In {\em Electric {Vehicle} {Tribology}}, pages 153--181. Elsevier,
+  2024.
+
+\bibitem{iso_281}
+{ISO} 281:2007 --- rolling bearings --- dynamic load ratings and rating life,
+  2007.
+
+\bibitem{cornel_condition_2021}
+Daniel Cornel, Francisco Guti{\'e}rrez~Guzm{\'a}n, Georg Jacobs, and Stephan
+  Neumann.
+\newblock Condition monitoring of roller bearings using acoustic emission.
+\newblock {\em Wind Energy Science}, 6(2):367--376, 2021.
+
+\bibitem{miettinen_analysis_2001}
+J~Miettinen, P~Andersson, and V~Wikstr{\"o}m.
+\newblock Analysis of grease lubrication of a ball bearing using acoustic
+  emission measurement.
+\newblock {\em Proceedings of the Institution of Mechanical Engineers, Part~J:
+  Journal of Engineering Tribology}, 215(6):535--544, 2001.
+
+\bibitem{hjorth_eeg_1970}
+Bo~Hjorth.
+\newblock {EEG} analysis based on time domain properties.
+\newblock {\em Electroencephalography and Clinical Neurophysiology},
+  29(3):306--310, 1970.
+
+\end{thebibliography}

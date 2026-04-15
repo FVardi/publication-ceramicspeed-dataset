@@ -24,7 +24,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from own_utils.loading import discover_hdf5_files, load_and_process_files_parallel
-from own_utils.config import load_config, get_input_dir, get_output_dir
+from own_utils.config import (
+    load_config,
+    get_input_dir,
+    get_output_dir,
+    get_sensor_prefilter,
+    get_frequency_bands_config,
+)
 
 # %%
 # =============================================================================
@@ -51,12 +57,22 @@ INPUT_DIR = get_input_dir(cfg)
 OUTPUT_DIR = get_output_dir(cfg)
 SIGNAL_CLEAN_CFG: dict = cfg.get("signal_cleaning", {})
 
+# Pre-filter: restrict each sensor to its effective bandwidth before
+# computing broadband features (prevents out-of-band noise from biasing
+# spectral features — especially important for the heterodyned UL probe).
+SENSOR_PREFILTER = get_sensor_prefilter(cfg)
+
+# Physics-motivated bandpass bands: produces additional prefixed feature
+# columns (e.g. "AE_50-200kHz__mobility") alongside the broadband set.
+FREQUENCY_BANDS = get_frequency_bands_config(cfg)
+
 # %%
 # =============================================================================
 # Discover HDF5 files
 # =============================================================================
 
-files = discover_hdf5_files(INPUT_DIR)
+FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
+files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
 print(f"Found {len(files)} HDF5 file(s) in {INPUT_DIR}")
 
 if SIGNAL_CLEAN_CFG.get("enabled", False):
@@ -67,6 +83,21 @@ if SIGNAL_CLEAN_CFG.get("enabled", False):
 else:
     print("Signal cleaning: DISABLED")
 
+if SENSOR_PREFILTER:
+    print("Sensor pre-filter: ENABLED")
+    for sensor, (f_lo, f_hi) in SENSOR_PREFILTER.items():
+        print(f"  {sensor}: {f_lo/1e3:.0f}–{f_hi/1e3:.0f} kHz")
+else:
+    print("Sensor pre-filter: DISABLED (broadband features from raw signal)")
+
+if FREQUENCY_BANDS:
+    print("Frequency bands: ENABLED")
+    for sensor, bands in FREQUENCY_BANDS.items():
+        labels = [label for _, _, label in bands]
+        print(f"  {sensor}: {labels}")
+else:
+    print("Frequency bands: DISABLED (broadband features only)")
+
 # %%
 # =============================================================================
 # Clean signals + extract features in parallel
@@ -75,6 +106,8 @@ else:
 df, metadata_df = load_and_process_files_parallel(
     files,
     signal_clean_cfg=SIGNAL_CLEAN_CFG,
+    sensor_prefilter=SENSOR_PREFILTER,
+    frequency_bands=FREQUENCY_BANDS,
 )
 
 # %%

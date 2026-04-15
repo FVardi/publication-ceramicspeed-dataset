@@ -109,7 +109,7 @@ metadata["kappa"] = metadata.apply(
 # =============================================================================
 
 ae_mask = df.index.get_level_values("sensor") == "AE"
-us_mask = df.index.get_level_values("sensor") == "Ultrasound"
+us_mask = df.index.get_level_values("sensor") == "UL"
 
 ae_df = df[ae_mask]
 us_df = df[us_mask]
@@ -146,7 +146,7 @@ print(us_ranking.head(10).to_string())
 
 import numpy as np
 
-for sensor_label, spearman in [("AE", ae_spearman), ("Ultrasound (US)", us_spearman)]:
+for sensor_label, spearman in [("AE", ae_spearman), ("UL", us_spearman)]:
     _rho = spearman["rho"].sort_values(key=np.abs, ascending=True)  # ascending for horizontal bar
     _colors = ["C0" if v >= 0 else "C3" for v in _rho]
 
@@ -256,7 +256,7 @@ feature_selection_output = {
         "retained": ae_retained,
         "all_columns": ae_df.columns.tolist(),
     },
-    "Ultrasound": {
+    "UL": {
         "retained": us_retained,
         "all_columns": us_df.columns.tolist(),
     },

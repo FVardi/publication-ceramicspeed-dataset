@@ -1,0 +1,30 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
+\contentsline {section}{\numberline {2}Background}{4}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Lubrication regimes and the viscosity ratio $\kappa $}{4}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Physical origins of AE and passive acoustic signals}{5}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Hjorth parameters and spectral shape features}{6}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Experimental Setup}{6}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Test rig and bearing}{6}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Sensor configuration and data acquisition}{7}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Operating conditions and $\kappa $ derivation}{7}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Dataset availability}{8}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Signal Processing Pipeline}{8}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Signal cleaning}{8}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Feature extraction}{8}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Feature selection}{9}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Feature Analysis}{9}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Raw Spearman correlation with $\kappa $}{9}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Operating-condition confounding analysis}{12}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Partial Spearman correlation analysis}{13}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}PCA and regime separability}{15}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Regression Modelling}{15}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Experimental design}{15}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Results}{16}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Discussion}{19}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Interpreting the partial Spearman results}{19}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Why AE outperforms the acoustic channel}{20}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Why fusion does not help}{20}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Implications for the $\kappa $ regression framework}{21}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Limitations}{21}{subsection.7.5}%
+\contentsline {section}{\numberline {8}Conclusion}{22}{section.8}%
