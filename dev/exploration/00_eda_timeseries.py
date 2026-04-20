@@ -33,18 +33,20 @@ import argparse
 import sys
 from pathlib import Path
 
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib import colormaps
-from scipy.signal import butter, sosfilt, welch
+from scipy.signal import butter, hilbert as _hilbert, sosfilt, welch
 from scipy.stats import kurtosis, skew
 import antropy as ant
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from own_utils.calculate_kappa import calculate_kappa
 from own_utils.config import get_input_dir, get_output_dir, load_config
-from own_utils.loading import discover_hdf5_files, load_hdf5_file
+from own_utils.loading import discover_hdf5_files
+
 
 # %%
 # =============================================================================
@@ -81,6 +83,11 @@ WELCH_WINDOW: str = welch_cfg.get("window", "hann")
 kappa_cfg = cfg.get("kappa", {})
 KAPPA_BOUNDS: list[float] = kappa_cfg.get("boundaries", [0.5, 1.0])
 
+# Waveform/envelope snippet lengths — kept short so full 250k-sample arrays
+# are never retained in memory beyond a single sweep's processing.
+WAVEFORM_MS: float = 20.0   # milliseconds stored per sweep for EDA2
+_ENV_SHOW_MS: float = 5.0   # milliseconds stored per sweep for EDA10 Panel A
+
 # Sub-bands for EDA8 (fixed, independent of the pipeline's band_width_hz)
 ANA_BANDS: list[tuple[float, float, str]] = [
     (0,        200_000, "0–200 kHz"),
@@ -91,71 +98,27 @@ ANA_BANDS: list[tuple[float, float, str]] = [
 
 # %%
 # =============================================================================
-# Load raw signals
+# Helper functions  (defined before _load_sweeps so they can be called inline)
 # =============================================================================
 
+_VISCOSITY_FALLBACK: dict[str, float] = {
+    "viscosity_40c_cst": 22.0,
+    "viscosity_100c_cst": 4.1,
+}
 
-def _load_sweeps(file_paths: list[Path]) -> list[dict]:
-    """Return one dict per (file, sweep) pair containing voltage arrays and metadata."""
-    records: list[dict] = []
-    for fp in file_paths:
-        try:
-            data = load_hdf5_file(fp, sensors=SENSORS)
-        except Exception as exc:
-            print(f"  WARNING: {fp.name}: {exc}")
-            continue
-
-        fs: float = data["fs"]
-        lm: dict = data["lubricant_metadata"]
-
-        for sw in data["sweeps"]:
-            tp = sw["test_parameters"]
-            rpm = float(tp.get("rpm", np.nan))
-            if rpm < RPM_MIN or rpm > RPM_MAX:
-                continue
-
-            temp_c = float(tp.get("temperature_c", np.nan))
-            nu_40 = float(lm.get("viscosity_40c_cst", np.nan))
-            nu_100 = float(lm.get("viscosity_100c_cst", np.nan))
-            try:
-                kap = calculate_kappa(
-                    rpm=rpm, temp_c=temp_c, d_pw=D_PW_MM,
-                    nu_40=nu_40, nu_100=nu_100,
-                )
-            except Exception:
-                kap = np.nan
-
-            rec: dict = {
-                "file": fp.stem,
-                "sweep": sw["name"],
-                "rpm": rpm,
-                "temperature_c": temp_c,
-                "kappa": kap,
-                "fs": fs,
-            }
-            for sensor in SENSORS:
-                if sensor in sw:
-                    rec[sensor] = sw[sensor]
-
-            records.append(rec)
-
-    return records
+_BP_LOW_HZ  = 10e3   # 10 kHz
+_BP_HIGH_HZ = 200e3  # 200 kHz
 
 
-FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
-
-hdf5_files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
-if args.max_files:
-    hdf5_files = hdf5_files[: args.max_files]
-
-print(f"Loading {len(hdf5_files)} HDF5 file(s) from {INPUT_DIR} …")
-sweeps = _load_sweeps(hdf5_files)
-print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
-
-# %%
-# =============================================================================
-# Per-sweep time-domain statistics
-# =============================================================================
+def _normalize_sweep_params(params: dict) -> dict:
+    out = dict(params)
+    if "rpm" not in out and "telem_rpm_meas" in out:
+        out["rpm"] = out["telem_rpm_meas"]
+    if "temperature_c" not in out and "telem_omron_pv_c" in out:
+        out["temperature_c"] = out["telem_omron_pv_c"]
+    if "load_g" not in out and "telem_mass_g" in out:
+        out["load_g"] = out["telem_mass_g"]
+    return out
 
 
 def _time_stats(v: np.ndarray, fs: float) -> dict:
@@ -174,9 +137,6 @@ def _time_stats(v: np.ndarray, fs: float) -> dict:
         "spectral_flatness": sf,
     }
 
-_BP_LOW_HZ  = 10e3   # 10 kHz
-_BP_HIGH_HZ = 200e3  # 500 kHz
-
 
 def _bp_filter(v: np.ndarray, fs: float) -> np.ndarray:
     nyq = fs / 2
@@ -187,11 +147,133 @@ def _bp_filter(v: np.ndarray, fs: float) -> np.ndarray:
     return sosfilt(sos, v)
 
 
+def _psd(v: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndarray]:
+    f, p = welch(
+        v, fs=fs,
+        nperseg=WELCH_NPERSEG,
+        noverlap=WELCH_NOVERLAP,
+        window=WELCH_WINDOW,
+    )
+    return f, p
+
+
+# %%
+# =============================================================================
+# Load raw signals — stream sweep-by-sweep, compute everything in one pass
+# =============================================================================
+
+
+def _load_sweeps(file_paths: list[Path]) -> list[dict]:
+    """Stream HDF5 sweeps one at a time, computing all derived metrics inline.
+
+    Each 250k-sample voltage array is loaded, processed, and discarded before
+    the next sweep is read.  Only short waveform/envelope snippets and scalar
+    statistics are retained, keeping peak RAM independent of file size.
+
+    Each returned record contains:
+        waveform  — {sensor: array[:n_wave]}   short snippet for EDA2
+        envelope  — {sensor: array[:n_env]}    short snippet for EDA10 Panel A
+        stats     — {sensor: dict}             broadband time-domain stats
+        bp_stats  — {sensor: dict}             BP-filtered time-domain stats
+        psd       — {sensor: (f, p)}           Welch PSD
+        env_mean  — {sensor: float}            mean Hilbert envelope amplitude
+        env_psd   — {sensor: (f, p)}           Welch PSD of envelope
+        env_sf    — {sensor: float}            spectral flatness of envelope PSD
+    """
+    records: list[dict] = []
+    for fp in file_paths:
+        try:
+            with h5py.File(fp, "r") as f:
+                sweeps_grp = f["sweeps"]
+                first_key = list(sweeps_grp.keys())[0]
+                time_axis = sweeps_grp[first_key][SENSORS[0]]["time"][()]
+                fs: float = 1.0 / float(np.mean(np.diff(time_axis)))
+
+                lm = dict(f["metadata"]["lubricant"].attrs)
+                for k, v_fb in _VISCOSITY_FALLBACK.items():
+                    lm.setdefault(k, v_fb)
+
+                n_wave = int(WAVEFORM_MS * 1e-3 * fs)
+                n_env  = int(_ENV_SHOW_MS  * 1e-3 * fs)
+
+                for sweep_name, sweep in sweeps_grp.items():
+                    tp  = _normalize_sweep_params(dict(sweep.attrs))
+                    rpm = float(tp.get("rpm", np.nan))
+                    if rpm < RPM_MIN or rpm > RPM_MAX:
+                        continue
+
+                    temp_c = float(tp.get("temperature_c", np.nan))
+                    nu_40  = float(lm.get("viscosity_40c_cst", np.nan))
+                    nu_100 = float(lm.get("viscosity_100c_cst", np.nan))
+                    try:
+                        kap = calculate_kappa(
+                            rpm=rpm, temp_c=temp_c, d_pw=D_PW_MM,
+                            nu_40=nu_40, nu_100=nu_100,
+                        )
+                    except Exception:
+                        kap = np.nan
+
+                    rec: dict = {
+                        "file": fp.stem, "sweep": sweep_name,
+                        "rpm": rpm, "temperature_c": temp_c,
+                        "kappa": kap, "fs": fs,
+                        "waveform": {}, "envelope": {},
+                        "stats": {}, "bp_stats": {},
+                        "psd": {},
+                        "env_mean": {}, "env_psd": {}, "env_sf": {},
+                    }
+
+                    for sensor in SENSORS:
+                        if sensor not in sweep:
+                            continue
+
+                        sig = sweep[sensor]["voltage"][()]  # 250k samples — discarded after this block
+
+                        rec["waveform"][sensor] = sig[:n_wave].copy()
+                        rec["stats"][sensor]    = _time_stats(sig, fs)
+                        rec["bp_stats"][sensor] = _time_stats(_bp_filter(sig, fs), fs)
+                        rec["psd"][sensor]      = _psd(sig, fs)
+
+                        env = np.abs(_hilbert(sig))
+                        rec["envelope"][sensor] = env[:n_env].copy()
+                        rec["env_mean"][sensor] = float(np.mean(env))
+                        _, p_env = welch(env, fs=fs, nperseg=min(256, len(env)))
+                        rec["env_psd"][sensor]  = (_, p_env)
+                        p_clip = np.clip(p_env, 1e-30, None)
+                        rec["env_sf"][sensor]   = float(np.exp(np.mean(np.log(p_clip))) / np.mean(p_clip))
+
+                        del sig, env  # release before next sensor / sweep
+
+                    records.append(rec)
+
+        except Exception as exc:
+            print(f"  WARNING: {fp.name}: {exc}")
+            continue
+
+    return records
+
+
+FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
+
+hdf5_files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
+if args.max_files:
+    hdf5_files = hdf5_files[: args.max_files]
+
+print(f"Loading {len(hdf5_files)} HDF5 file(s) from {INPUT_DIR} …")
+sweeps = _load_sweeps(hdf5_files)
+print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
+
+# TODO: THe below code is not modified to the new dataset and much higher memory load.
+# %%
+# =============================================================================
+# Per-sweep time-domain statistics
+# =============================================================================
+
 stat_rows: list[dict] = []
 bp_stat_rows: list[dict] = []
 for rec in sweeps:
     for sensor in SENSORS:
-        if sensor not in rec:
+        if sensor not in rec["stats"]:
             continue
         base = {
             "file": rec["file"],
@@ -201,8 +283,8 @@ for rec in sweeps:
             "temperature_c": rec["temperature_c"],
             "kappa": rec["kappa"],
         }
-        stat_rows.append({**base, **_time_stats(rec[sensor], rec["fs"])})
-        bp_stat_rows.append({**base, **_time_stats(_bp_filter(rec[sensor], rec["fs"]), rec["fs"])})
+        stat_rows.append({**base, **rec["stats"][sensor]})
+        bp_stat_rows.append({**base, **rec["bp_stats"][sensor]})
 
 stats_df = pd.DataFrame(stat_rows)
 hp_stats_df = pd.DataFrame(bp_stat_rows)
@@ -251,11 +333,10 @@ print("Saved: eda_operating_conditions.png")
 # =============================================================================
 
 N_EXAMPLES = 4
-WAVEFORM_MS = 5.0     # milliseconds to display (avoids plotting huge arrays)
 
 valid_sweeps = [
     r for r in sweeps
-    if not np.isnan(r.get("kappa", np.nan)) and all(s in r for s in SENSORS)
+    if not np.isnan(r.get("kappa", np.nan)) and all(s in r["waveform"] for s in SENSORS)
 ]
 kappa_sorted = sorted(valid_sweeps, key=lambda r: r["kappa"])
 example_idx = np.linspace(0, len(kappa_sorted) - 1, N_EXAMPLES, dtype=int)
@@ -270,11 +351,10 @@ fig, axes = plt.subplots(
 for row_i, sensor in enumerate(SENSORS):
     for col_i, rec in enumerate(example_recs):
         ax = axes[row_i, col_i]
-        v = rec[sensor]
+        v = rec["waveform"][sensor]
         fs = rec["fs"]
-        n_show = min(len(v), int(WAVEFORM_MS * 1e-3 * fs))
-        t_ms = np.arange(n_show) / fs * 1e3
-        ax.plot(t_ms, v[:n_show], lw=0.4, color=f"C{row_i}", alpha=0.9)
+        t_ms = np.arange(len(v)) / fs * 1e3
+        ax.plot(t_ms, v, lw=0.4, color=f"C{row_i}", alpha=0.9)
         ax.set_xlabel("Time [ms]")
         ax.set_ylabel("Voltage [V]")
         ax.set_title(f"{sensor}\nκ = {rec['kappa']:.2f}   RPM = {rec['rpm']:.0f}")
@@ -378,26 +458,15 @@ print("Saved: eda_time_domain_stats_bp10k_500k.png")
 
 # %%
 # =============================================================================
-# Compute Welch PSDs (reused in EDA5, EDA6, EDA8)
+# Assemble PSD rows (reused in EDA5, EDA6, EDA8, EDA9)
 # =============================================================================
-
-
-def _psd(v: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndarray]:
-    f, p = welch(
-        v, fs=fs,
-        nperseg=WELCH_NPERSEG,
-        noverlap=WELCH_NOVERLAP,
-        window=WELCH_WINDOW,
-    )
-    return f, p
-
 
 psd_rows: list[dict] = []
 for rec in sweeps:
     for sensor in SENSORS:
-        if sensor not in rec:
+        if sensor not in rec["psd"]:
             continue
-        f_arr, p_arr = _psd(rec[sensor], rec["fs"])
+        f_arr, p_arr = rec["psd"][sensor]
         psd_rows.append({
             "file": rec["file"],
             "sweep": rec["sweep"],
@@ -459,10 +528,6 @@ print("Saved: eda_psd_kappa_regimes.png")
 # Figure EDA11    : PSD of the Hilbert envelope per κ regime per sensor
 # =============================================================================
 
-from scipy.signal import hilbert as _hilbert  # local import to avoid name clash
-
-_ENV_SHOW_MS = 5.0  # ms to display in Panel A
-
 fig10, axes10 = plt.subplots(
     len(SENSORS), 2,
     figsize=(14, 5 * len(SENSORS)),
@@ -476,20 +541,20 @@ for row_i, sensor in enumerate(SENSORS):
     env_mean_rows = []  # [(kappa, mean_env), ...]
 
     for color, (lo, hi, label) in zip(_interval_colors, _kappa_intervals):
-        group = [r for r in sweeps if lo <= r.get("kappa", np.nan) < hi and sensor in r]
+        group = [r for r in sweeps if lo <= r.get("kappa", np.nan) < hi and sensor in r["envelope"]]
         if not group:
             continue
 
         fs_ex = group[0]["fs"]
-        n_show = min(int(_ENV_SHOW_MS * 1e-3 * fs_ex), min(len(r[sensor]) for r in group))
+        n_show = min(len(r["envelope"][sensor]) for r in group)
         t_ms = np.arange(n_show) / fs_ex * 1e3
 
         envs = []
         for r in group:
-            env = np.abs(_hilbert(r[sensor]))
-            env_mean_rows.append({"kappa": r["kappa"], "mean_env": float(np.mean(env))})
-            if len(env) >= n_show:
-                envs.append(env[:n_show])
+            env_mean_rows.append({"kappa": r["kappa"], "mean_env": r["env_mean"][sensor]})
+            env_snip = r["envelope"][sensor]
+            if len(env_snip) >= n_show:
+                envs.append(env_snip[:n_show])
 
         if envs:
             ax_wave.plot(t_ms, np.mean(envs, axis=0), lw=1.2, color=color, label=label)
@@ -539,18 +604,16 @@ for row_i, sensor in enumerate(SENSORS):
     ax = axes11[row_i, 0]
 
     for color, (lo, hi, label) in zip(_interval_colors, _kappa_intervals):
-        group = [r for r in sweeps if lo <= r.get("kappa", np.nan) < hi and sensor in r]
+        group = [r for r in sweeps if lo <= r.get("kappa", np.nan) < hi and sensor in r["env_psd"]]
         if not group:
             continue
 
-        fs_ex = group[0]["fs"]
         psds = []
+        f_env = None
         for r in group:
-            env = np.abs(_hilbert(r[sensor]))
-            f_env, p_env = welch(env, fs=fs_ex, nperseg=min(256, len(env)))
+            f_env, p_env = r["env_psd"][sensor]
             psds.append(p_env)
 
-        # Align to shortest PSD (nperseg may differ across sweeps)
         min_len = min(len(p) for p in psds)
         psd_mean = np.mean([p[:min_len] for p in psds], axis=0)
         ax.semilogy(f_env[:min_len], psd_mean, lw=1.2, color=color, alpha=0.7, label=label)
@@ -586,13 +649,9 @@ for col_i, sensor in enumerate(SENSORS):
 
     for r in sweeps:
         kappa = r.get("kappa", np.nan)
-        if np.isnan(kappa) or sensor not in r:
+        if np.isnan(kappa) or sensor not in r["env_sf"]:
             continue
-        env = np.abs(_hilbert(r[sensor]))
-        _, p_env = welch(env, fs=r["fs"], nperseg=min(256, len(env)))
-        p_env = np.clip(p_env, 1e-30, None)
-        sf = np.exp(np.mean(np.log(p_env))) / np.mean(p_env)
-        sf_rows.append({"kappa": kappa, "sf": sf, "rpm": r.get("rpm", np.nan)})
+        sf_rows.append({"kappa": kappa, "sf": r["env_sf"][sensor], "rpm": r["rpm"]})
 
     sf_df = pd.DataFrame(sf_rows).dropna()
     if sf_df.empty:

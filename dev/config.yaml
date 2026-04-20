@@ -112,7 +112,7 @@ filters:
   # Matched against file stems (filename without extension).
   # If omitted or empty, all .hdf5 files in input_dir are used.
   file_patterns:
-    - "scope_*"
+    - "scope_20260416_142720"
 
 # --- Kappa regime boundaries (for visualisation colouring) ------------------
 kappa:
