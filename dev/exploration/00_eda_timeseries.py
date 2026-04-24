@@ -15,7 +15,7 @@ EDA7 — Spectrograms for lowest and highest κ sweeps
 EDA8 — Sub-band energy fractions vs κ
 EDA9  — Average PSD per κ regime per sensor
 
-All figures are saved to the configured output directory.
+All figures are saved to the configured output directory.w
 
 Usage
 -----
@@ -261,9 +261,8 @@ if args.max_files:
 
 print(f"Loading {len(hdf5_files)} HDF5 file(s) from {INPUT_DIR} …")
 sweeps = _load_sweeps(hdf5_files)
-print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
+print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")  
 
-# TODO: THe below code is not modified to the new dataset and much higher memory load.
 # %%
 # =============================================================================
 # Per-sweep time-domain statistics

@@ -198,7 +198,8 @@ def analyse_sweep(
 # Load all files and collect per-sweep results
 # =============================================================================
 
-hdf5_files = discover_hdf5_files(INPUT_DIR)
+FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
+hdf5_files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
 if args.max_files:
     hdf5_files = hdf5_files[: args.max_files]
 
