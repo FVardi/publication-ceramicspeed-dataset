@@ -22,6 +22,14 @@ Usage
     python exploration/00_eda_timeseries.py
     python exploration/00_eda_timeseries.py --config alt.yaml
     python exploration/00_eda_timeseries.py --max-files 5   # quick test
+
+Feature caching
+---------------
+Time-domain and spectral features are cached to parquet for fast reruns.
+Load priority:
+  1. features.parquet + metadata.parquet  (output of 01_feature_generation.py)
+  2. eda_features.parquet + eda_metadata.parquet  (written by this script)
+  3. Compute from HDF5 → save as eda_features / eda_metadata parquet
 """
 
 # %%
@@ -38,13 +46,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib import colormaps
-from scipy.signal import butter, hilbert as _hilbert, sosfilt, welch
-from scipy.stats import kurtosis, skew
-import antropy as ant
+from scipy.signal import hilbert as _hilbert, welch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from own_utils.calculate_kappa import calculate_kappa
 from own_utils.config import get_input_dir, get_output_dir, load_config
+from own_utils.features import extract_features, bandpass_filter as _bandpass_filter
 from own_utils.loading import discover_hdf5_files
 
 
@@ -96,18 +103,21 @@ ANA_BANDS: list[tuple[float, float, str]] = [
     (600_000,  800_000, "600–800 kHz"),
 ]
 
+# BP filter used for EDA3b — must match the label used when saving parquet so
+# that pre-computed band features can be loaded on subsequent runs.
+_BP_LOW_HZ  = 10e3   # 10 kHz
+_BP_HIGH_HZ = 200e3  # 200 kHz
+_BP_BAND_LABEL = f"{int(_BP_LOW_HZ / 1e3)}-{int(_BP_HIGH_HZ / 1e3)}kHz"  # "10-200kHz"
+
 # %%
 # =============================================================================
-# Helper functions  (defined before _load_sweeps so they can be called inline)
+# Helper functions
 # =============================================================================
 
 _VISCOSITY_FALLBACK: dict[str, float] = {
     "viscosity_40c_cst": 22.0,
     "viscosity_100c_cst": 4.1,
 }
-
-_BP_LOW_HZ  = 10e3   # 10 kHz
-_BP_HIGH_HZ = 200e3  # 200 kHz
 
 
 def _normalize_sweep_params(params: dict) -> dict:
@@ -119,32 +129,6 @@ def _normalize_sweep_params(params: dict) -> dict:
     if "load_g" not in out and "telem_mass_g" in out:
         out["load_g"] = out["telem_mass_g"]
     return out
-
-
-def _time_stats(v: np.ndarray, fs: float) -> dict:
-    rms = float(np.sqrt(np.mean(v ** 2)))
-    peak = float(np.max(np.abs(v)))
-    _, p = welch(v, fs=fs, nperseg=min(256, len(v)))
-    p = np.clip(p, 1e-30, None)
-    sf = float(np.exp(np.mean(np.log(p))) / np.mean(p))
-    return {
-        "rms": rms,
-        "peak": peak,
-        "crest_factor": peak / rms if rms > 0 else np.nan,
-        "kurtosis": float(kurtosis(v, fisher=True)),
-        "skewness": float(skew(v)),
-        "mobility": float(ant.hjorth_params(v)[0]),
-        "spectral_flatness": sf,
-    }
-
-
-def _bp_filter(v: np.ndarray, fs: float) -> np.ndarray:
-    nyq = fs / 2
-    lo, hi = _BP_LOW_HZ / nyq, _BP_HIGH_HZ / nyq
-    if lo <= 0 or hi >= 1.0:
-        return v
-    sos = butter(4, [lo, hi], btype="bandpass", output="sos")
-    return sosfilt(sos, v)
 
 
 def _psd(v: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndarray]:
@@ -159,22 +143,113 @@ def _psd(v: np.ndarray, fs: float) -> tuple[np.ndarray, np.ndarray]:
 
 # %%
 # =============================================================================
+# Parquet helpers — fast feature cache
+# =============================================================================
+
+
+def _try_load_parquet() -> tuple[pd.DataFrame, pd.DataFrame] | None:
+    """Return (feat_df, meta_df) from the first available parquet pair, or None."""
+    candidates = [
+        (OUTPUT_DIR / "features.parquet",     OUTPUT_DIR / "metadata.parquet"),
+        (OUTPUT_DIR / "eda_features.parquet", OUTPUT_DIR / "eda_metadata.parquet"),
+    ]
+    for feat_path, meta_path in candidates:
+        if feat_path.exists() and meta_path.exists():
+            print(f"Found cached features: {feat_path.name} + {meta_path.name}")
+            return pd.read_parquet(feat_path), pd.read_parquet(meta_path)
+    return None
+
+
+def _build_stats_from_parquet(
+    feat_df: pd.DataFrame,
+    meta_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    """Convert parquet DataFrames into stats_df / hp_stats_df.
+
+    Computes kappa per sweep from metadata columns, then merges with features.
+    Returns hp_stats_df = None when BP-band prefixed columns are absent.
+    """
+    sweep_meta = (
+        meta_df.drop_duplicates(["file", "sweep"])
+        [["file", "sweep", "rpm", "temperature_c",
+          "viscosity_40c_cst", "viscosity_100c_cst"]]
+        .copy()
+    )
+
+    def _kappa(row: pd.Series) -> float:
+        try:
+            return calculate_kappa(
+                rpm=float(row["rpm"]),
+                temp_c=float(row["temperature_c"]),
+                d_pw=D_PW_MM,
+                nu_40=float(row.get("viscosity_40c_cst", 22.0)),
+                nu_100=float(row.get("viscosity_100c_cst", 4.1)),
+            )
+        except Exception:
+            return np.nan
+
+    sweep_meta["kappa"] = sweep_meta.apply(_kappa, axis=1)
+
+    # RPM filter (parquet may contain all sweeps)
+    sweep_meta = sweep_meta[
+        (sweep_meta["rpm"] >= RPM_MIN) & (sweep_meta["rpm"] <= RPM_MAX)
+    ]
+
+    stats_df = feat_df.merge(
+        sweep_meta[["file", "sweep", "rpm", "temperature_c", "kappa"]],
+        on=["file", "sweep"],
+        how="inner",
+    )
+
+    # BP-filtered stats from band-prefixed columns (written by this script or
+    # by 01_feature_generation.py when the matching band is configured)
+    bp_prefix = f"{_BP_BAND_LABEL}__"
+    bp_cols = [c for c in feat_df.columns if c.startswith(bp_prefix)]
+    if bp_cols:
+        hp_df = feat_df[["file", "sweep", "sensor"] + bp_cols].rename(
+            columns={c: c[len(bp_prefix):] for c in bp_cols}
+        )
+        hp_stats_df = hp_df.merge(
+            sweep_meta[["file", "sweep", "rpm", "temperature_c", "kappa"]],
+            on=["file", "sweep"],
+            how="inner",
+        )
+    else:
+        hp_stats_df = None
+        print(
+            f"  Note: no '{bp_prefix}*' columns found — skipping EDA3b. "
+            f"Run 01_feature_generation.py with the {_BP_BAND_LABEL} band configured, "
+            f"or delete eda_features.parquet to recompute."
+        )
+
+    return stats_df, hp_stats_df
+
+
+# %%
+# =============================================================================
 # Load raw signals — stream sweep-by-sweep, compute everything in one pass
 # =============================================================================
 
 
-def _load_sweeps(file_paths: list[Path]) -> list[dict]:
-    """Stream HDF5 sweeps one at a time, computing all derived metrics inline.
+def _load_sweeps(file_paths: list[Path], *, skip_stats: bool = False) -> list[dict]:
+    """Stream HDF5 sweeps one at a time, computing derived metrics inline.
 
     Each 250k-sample voltage array is loaded, processed, and discarded before
     the next sweep is read.  Only short waveform/envelope snippets and scalar
     statistics are retained, keeping peak RAM independent of file size.
 
+    Parameters
+    ----------
+    skip_stats:
+        When True, skip extract_features computation (stats / bp_stats keys
+        will be empty dicts).  Use this when stats are already loaded from
+        parquet and only visualization data is needed.
+
     Each returned record contains:
         waveform  — {sensor: array[:n_wave]}   short snippet for EDA2
         envelope  — {sensor: array[:n_env]}    short snippet for EDA10 Panel A
-        stats     — {sensor: dict}             broadband time-domain stats
-        bp_stats  — {sensor: dict}             BP-filtered time-domain stats
+        stats     — {sensor: dict}             broadband features (empty when skip_stats)
+        bp_stats  — {sensor: dict}             BP-filtered features (empty when skip_stats)
         psd       — {sensor: (f, p)}           Welch PSD
         env_mean  — {sensor: float}            mean Hilbert envelope amplitude
         env_psd   — {sensor: (f, p)}           Welch PSD of envelope
@@ -217,6 +292,8 @@ def _load_sweeps(file_paths: list[Path]) -> list[dict]:
                         "file": fp.stem, "sweep": sweep_name,
                         "rpm": rpm, "temperature_c": temp_c,
                         "kappa": kap, "fs": fs,
+                        "viscosity_40c_cst": nu_40,
+                        "viscosity_100c_cst": nu_100,
                         "waveform": {}, "envelope": {},
                         "stats": {}, "bp_stats": {},
                         "psd": {},
@@ -230,9 +307,13 @@ def _load_sweeps(file_paths: list[Path]) -> list[dict]:
                         sig = sweep[sensor]["voltage"][()]  # 250k samples — discarded after this block
 
                         rec["waveform"][sensor] = sig[:n_wave].copy()
-                        rec["stats"][sensor]    = _time_stats(sig, fs)
-                        rec["bp_stats"][sensor] = _time_stats(_bp_filter(sig, fs), fs)
                         rec["psd"][sensor]      = _psd(sig, fs)
+
+                        if not skip_stats:
+                            rec["stats"][sensor]    = extract_features(sig, fs)
+                            rec["bp_stats"][sensor] = extract_features(
+                                _bandpass_filter(sig, fs, _BP_LOW_HZ, _BP_HIGH_HZ), fs
+                            )
 
                         env = np.abs(_hilbert(sig))
                         rec["envelope"][sensor] = env[:n_env].copy()
@@ -253,15 +334,95 @@ def _load_sweeps(file_paths: list[Path]) -> list[dict]:
     return records
 
 
+# %%
+# =============================================================================
+# Discover files and load / compute features
+# =============================================================================
+
 FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
 
 hdf5_files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
 if args.max_files:
     hdf5_files = hdf5_files[: args.max_files]
 
-print(f"Loading {len(hdf5_files)} HDF5 file(s) from {INPUT_DIR} …")
-sweeps = _load_sweeps(hdf5_files)
-print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
+print(f"Found {len(hdf5_files)} HDF5 file(s) in {INPUT_DIR}")
+
+# ── Try parquet cache ──────────────────────────────────────────────────────
+_parquet = _try_load_parquet()
+
+if _parquet is not None:
+    print("Loading pre-computed stats from parquet (skip HDF5 feature extraction) …")
+    stats_df, hp_stats_df = _build_stats_from_parquet(*_parquet)
+    print(f"Loaded {len(stats_df)} feature rows; loading HDF5 for visualizations …")
+    sweeps = _load_sweeps(hdf5_files, skip_stats=True)
+
+else:
+    print(f"No parquet cache found — computing features from {len(hdf5_files)} HDF5 file(s) …")
+    sweeps = _load_sweeps(hdf5_files)
+    print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
+
+    # ── Build stats DataFrames ─────────────────────────────────────────────
+    stat_rows: list[dict] = []
+    bp_stat_rows: list[dict] = []
+    for rec in sweeps:
+        for sensor in SENSORS:
+            if sensor not in rec["stats"]:
+                continue
+            base = {
+                "file": rec["file"],
+                "sweep": rec["sweep"],
+                "sensor": sensor,
+                "rpm": rec["rpm"],
+                "temperature_c": rec["temperature_c"],
+                "kappa": rec["kappa"],
+            }
+            stat_rows.append({**base, **rec["stats"][sensor]})
+            bp_stat_rows.append({**base, **rec["bp_stats"][sensor]})
+
+    stats_df = pd.DataFrame(stat_rows)
+    hp_stats_df = pd.DataFrame(bp_stat_rows) if bp_stat_rows else None
+
+    # ── Save feature cache to parquet ─────────────────────────────────────
+    _feat_rows: list[dict] = []
+    _meta_seen: set = set()
+    _meta_rows: list[dict] = []
+    for rec in sweeps:
+        key = (rec["file"], rec["sweep"])
+        if key not in _meta_seen:
+            _meta_seen.add(key)
+            _meta_rows.append({
+                "file": rec["file"],
+                "sweep": rec["sweep"],
+                "rpm": rec["rpm"],
+                "temperature_c": rec["temperature_c"],
+                "viscosity_40c_cst": rec.get("viscosity_40c_cst", np.nan),
+                "viscosity_100c_cst": rec.get("viscosity_100c_cst", np.nan),
+            })
+        for sensor in SENSORS:
+            if sensor not in rec["stats"]:
+                continue
+            row: dict = {"file": rec["file"], "sweep": rec["sweep"], "sensor": sensor}
+            row.update(rec["stats"][sensor])
+            # Store BP features under band-prefixed keys so they survive cache reload
+            if sensor in rec.get("bp_stats", {}):
+                row.update({
+                    f"{_BP_BAND_LABEL}__{k}": v
+                    for k, v in rec["bp_stats"][sensor].items()
+                })
+            _feat_rows.append(row)
+
+    pd.DataFrame(_feat_rows).to_parquet(
+        OUTPUT_DIR / "eda_features.parquet", engine="pyarrow"
+    )
+    pd.DataFrame(_meta_rows).to_parquet(
+        OUTPUT_DIR / "eda_metadata.parquet", engine="pyarrow"
+    )
+    print(
+        f"Saved feature cache: eda_features.parquet ({len(_feat_rows)} rows), "
+        f"eda_metadata.parquet ({len(_meta_rows)} rows)"
+    )
+
+print(f"Sweeps for visualization: {len(sweeps)}")
 
 # TODO: THe below code is not modified to the new dataset and much higher memory load.
 # %%
@@ -269,25 +430,8 @@ print(f"Loaded {len(sweeps)} sweeps (after RPM filter {RPM_MIN} – {RPM_MAX})")
 # Per-sweep time-domain statistics
 # =============================================================================
 
-stat_rows: list[dict] = []
-bp_stat_rows: list[dict] = []
-for rec in sweeps:
-    for sensor in SENSORS:
-        if sensor not in rec["stats"]:
-            continue
-        base = {
-            "file": rec["file"],
-            "sweep": rec["sweep"],
-            "sensor": sensor,
-            "rpm": rec["rpm"],
-            "temperature_c": rec["temperature_c"],
-            "kappa": rec["kappa"],
-        }
-        stat_rows.append({**base, **rec["stats"][sensor]})
-        bp_stat_rows.append({**base, **rec["bp_stats"][sensor]})
-
-stats_df = pd.DataFrame(stat_rows)
-hp_stats_df = pd.DataFrame(bp_stat_rows)
+# stats_df / hp_stats_df are already built above (from parquet or from sweeps).
+# Nothing to do here — this cell intentionally left as a checkpoint.
 
 # %%
 # =============================================================================
@@ -422,39 +566,42 @@ print("Saved: eda_time_domain_stats.png")
 # Figure EDA3b — Time-domain statistics vs κ (BP-filtered)
 # =============================================================================
 
-fig, axes = plt.subplots(
-    len(SENSORS), len(stat_cols),
-    figsize=(5 * len(stat_cols), 4 * len(SENSORS)),
-    squeeze=False,
-)
+if hp_stats_df is not None:
+    fig, axes = plt.subplots(
+        len(SENSORS), len(stat_cols),
+        figsize=(5 * len(stat_cols), 4 * len(SENSORS)),
+        squeeze=False,
+    )
 
-for row_i, sensor in enumerate(SENSORS):
-    sub = hp_stats_df[(hp_stats_df["sensor"] == sensor)].dropna(subset=["kappa"])
-    for col_i, (col, label) in enumerate(stat_cols):
-        ax = axes[row_i, col_i]
-        sc = ax.scatter(
-            sub["kappa"], sub[col],
-            c=sub["rpm"], cmap="plasma",
-            s=10, alpha=0.5, edgecolors="none",
-        )
-        fig.colorbar(sc, ax=ax, label="RPM")
+    for row_i, sensor in enumerate(SENSORS):
+        sub = hp_stats_df[(hp_stats_df["sensor"] == sensor)].dropna(subset=["kappa"])
+        for col_i, (col, label) in enumerate(stat_cols):
+            ax = axes[row_i, col_i]
+            sc = ax.scatter(
+                sub["kappa"], sub[col],
+                c=sub["rpm"], cmap="plasma",
+                s=10, alpha=0.5, edgecolors="none",
+            )
+            fig.colorbar(sc, ax=ax, label="RPM")
 
-        bins = pd.cut(sub["kappa"], bins=12)
-        trend = sub.groupby(bins, observed=True)[col].mean()
-        centres = [iv.mid for iv in trend.index]
-        ax.plot(centres, trend.values, "r-o", ms=4, lw=1.5, label="bin mean")
+            bins = pd.cut(sub["kappa"], bins=12)
+            trend = sub.groupby(bins, observed=True)[col].mean()
+            centres = [iv.mid for iv in trend.index]
+            ax.plot(centres, trend.values, "r-o", ms=4, lw=1.5, label="bin mean")
 
-        ax.set_xlabel("κ")
-        ax.set_ylabel(label)
-        ax.set_yscale("log")
-        ax.set_title(f"{sensor} — {label} vs κ  [BP 10–500 kHz]")
-        ax.legend(fontsize=8)
-        ax.grid(ls=":", alpha=0.4)
+            ax.set_xlabel("κ")
+            ax.set_ylabel(label)
+            ax.set_yscale("log")
+            ax.set_title(f"{sensor} — {label} vs κ  [BP 10–200 kHz]")
+            ax.legend(fontsize=8)
+            ax.grid(ls=":", alpha=0.4)
 
-fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_time_domain_stats_bp10k_500k.png", dpi=600)
-plt.show()
-print("Saved: eda_time_domain_stats_bp10k_500k.png")
+    fig.tight_layout()
+    plt.savefig(OUTPUT_DIR / "eda_time_domain_stats_bp10k_500k.png", dpi=600)
+    plt.show()
+    print("Saved: eda_time_domain_stats_bp10k_500k.png")
+else:
+    print("Skipping EDA3b (no BP-band features available).")
 
 # %%
 # =============================================================================
