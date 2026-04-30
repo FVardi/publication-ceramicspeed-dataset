@@ -15,7 +15,7 @@ EDA7 — Spectrograms for lowest and highest κ sweeps
 EDA8 — Sub-band energy fractions vs κ
 EDA9  — Average PSD per κ regime per sensor
 
-All figures are saved to the configured output directory.
+All figures are saved to the configured output directory.w
 
 Usage
 -----

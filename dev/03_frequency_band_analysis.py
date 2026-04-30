@@ -60,6 +60,7 @@ from own_utils.config import (
     get_sensor_freq_limits,
     make_frequency_bands,
 )
+from own_utils.loading import discover_hdf5_files
 
 # %%
 # =============================================================================
@@ -178,9 +179,10 @@ def analyse_bands(
 # Data loading
 # =============================================================================
 
-files = sorted(INPUT_DIR.glob("scope_*.hdf5"))
+FILE_PATTERNS: list[str] | None = cfg.get("filters", {}).get("file_patterns") or None
+files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
 if not files:
-    raise FileNotFoundError(f"No scope_*.hdf5 files found in {INPUT_DIR}")
+    raise FileNotFoundError(f"No matching HDF5 files found in {INPUT_DIR}")
 
 print(f"Found {len(files)} HDF5 file(s).")
 print(f"\nBand width: {cfg['band_width_hz'] / 1e3:.0f} kHz")

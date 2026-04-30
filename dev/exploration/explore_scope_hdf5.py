@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy import signal
 
-FILE = Path("C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/data/scope_20260331_124650.hdf5")
+FILE = Path("C:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/data/scope_20260416_142720.hdf5")
 
 CH_COLORS = {"CHAN1": "C0", "CHAN2": "C1", "CHAN3": "C2", "CHAN4": "C3",
              "AE": "C4", "ACC": "C5"}
