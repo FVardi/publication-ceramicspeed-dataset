@@ -1,5 +1,0 @@
-C
-exploration
-features
-own_utils
-scripts_from_Morten

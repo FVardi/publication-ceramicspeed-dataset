@@ -19,7 +19,9 @@
       "Bash(powershell -Command \"whoami /groups\")",
       "Bash(powershell -Command \"\\([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent\\(\\)\\).IsInRole\\([Security.Principal.WindowsBuiltInRole]::Administrator\\)\")",
       "Bash(powershell -Command \"Get-ItemProperty 'HKLM:\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\CI\\\\Policy' -ErrorAction SilentlyContinue; reg query 'HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\CI\\\\Policy' 2>&1\")",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(uv run python -c \":*)",
+      "Bash(conda run -n base python -c \":*)"
     ]
   }
 }
