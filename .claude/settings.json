@@ -21,7 +21,8 @@
       "Bash(powershell -Command \"Get-ItemProperty 'HKLM:\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\CI\\\\Policy' -ErrorAction SilentlyContinue; reg query 'HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\CI\\\\Policy' 2>&1\")",
       "Bash(python -c ':*)",
       "Bash(uv run python -c \":*)",
-      "Bash(conda run -n base python -c \":*)"
+      "Bash(conda run -n base python -c \":*)",
+      "Bash(.venv/Scripts/python -c ' *)"
     ]
   }
 }

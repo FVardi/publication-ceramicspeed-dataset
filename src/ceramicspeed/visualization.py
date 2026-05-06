@@ -192,7 +192,7 @@ def plot_correlation_matrix(
     else:
         fig = ax.get_figure()
 
-    im = ax.imshow(corr.values, vmin=vmin, vmax=vmax, cmap=cmap, aspect="equal")
+    im = ax.imshow(corr.values.copy(), vmin=vmin, vmax=vmax, cmap=cmap, aspect="equal")
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
     ax.set_xticks(range(len(corr.columns)))
@@ -359,8 +359,11 @@ def plot_coefficients(
     subtitle_parts: list[str] = []
     est = result.estimator
     if hasattr(est, "l1_ratio"):
-        alpha = getattr(est, "alpha_", None) or est.alpha
-        subtitle_parts.append(f"α={alpha:.4f}, l1={est.l1_ratio:.2f}")
+        alpha = getattr(est, "alpha_", None) or getattr(est, "alpha", 0.0)
+        l1 = getattr(est, "l1_ratio_", est.l1_ratio)
+        if not isinstance(l1, float):
+            l1 = float(np.ravel(l1)[0])
+        subtitle_parts.append(f"α={alpha:.4f}, l1={l1:.2f}")
     elif hasattr(est, "lambda_"):
         subtitle_parts.append(f"α={est.alpha_:.2e}, λ={est.lambda_:.2e}")
     elif hasattr(est, "n_estimators"):
@@ -444,8 +447,11 @@ def plot_coefficients_log(
     est = result.estimator
     inner = est[-1] if hasattr(est, "__len__") else est  # unwrap Pipeline
     if hasattr(est, "l1_ratio"):
-        alpha = getattr(est, "alpha_", None) or est.alpha
-        subtitle_parts.append(f"α={alpha:.4f}, l1={est.l1_ratio:.2f}")
+        alpha = getattr(est, "alpha_", None) or getattr(est, "alpha", 0.0)
+        l1 = getattr(est, "l1_ratio_", est.l1_ratio)
+        if not isinstance(l1, float):
+            l1 = float(np.ravel(l1)[0])
+        subtitle_parts.append(f"α={alpha:.4f}, l1={l1:.2f}")
     elif hasattr(est, "lambda_"):
         subtitle_parts.append(f"α={est.alpha_:.2e}, λ={est.lambda_:.2e}")
     elif hasattr(est, "n_estimators"):

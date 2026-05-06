@@ -377,8 +377,8 @@ def clean_signal(
             )
             return out, report
 
-    # 5. Spike outliers
-    if remove_outliers_z is not None:
+    # 5. Spike outliers — falsy values (None, False, 0) all mean "disabled"
+    if remove_outliers_z:
         out, n_spikes = remove_signal_outliers(
             out, z_threshold=remove_outliers_z, window=outlier_window
         )

@@ -2,56 +2,48 @@
 eda.py
 ======
 EDA orchestrator — configure, load data, generate and save all figures.
-
-Usage
------
-    python dev/exploration/eda.py
-    python dev/exploration/eda.py --config alt.yaml
-    python dev/exploration/eda.py --max-files 2   # quick test on fewer files
 """
 
-import argparse
+# %%
 import matplotlib.pyplot as plt
 
 from ceramicspeed import eda as _eda
 from ceramicspeed.config import get_input_dir, get_output_dir, load_config
 from ceramicspeed.loading import discover_hdf5_files
 
-
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--config", default=None)
-    p.add_argument("--max-files", type=int, default=None)
-    args, _ = p.parse_known_args()
-    return args
-
-
 # %%
 # -----------------------------------------------------------------------------
-# Configuration
+# Configuration — edit here
 # -----------------------------------------------------------------------------
 
-args = parse_args()
-cfg = load_config(args.config)
+CONFIG_PATH = None   # path to alt config yaml, or None for default
+
+SENSORS     = ("AE", "UL")
+WAVEFORM_MS = 20.0
+ENV_SHOW_MS = 20.0
+BP_LOW_HZ   = None   # set to e.g. 10e3 to enable bandpass, or None to skips
+BP_HIGH_HZ  = None
+
+# -----------------------------------------------------------------------------
+
+cfg = load_config(CONFIG_PATH)
 
 INPUT_DIR  = get_input_dir(cfg)
 OUTPUT_DIR = get_output_dir(cfg)
 EDA_DIR    = OUTPUT_DIR / "eda"
 EDA_DIR.mkdir(parents=True, exist_ok=True)
 
-SENSORS     = ("AE", "UL")
-WAVEFORM_MS = 20.0
-ENV_SHOW_MS = 5.0
-BP_LOW_HZ   = 10e3
-BP_HIGH_HZ  = 200e3
-BP_LABEL    = f"{int(BP_LOW_HZ / 1e3)}-{int(BP_HIGH_HZ / 1e3)}kHz"
+BP_LABEL = (
+    f"{int(BP_LOW_HZ / 1e3)}-{int(BP_HIGH_HZ / 1e3)}kHz"
+    if BP_LOW_HZ is not None and BP_HIGH_HZ is not None else None
+)
 
 KAPPA_BOUNDS = cfg.get("kappa", {}).get("boundaries", [0.5, 1.0])
 RPM_MIN      = cfg["filters"].get("rpm_min", 0.0)
 RPM_MAX      = cfg["filters"]["rpm_max"]
 
 kappa_ivs = _eda.make_kappa_intervals(KAPPA_BOUNDS)
-iv_colors = [f"C{i}" for i in range(len(kappa_ivs))]
+iv_colors  = [f"C{i}" for i in range(len(kappa_ivs))]
 
 # %%
 # -----------------------------------------------------------------------------
@@ -60,8 +52,6 @@ iv_colors = [f"C{i}" for i in range(len(kappa_ivs))]
 
 FILE_PATTERNS = cfg.get("filters", {}).get("file_patterns") or None
 files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
-if args.max_files:
-    files = files[: args.max_files]
 print(f"Found {len(files)} HDF5 file(s)")
 
 _load_kw = dict(
@@ -88,7 +78,7 @@ print(f"Sweeps: {len(sweeps)}  |  Feature rows: {len(stats_df)}")
 
 
 def _save(fig: plt.Figure, name: str) -> None:
-    fig.savefig(EDA_DIR / name, dpi=600)
+    fig.savefig(EDA_DIR / name, dpi=150)
     plt.show()
     plt.close(fig)
     print(f"Saved: {name}")
@@ -138,6 +128,3 @@ _save(_eda.plot_envelope_spectral_flatness(sweeps, SENSORS),
 # -----------------------------------------------------------------------------
 
 print(f"\nAll outputs saved to: {EDA_DIR}")
-
-if __name__ == "__main__":
-    print("\nEDA complete.")

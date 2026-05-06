@@ -123,7 +123,10 @@ def extract_features(signal_data: np.ndarray, fs: float) -> dict[str, float]:
     fft_coeffs: np.ndarray = np.fft.fft(x)[: N // 2]
     fft_mag: np.ndarray = np.abs(fft_coeffs)
     K: int = len(fft_mag)
-    freq: np.ndarray = np.fft.fftfreq(N, d=1.0 / fs)[:K].reshape(-1, 1)
+    freq: np.ndarray = np.fft.fftfreq(N, d=1.0 / fs)[:K]
+
+    _fft_sum = float(np.sum(fft_mag))
+    _fft_empty = _fft_sum < 1e-30  # band is silent (e.g. above Nyquist)
 
     # ------------------------------------------------------------------
     # Time-domain features
@@ -153,61 +156,72 @@ def extract_features(signal_data: np.ndarray, fs: float) -> dict[str, float]:
     # ------------------------------------------------------------------
     # Frequency-domain features
     # ------------------------------------------------------------------
+    if _fft_empty:
+        return {
+            "peak": peak, "rms": rms, "std": std, "variance": variance,
+            "skewness": skewness, "crest_factor": crest_factor,
+            "kurtosis": kurtosis, "shape_factor": shape_factor,
+            "impulse_factor": impulse_factor, "margin_factor": margin_factor,
+            "mobility": mobility, "complexity": complexity,
+            "dominant_frequency": 0.0, "spectral_mean": 0.0,
+            "spectral_std": 0.0, "spectral_skewness": 0.0,
+            "spectral_kurtosis": 0.0, "center_frequency": 0.0,
+            "rms_frequency": 0.0, "spectral_flatness": 0.0,
+            "frequency_weighted_std": 0.0, "peak_frequency": 0.0,
+            "normalized_frequency_std": 0.0, "frequency_skewness": 0.0,
+            "frequency_kurtosis": 0.0, "normalized_bandwidth": 0.0,
+        }
+
     dominant_frequency: float = float(np.argmax((fft_mag / K) ** 2) * (fs / K))
     spectral_mean: float = float(np.mean(fft_mag))
     spectral_std: float = float(np.std(fft_mag))
-    center_frequency: float = float(
-        np.sum(freq * fft_mag) / np.sum(fft_mag)
-    )
+    center_frequency: float = float(np.sum(freq * fft_mag) / _fft_sum)
 
     if spectral_std < 1e-30:
         spectral_skewness = 0.0
         spectral_kurtosis = 0.0
     else:
-        # spectral_skewness = float(
-        #     np.sum(((fft_mag - spectral_mean) / spectral_std) ** 3) / K
-        # )
         spectral_skewness = float(
-            np.sum(freq - center_frequency ** 3 * fft_mag)
-            / (spectral_std ** 3 * np.sum(fft_mag))
+            np.sum((freq - center_frequency) ** 3 * fft_mag)
+            / (spectral_std ** 3 * _fft_sum)
         )
-        # spectral_kurtosis = float(
-        #     np.sum(((fft_mag - spectral_mean) / spectral_std) ** 4) / K
-        # )
         spectral_kurtosis = float(
-            np.sum(freq - center_frequency ** 4 * fft_mag)
-            / (spectral_std ** 4 * np.sum(fft_mag))
+            np.sum((freq - center_frequency) ** 4 * fft_mag)
+            / (spectral_std ** 4 * _fft_sum)
         )
 
     rms_frequency: float = float(
-        np.sqrt(np.sum((freq**2) * fft_mag) / np.sum(fft_mag))
+        np.sqrt(np.sum((freq**2) * fft_mag) / _fft_sum)
     )
-    # spectral_flatness: float = float(
-    #     np.sum(freq**2 * fft_mag)
-    #     / np.sqrt(np.sum(fft_mag) * np.sum(freq**4 * fft_mag))
-    # )
+    # geometric mean / arithmetic mean; guard against log(0) from silent bins
+    _pos = fft_mag[fft_mag > 0]
     spectral_flatness: float = float(
-        np.exp(np.mean(np.log(fft_mag))) / np.mean(fft_mag)
-    )
+        np.exp(np.mean(np.log(_pos))) / spectral_mean
+    ) if len(_pos) > 0 and spectral_mean > 0 else 0.0
+
     frequency_weighted_std: float = float(
         np.sqrt(np.sum((freq - center_frequency) ** 2) / K)
     )
+    _freq2_sum = float(np.sum(freq**2 * fft_mag))
     peak_frequency: float = float(
-        np.sqrt(np.sum(freq**4 * fft_mag) / np.sum(freq**2 * fft_mag))
+        np.sqrt(np.sum(freq**4 * fft_mag) / _freq2_sum)
+    ) if _freq2_sum > 0 else 0.0
+
+    normalized_frequency_std: float = (
+        frequency_weighted_std / center_frequency if center_frequency > 0 else 0.0
     )
-    normalized_frequency_std: float = frequency_weighted_std / center_frequency
     frequency_skewness: float = float(
         np.sum((freq - center_frequency) ** 3 * fft_mag)
         / (K * frequency_weighted_std**3)
-    )
+    ) if frequency_weighted_std > 0 else 0.0
     frequency_kurtosis: float = float(
         np.sum((freq - center_frequency) ** 4 * fft_mag)
         / (K * frequency_weighted_std**4)
-    )
+    ) if frequency_weighted_std > 0 else 0.0
     normalized_bandwidth: float = float(
         np.sum(np.abs(freq - center_frequency) ** 0.5 * fft_mag)
         / (K * frequency_weighted_std**0.5)
-    )
+    ) if frequency_weighted_std > 0 else 0.0
 
     # ------------------------------------------------------------------
     # Assemble feature dictionary

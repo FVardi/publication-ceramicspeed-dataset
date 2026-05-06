@@ -64,54 +64,63 @@ RPM_MAX: float = cfg["filters"]["rpm_max"]
 
 # %%
 # =============================================================================
-# Load and clean data
+# Load data and split by sensor before cleaning
 # =============================================================================
+# Band-specific columns (e.g. AE_20-500kHz__*) only exist for AE rows.
+# Cleaning the combined DataFrame with nan_strategy="drop" would drop all
+# UL rows because they have NaN in those columns.  Split first so each
+# sensor is cleaned against only its own feature columns.
 
 raw_feature_df, raw_metadata_df = load_parquet_pair(OUTPUT_DIR)
 print(f"Loaded {len(raw_feature_df)} rows from features.parquet")
 
-df, metadata, cleaning_report = clean_features(
-    raw_feature_df,
-    raw_metadata_df,
-    rpm_max=RPM_MAX,
-    nan_strategy="drop",
-    drop_constant=True,
-)
-print(f"After cleaning: {cleaning_report['final_rows']} rows, "
-      f"{cleaning_report['final_features']} features")
-if cleaning_report.get("dropped_constant_features"):
-    print(f"  Dropped constant features: {cleaning_report['dropped_constant_features']}")
+def _split_sensor(feat_df, meta_df, sensor):
+    mask = feat_df["sensor"] == sensor
+    f = feat_df[mask].reset_index(drop=True)
+    m = meta_df[mask].reset_index(drop=True)
+    # Drop columns that are entirely NaN for this sensor (other sensors' bands)
+    f = f.dropna(axis=1, how="all")
+    return f, m
 
-df = df.set_index(["file", "sweep", "sensor"])
+ae_raw, ae_meta_raw = _split_sensor(raw_feature_df, raw_metadata_df, "AE")
+us_raw, us_meta_raw = _split_sensor(raw_feature_df, raw_metadata_df, "UL")
+
+_clean_kwargs = dict(rpm_max=RPM_MAX, nan_strategy="drop", drop_constant=True)
+ae_df, ae_metadata, ae_report = clean_features(ae_raw, ae_meta_raw, **_clean_kwargs)
+us_df, us_metadata, us_report = clean_features(us_raw, us_meta_raw, **_clean_kwargs)
+
+print(f"AE after cleaning: {ae_report['final_rows']} rows, {ae_report['final_features']} features")
+print(f"UL after cleaning: {us_report['final_rows']} rows, {us_report['final_features']} features")
+for label, report in [("AE", ae_report), ("UL", us_report)]:
+    if report.get("dropped_constant_features"):
+        print(f"  {label} dropped constant: {report['dropped_constant_features']}")
+
+ae_df = ae_df.set_index(["file", "sweep", "sensor"])
+us_df = us_df.set_index(["file", "sweep", "sensor"])
 
 # %%
 # =============================================================================
 # Calculate kappa
 # =============================================================================
 
-metadata["kappa"] = metadata.apply(
-    lambda row: calculate_kappa(
-        rpm=row["rpm"],
-        temp_c=row["temperature_c"],
-        d_pw=D_PW_MM,
-        nu_40=row["viscosity_40c_cst"],
-        nu_100=row["viscosity_100c_cst"],
-    ),
-    axis=1,
-)
+def _add_kappa(metadata):
+    metadata["kappa"] = metadata.apply(
+        lambda row: calculate_kappa(
+            rpm=row["rpm"],
+            temp_c=row["temperature_c"],
+            d_pw=D_PW_MM,
+            nu_40=row["viscosity_40c_cst"],
+            nu_100=row["viscosity_100c_cst"],
+        ),
+        axis=1,
+    )
+    return metadata
 
-# %%
-# =============================================================================
-# Split by sensor
-# =============================================================================
+ae_metadata = _add_kappa(ae_metadata)
+us_metadata = _add_kappa(us_metadata)
 
-ae_mask = df.index.get_level_values("sensor") == "AE"
-us_mask = df.index.get_level_values("sensor") == "UL"
-
-ae_df = df[ae_mask]
-us_df = df[us_mask]
-ae_kappa = metadata["kappa"][ae_mask]
-us_kappa = metadata["kappa"][us_mask]
+ae_kappa = ae_metadata["kappa"]
+us_kappa = us_metadata["kappa"]
 
 # %%
 # =============================================================================
@@ -274,3 +283,5 @@ print("Saved: feature_ranking_ae.csv, feature_ranking_us.csv")
 
 if __name__ == "__main__":
     print("\n02_feature_analysis complete.")
+
+

@@ -260,8 +260,9 @@ def identify_redundant_features(
     """
     features = corr_matrix.columns.tolist()
 
-    abs_corr = corr_matrix.abs()
-    np.fill_diagonal(abs_corr.values, 0.0)
+    abs_vals = corr_matrix.abs().values.copy()
+    np.fill_diagonal(abs_vals, 0.0)
+    abs_corr = pd.DataFrame(abs_vals, index=corr_matrix.index, columns=corr_matrix.columns)
     n_corr = (abs_corr >= corr_threshold).sum(axis=1)
 
     vif_series = vif_df["vif"].reindex(features)
@@ -302,8 +303,9 @@ def reduce_redundant_features(
     spear = spearman_correlation(df, target)
     relevance = spear["rho"].abs()
 
-    abs_corr = corr_matrix.abs().copy()
-    np.fill_diagonal(abs_corr.values, 0.0)
+    abs_vals = corr_matrix.abs().values.copy()
+    np.fill_diagonal(abs_vals, 0.0)
+    abs_corr = pd.DataFrame(abs_vals, index=corr_matrix.index, columns=corr_matrix.columns)
 
     dropped: set[str] = set()
 

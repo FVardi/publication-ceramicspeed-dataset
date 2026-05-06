@@ -106,7 +106,6 @@ DEFAULT_SIGNAL_CLEAN_CFG: dict[str, Any] = {
     "saturation_min_run": 50,
     "remove_outliers_z": 6.0,
     "outlier_window": 5,
-    "apply_detrend": False,
     "reject_clipped": False,
     "reject_saturated": False,
 }

@@ -421,6 +421,7 @@ def train_polynomial_cv(
     y_train: np.ndarray,
     *,
     degree: int = 2,
+    top_k: int | None = None,
     n_splits: int = 5,
     alphas: list[float] | None = None,
     random_state: int = 42,
@@ -443,6 +444,12 @@ def train_polynomial_cv(
         Training target values (kappa).
     degree:
         Polynomial degree (default 2).
+    top_k:
+        If set, restrict input to the *top_k* features ranked by absolute
+        Pearson correlation with *y_train* before polynomial expansion.
+        Degree-2 expansion of N features produces ~N²/2 terms, so keeping
+        N small avoids an overparameterised model.  ``None`` uses all
+        features.
     n_splits:
         Number of KFold splits.
     alphas:
@@ -458,16 +465,40 @@ def train_polynomial_cv(
         The estimator is a fitted sklearn Pipeline; feature_names are the
         expanded polynomial feature names.
     """
+    from sklearn.base import BaseEstimator, TransformerMixin
     from sklearn.linear_model import Ridge, RidgeCV
     from sklearn.preprocessing import PolynomialFeatures
 
-    col_names = X_train.columns.tolist()
+    class _ColumnSelector(BaseEstimator, TransformerMixin):
+        """Select columns by integer index — used as a Pipeline step."""
+        def __init__(self, indices: list[int]) -> None:
+            self.indices = indices
+        def fit(self, X, y=None):
+            return self
+        def transform(self, X):
+            if hasattr(X, "iloc"):
+                return X.iloc[:, self.indices].values
+            return X[:, self.indices]
+
     y_train = np.asarray(y_train, dtype=float)
+
+    # Determine which columns to use (all, or top-k by |Pearson r|)
+    if top_k is not None and top_k < X_train.shape[1]:
+        corr = np.abs(
+            np.array([np.corrcoef(X_train.iloc[:, j], y_train)[0, 1]
+                      for j in range(X_train.shape[1])])
+        )
+        top_idx = np.argsort(corr)[::-1][:top_k].tolist()
+    else:
+        top_idx = list(range(X_train.shape[1]))
+
+    col_names = [X_train.columns[i] for i in top_idx]
+    X_sel = X_train.iloc[:, top_idx]
     _alphas = alphas or np.logspace(-3, 4, 15)
 
     # Select alpha using a reference scaler+poly on the full training set
     scaler_ref = StandardScaler()
-    X_scaled_ref = scaler_ref.fit_transform(X_train.values)
+    X_scaled_ref = scaler_ref.fit_transform(X_sel.values)
     poly_ref = PolynomialFeatures(degree=degree, include_bias=False)
     X_poly_ref = poly_ref.fit_transform(X_scaled_ref)
 
@@ -480,15 +511,15 @@ def train_polynomial_cv(
     y_pred_oof = np.empty_like(y_train)
     fold_metrics: list[dict[str, float]] = []
 
-    for fold_idx, (tr_idx, val_idx) in enumerate(cv.split(X_train.values)):
+    for fold_idx, (tr_idx, val_idx) in enumerate(cv.split(X_sel.values)):
         fold_scaler = StandardScaler()
         fold_poly = PolynomialFeatures(degree=degree, include_bias=False)
 
         X_tr_poly = fold_poly.fit_transform(
-            fold_scaler.fit_transform(X_train.values[tr_idx])
+            fold_scaler.fit_transform(X_sel.values[tr_idx])
         )
         X_val_poly = fold_poly.transform(
-            fold_scaler.transform(X_train.values[val_idx])
+            fold_scaler.transform(X_sel.values[val_idx])
         )
 
         fold_model = Ridge(alpha=best_alpha)
@@ -503,17 +534,20 @@ def train_polynomial_cv(
             "alpha": best_alpha,
         })
 
-    # Final model: Pipeline refit on full training set
-    final_model = Pipeline([
+    # Final model: Pipeline refit on full training set.
+    # _ColumnSelector is first so the full feature matrix can be passed in
+    # at predict time — it selects the same top_k columns used during training.
+    pipeline_steps = [
+        ("selector", _ColumnSelector(top_idx)),
         ("scaler", StandardScaler()),
         ("poly", PolynomialFeatures(degree=degree, include_bias=False)),
         ("ridge", Ridge(alpha=best_alpha)),
-    ])
+    ]
+    final_model = Pipeline(pipeline_steps)
     final_model.fit(X_train, y_train)
 
     # Derive feature names from the fitted pipeline's own poly step so names
-    # are guaranteed to match the Ridge's coef_ (avoids any version-dependent
-    # mismatch when poly_ref was fit on a different scaler instance).
+    # are guaranteed to match the Ridge's coef_.
     feature_names = (
         final_model.named_steps["poly"]
         .get_feature_names_out(col_names)

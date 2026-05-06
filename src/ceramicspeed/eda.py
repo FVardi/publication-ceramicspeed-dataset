@@ -70,9 +70,11 @@ def load_sweeps(
     sensors: tuple[str, ...],
     waveform_ms: float,
     env_show_ms: float,
-    bp_low_hz: float,
-    bp_high_hz: float,
+    bp_low_hz: float | None = None,
+    bp_high_hz: float | None = None,
     skip_stats: bool = False,
+    max_sweeps: int | None = None,
+    sweep_names: list[str] | None = None,
 ) -> list[dict]:
     """Stream HDF5 files sweep-by-sweep, computing derived metrics inline.
 
@@ -104,6 +106,8 @@ def load_sweeps(
                 n_env = int(env_show_ms * 1e-3 * fs)
 
                 for sweep_name, sweep in sweeps_grp.items():
+                    if sweep_names is not None and sweep_name not in sweep_names:
+                        continue
                     tp = _normalize_sweep_params(dict(sweep.attrs))
                     rpm = float(tp.get("rpm", np.nan))
                     if rpm < rpm_min or rpm > rpm_max:
@@ -141,9 +145,10 @@ def load_sweeps(
 
                         if not skip_stats:
                             rec["stats"][sensor] = extract_features(sig, fs)
-                            rec["bp_stats"][sensor] = extract_features(
-                                _bandpass_filter(sig, fs, bp_low_hz, bp_high_hz), fs
-                            )
+                            if bp_low_hz is not None and bp_high_hz is not None:
+                                rec["bp_stats"][sensor] = extract_features(
+                                    _bandpass_filter(sig, fs, bp_low_hz, bp_high_hz), fs
+                                )
 
                         env = np.abs(_hilbert(sig))
                         rec["envelope"][sensor] = env[:n_env].copy()
@@ -155,7 +160,11 @@ def load_sweeps(
                         del sig, env
 
                     records.append(rec)
+                    if max_sweeps and len(records) >= max_sweeps:
+                        return records
 
+        except MemoryError:
+            raise
         except Exception as exc:
             print(f"  WARNING: {fp.name}: {exc}")
 
