@@ -56,6 +56,7 @@ __all__ = [
     "train_polynomial_cv",
     "train_lightgbm_cv",
     "evaluate_on_holdout",
+    "clip_predictions",
     "results_summary_table",
     "get_feature_weights",
 ]
@@ -195,6 +196,46 @@ def evaluate_on_holdout(
     result.holdout_y_true = y_test
     result.holdout_y_pred = y_pred_test
     result.holdout_metrics = _compute_metrics(y_test, y_pred_test)
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Prediction clipping
+# ---------------------------------------------------------------------------
+
+
+def clip_predictions(
+    result: ModelResult,
+    lo: float = 0.0,
+    hi: float | None = None,
+) -> ModelResult:
+    """Clip OOF and hold-out predictions to [lo, hi] and recompute metrics.
+
+    Applied after training and hold-out evaluation — does not affect the
+    model weights or the training objective.
+
+    Parameters
+    ----------
+    result:
+        A ModelResult (hold-out evaluation must already have been run).
+    lo:
+        Lower bound.  Default ``0.0`` — kappa is physically non-negative.
+    hi:
+        Upper bound.  ``None`` (default) uses ``max(result.y_true)``, i.e.
+        the highest kappa seen in the training set.
+    """
+    _hi = hi if hi is not None else float(result.y_true.max())
+
+    result.y_pred = np.clip(result.y_pred, lo, _hi)
+    m = _compute_metrics(result.y_true, result.y_pred)
+    result.r2, result.mae, result.rmse = m["r2"], m["mae"], m["rmse"]
+
+    if result.holdout_y_pred is not None and result.holdout_y_true is not None:
+        result.holdout_y_pred = np.clip(result.holdout_y_pred, lo, _hi)
+        result.holdout_metrics = _compute_metrics(
+            result.holdout_y_true, result.holdout_y_pred
+        )
 
     return result
 

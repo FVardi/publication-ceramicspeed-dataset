@@ -34,6 +34,7 @@ import json
 import math
 
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -44,10 +45,11 @@ from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.config import load_config, get_output_dir
 from ceramicspeed.modelling import (
     train_elastic_net_cv,
-    train_bayesian_ridge_cv,
+    # train_bayesian_ridge_cv,
     train_polynomial_cv,
     train_lightgbm_cv,
     evaluate_on_holdout,
+    clip_predictions,
     results_summary_table,
     get_feature_weights,
     ModelResult,
@@ -304,6 +306,7 @@ def _train_and_eval(train_fn, X_tr, y_tr, X_te, y_te, **kwargs) -> ModelResult:
     """Train via CV on training set, then evaluate on hold-out."""
     result = train_fn(X_tr, y_tr, **kwargs)
     evaluate_on_holdout(result, X_te, y_te)
+    clip_predictions(result, lo=0.0)
     print(result.summary())
     return result
 
@@ -356,42 +359,42 @@ if X_combined_train is not None:
     )
     results.append(result)
 
-# --- Bayesian Ridge (per-sensor) ----------------------------------------------
-for sensor_name in feature_selection:
-    X_tr, y_tr, _ = sensor_train[sensor_name]
-    X_te, y_te, _ = sensor_test[sensor_name]
+# --- Bayesian Ridge (per-sensor) — disabled: overlaps too much with Elastic Net
+# for sensor_name in feature_selection:
+#     X_tr, y_tr, _ = sensor_train[sensor_name]
+#     X_te, y_te, _ = sensor_test[sensor_name]
+#
+#     print(f"\n{'='*60}")
+#     print(f"Training Bayesian Ridge — {sensor_name}")
+#     print(f"{'='*60}")
+#
+#     result = _train_and_eval(
+#         train_bayesian_ridge_cv, X_tr, y_tr, X_te, y_te,
+#         n_splits=CV_N_SPLITS,
+#         max_iter=BAYES_MAX_ITER,
+#         random_state=RANDOM_STATE,
+#         name=f"BayesianRidge_{sensor_name}",
+#         sensor=sensor_name,
+#     )
+#     results.append(result)
 
-    print(f"\n{'='*60}")
-    print(f"Training Bayesian Ridge — {sensor_name}")
-    print(f"{'='*60}")
-
-    result = _train_and_eval(
-        train_bayesian_ridge_cv, X_tr, y_tr, X_te, y_te,
-        n_splits=CV_N_SPLITS,
-        max_iter=BAYES_MAX_ITER,
-        random_state=RANDOM_STATE,
-        name=f"BayesianRidge_{sensor_name}",
-        sensor=sensor_name,
-    )
-    results.append(result)
-
-# --- Bayesian Ridge (combined) ------------------------------------------------
-if X_combined_train is not None:
-    print(f"\n{'='*60}")
-    print("Training Bayesian Ridge — Combined (AE + Ultrasound)")
-    print(f"{'='*60}")
-
-    result = _train_and_eval(
-        train_bayesian_ridge_cv,
-        X_combined_train, y_combined_train,
-        X_combined_test, y_combined_test,
-        n_splits=CV_N_SPLITS,
-        max_iter=BAYES_MAX_ITER,
-        random_state=RANDOM_STATE,
-        name="BayesianRidge_Combined",
-        sensor="combined",
-    )
-    results.append(result)
+# --- Bayesian Ridge (combined) — disabled: overlaps too much with Elastic Net
+# if X_combined_train is not None:
+#     print(f"\n{'='*60}")
+#     print("Training Bayesian Ridge — Combined (AE + Ultrasound)")
+#     print(f"{'='*60}")
+#
+#     result = _train_and_eval(
+#         train_bayesian_ridge_cv,
+#         X_combined_train, y_combined_train,
+#         X_combined_test, y_combined_test,
+#         n_splits=CV_N_SPLITS,
+#         max_iter=BAYES_MAX_ITER,
+#         random_state=RANDOM_STATE,
+#         name="BayesianRidge_Combined",
+#         sensor="combined",
+#     )
+#     results.append(result)
 
 # --- Polynomial Regression (per-sensor) --------------------------------------
 for sensor_name in feature_selection:
@@ -523,6 +526,17 @@ _cv_rpm["combined"] = rpm_combined_train if rpm_combined_train is not None else 
 _ncols = min(3, n_models)
 _nrows = math.ceil(n_models / _ncols)
 
+# Discrete RPM colormap — 1000 RPM intervals using inferno.
+# Ceiling is derived from the actual data (rounded up to nearest 1000)
+# rather than the config rpm_max filter, which is often much higher.
+_rpm_step = 1000
+_rpm_data_max = float(metadata["rpm"].max())
+_rpm_ceil = math.ceil(_rpm_data_max / _rpm_step) * _rpm_step
+_rpm_boundaries = np.arange(0, _rpm_ceil + _rpm_step, _rpm_step)
+_rpm_n = len(_rpm_boundaries) - 1
+_rpm_cmap = plt.cm.get_cmap("tab10", _rpm_n)
+_rpm_norm = mcolors.BoundaryNorm(_rpm_boundaries, _rpm_n)
+
 # CV predictions (out-of-fold on training set)
 fig, axes = plt.subplots(_nrows, _ncols, figsize=(6 * _ncols, 6 * _nrows), squeeze=False)
 _axes_flat = [axes[r][c] for r in range(_nrows) for c in range(_ncols)]
@@ -530,16 +544,16 @@ for ax in _axes_flat[n_models:]:
     ax.set_visible(False)
 for ax, result in zip(_axes_flat, results):
     _rpm = _cv_rpm.get(result.sensor, None)
-    sc = ax.scatter(result.y_true, result.y_pred, c=_rpm, cmap="inferno",
-                    s=14, alpha=0.6, edgecolors="none")
+    sc = ax.scatter(result.y_true, result.y_pred, c=_rpm, cmap=_rpm_cmap,
+                    norm=_rpm_norm, s=14, alpha=0.6, edgecolors="none")
     plt.colorbar(sc, ax=ax, label="RPM")
-    lims = [min(result.y_true.min(), result.y_pred.min()),
-            max(result.y_true.max(), result.y_pred.max())]
-    ax.plot(lims, lims, "k--", lw=1, alpha=0.5, label="ideal")
+    _margin = 0.05 * (result.y_true.max() - result.y_true.min())
+    _xlims = [result.y_true.min() - _margin, result.y_true.max() + _margin]
+    ax.plot(_xlims, _xlims, "k--", lw=1, alpha=0.5, label="ideal")
+    ax.set_xlim(_xlims)
     ax.set_xlabel("True κ")
     ax.set_ylabel("Predicted κ")
     ax.set_title(f"{result.name}\nR² = {result.r2:.3f}   MAE = {result.mae:.3f}   RMSE = {result.rmse:.3f}")
-    ax.set_aspect("equal", adjustable="datalim")
     ax.grid(ls=":", alpha=0.4)
 fig.suptitle("CV Out-of-Fold Predictions vs True κ (Training Set)", fontsize=13)
 fig.tight_layout()
@@ -556,18 +570,16 @@ for ax, result in zip(_axes_flat, results):
     if result.holdout_y_true is not None:
         _rpm = _holdout_rpm.get(result.sensor, None)
         sc = ax.scatter(result.holdout_y_true, result.holdout_y_pred,
-                        c=_rpm, cmap="inferno", s=14, alpha=0.6, edgecolors="none")
+                        c=_rpm, cmap=_rpm_cmap, norm=_rpm_norm, s=14, alpha=0.6, edgecolors="none")
         plt.colorbar(sc, ax=ax, label="RPM")
-        lims = [
-            min(result.holdout_y_true.min(), result.holdout_y_pred.min()),
-            max(result.holdout_y_true.max(), result.holdout_y_pred.max()),
-        ]
-        ax.plot(lims, lims, "k--", lw=1, alpha=0.5, label="ideal")
+        _margin = 0.05 * (result.holdout_y_true.max() - result.holdout_y_true.min())
+        _xlims = [result.holdout_y_true.min() - _margin, result.holdout_y_true.max() + _margin]
+        ax.plot(_xlims, _xlims, "k--", lw=1, alpha=0.5, label="ideal")
+        ax.set_xlim(_xlims)
         h = result.holdout_metrics
         ax.set_title(f"{result.name}\nR² = {h['r2']:.3f}   MAE = {h['mae']:.3f}   RMSE = {h['rmse']:.3f}")
         ax.set_xlabel("True κ")
         ax.set_ylabel("Predicted κ")
-        ax.set_aspect("equal", adjustable="datalim")
         ax.grid(ls=":", alpha=0.4)
 fig.suptitle("Hold-Out Test Set: Predicted vs True κ", fontsize=13)
 fig.tight_layout()
@@ -622,8 +634,8 @@ for ax, result in zip(_axes_flat, results):
     if result.holdout_y_true is not None:
         residuals = result.holdout_y_true - result.holdout_y_pred
         _rpm = _holdout_rpm.get(result.sensor, None)
-        sc = ax.scatter(result.holdout_y_pred, residuals, c=_rpm, cmap="inferno",
-                        s=12, alpha=0.6, edgecolors="none")
+        sc = ax.scatter(result.holdout_y_pred, residuals, c=_rpm, cmap=_rpm_cmap,
+                        norm=_rpm_norm, s=12, alpha=0.6, edgecolors="none")
         plt.colorbar(sc, ax=ax, label="RPM")
         ax.axhline(0, color="k", ls="--", lw=0.8)
         ax.set_xlabel("Predicted κ")

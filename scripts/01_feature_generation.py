@@ -100,7 +100,7 @@ else:
 # Clean signals + extract features in parallel
 # =============================================================================
 
-df, metadata_df = load_and_process_files_parallel(
+df, metadata_df, signal_quality_df = load_and_process_files_parallel(
     files,
     signal_clean_cfg=SIGNAL_CLEAN_CFG,
     sensor_prefilter=SENSOR_PREFILTER,
@@ -117,6 +117,9 @@ print(f"Saved: {OUTPUT_DIR / 'features.parquet'}  ({len(df)} rows)")
 
 metadata_df.to_parquet(OUTPUT_DIR / "metadata.parquet", engine="pyarrow")
 print(f"Saved: {OUTPUT_DIR / 'metadata.parquet'}  ({len(metadata_df)} rows)")
+
+signal_quality_df.to_parquet(OUTPUT_DIR / "signal_quality.parquet", engine="pyarrow")
+print(f"Saved: {OUTPUT_DIR / 'signal_quality.parquet'}  ({len(signal_quality_df)} rows)")
 
 
 # %%

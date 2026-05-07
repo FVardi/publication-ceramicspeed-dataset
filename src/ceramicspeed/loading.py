@@ -187,6 +187,27 @@ def load_hdf5_file(
 # ---------------------------------------------------------------------------
 
 
+def _sig_report_to_dict(
+    file_name: str,
+    sweep_name: str,
+    sensor_name: str,
+    report: SignalQualityReport,
+) -> dict[str, Any]:
+    return {
+        "file": file_name,
+        "sweep": sweep_name,
+        "sensor": sensor_name,
+        "is_valid": report.is_valid,
+        "rejection_reason": report.rejection_reason,
+        "n_nan_inf_replaced": report.n_nan_inf_replaced,
+        "is_clipped": report.is_clipped,
+        "clipping_fraction": report.clipping_fraction,
+        "is_saturated": report.is_saturated,
+        "saturation_longest_run": report.saturation_longest_run,
+        "n_outlier_samples_replaced": report.n_outlier_samples_replaced,
+    }
+
+
 def load_and_process_file(
     file_path: str | Path,
     frequency_bands: dict[str, list[tuple[float, float, str]]] | None = None,
@@ -238,9 +259,10 @@ def load_and_process_file(
 
     Returns
     -------
-    tuple[list[dict], list[dict]]
-        ``(feature_rows, metadata_rows)`` — one dict per (sweep, sensor)
-        pair that passed validation.
+    tuple[list[dict], list[dict], list[dict]]
+        ``(feature_rows, metadata_rows, quality_rows)`` — feature and
+        metadata dicts for accepted pairs, plus one quality dict per
+        *every* sweep/sensor pair attempted (both accepted and rejected).
     """
     sensors = sensors or DEFAULT_SENSORS
     scfg = _resolve_signal_cfg(signal_clean_cfg)
@@ -253,7 +275,7 @@ def load_and_process_file(
     rows: list[dict[str, Any]] = []
     metadata: list[dict[str, Any]] = []
 
-    n_rejected = 0
+    quality_rows: list[dict[str, Any]] = []
 
     sweeps = hdf5_data["sweeps"]
     sweep_iter = tqdm(sweeps, desc=f"{file_name}", unit="sweep") if show_progress else sweeps
@@ -273,7 +295,9 @@ def load_and_process_file(
                         file_name, sweep_name, sensor_name,
                         sig_report.rejection_reason,
                     )
-                    n_rejected += 1
+                    quality_rows.append(_sig_report_to_dict(
+                        file_name, sweep_name, sensor_name, sig_report
+                    ))
                     continue
             else:
                 sig_report = SignalQualityReport()
@@ -326,16 +350,64 @@ def load_and_process_file(
                 **quality_cols,
             }
 
+            quality_rows.append(_sig_report_to_dict(
+                file_name, sweep_name, sensor_name, sig_report
+            ))
             rows.append(row)
             metadata.append(metadata_row)
 
+    n_rejected = sum(1 for qr in quality_rows if not qr["is_valid"])
     if n_rejected:
         logger.warning(
             "%s: %d sweep/sensor pair(s) rejected by signal cleaning",
             file_name, n_rejected,
         )
 
-    return rows, metadata
+    return rows, metadata, quality_rows
+
+
+def _print_cleaning_summary(quality_df: pd.DataFrame) -> None:
+    """Print a signal-cleaning statistics table to stdout."""
+    n_total = len(quality_df)
+    if n_total == 0:
+        return
+
+    valid = quality_df["is_valid"]
+    n_rejected = int((~valid).sum())
+    n_kept = int(valid.sum())
+    accepted = quality_df[valid]
+
+    print("\n--- Signal cleaning summary ---")
+    print(f"  Sweep/sensor pairs total    : {n_total}")
+    print(f"  Rejected (invalid signal)   : {n_rejected} ({n_rejected / n_total:.1%})")
+
+    if n_kept == 0:
+        print("  (no valid signals to report further stats)")
+        print("-------------------------------\n")
+        return
+
+    col = accepted["n_nan_inf_replaced"]
+    n_sig = int((col > 0).sum())
+    print(f"  Signals with NaN/Inf fixed  : {n_sig} ({n_sig / n_kept:.1%})"
+          f"  [total samples replaced: {int(col.sum())}]")
+
+    n_clip = int(accepted["is_clipped"].sum())
+    extra = ""
+    if n_clip:
+        avg_frac = accepted.loc[accepted["is_clipped"], "clipping_fraction"].mean()
+        extra = f"  [avg clipping fraction: {avg_frac:.2%}]"
+    print(f"  Signals flagged clipped     : {n_clip} ({n_clip / n_kept:.1%}){extra}")
+
+    n_sat = int(accepted["is_saturated"].sum())
+    print(f"  Signals flagged saturated   : {n_sat} ({n_sat / n_kept:.1%})")
+
+    col = accepted["n_outlier_samples_replaced"]
+    n_sig = int((col > 0).sum())
+    print(f"  Signals with spikes removed : {n_sig} ({n_sig / n_kept:.1%})"
+          f"  [total spike samples replaced: {int(col.sum())}]")
+
+    print(f"  Kept for feature extraction : {n_kept}")
+    print("-------------------------------\n")
 
 
 def load_and_process_files_parallel(
@@ -370,8 +442,10 @@ def load_and_process_files_parallel(
 
     Returns
     -------
-    tuple[pd.DataFrame, pd.DataFrame]
-        ``(features_df, metadata_df)``
+    tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
+        ``(features_df, metadata_df, signal_quality_df)`` — the last
+        DataFrame has one row per sweep/sensor pair attempted (including
+        rejected ones) with all ``SignalQualityReport`` fields.
     """
     if len(file_paths) == 1:
         results = [load_and_process_file(
@@ -390,10 +464,17 @@ def load_and_process_files_parallel(
             desc="Processing HDF5 files",
         ))
 
-    all_features = [row for feat_rows, _ in results for row in feat_rows]
-    all_metadata = [row for _, meta_rows in results for row in meta_rows]
+    all_features = [row for feat_rows, _, _ in results for row in feat_rows]
+    all_metadata = [row for _, meta_rows, _ in results for row in meta_rows]
+    all_quality = [qr for _, _, qrows in results for qr in qrows]
 
-    return pd.DataFrame(all_features), pd.DataFrame(all_metadata)
+    features_df = pd.DataFrame(all_features)
+    metadata_df = pd.DataFrame(all_metadata)
+    quality_df = pd.DataFrame(all_quality)
+
+    _print_cleaning_summary(quality_df)
+
+    return features_df, metadata_df, quality_df
 
 
 # ---------------------------------------------------------------------------
