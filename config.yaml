@@ -141,6 +141,7 @@ modelling:
     reg_alpha:           0.0
     reg_lambda:          1.0
     early_stopping_rounds: 50
+    n_trials:            50    # Optuna trials per study (outer fold + final model)
     param_grid:
       learning_rate: [0.01, 0.05, 0.1]
       num_leaves:    [15, 31, 63]

@@ -112,6 +112,8 @@ LGB_COLSAMPLE: float = lgb_cfg.get("colsample_bytree", 0.8)
 LGB_REG_ALPHA: float = lgb_cfg.get("reg_alpha", 0.0)
 LGB_REG_LAMBDA: float = lgb_cfg.get("reg_lambda", 1.0)
 LGB_EARLY_STOP: int = lgb_cfg.get("early_stopping_rounds", 50)
+LGB_PARAM_GRID: dict | None = lgb_cfg.get("param_grid") or None
+LGB_N_TRIALS: int = lgb_cfg.get("n_trials", 50)
 
 
 # %%
@@ -459,6 +461,8 @@ for sensor_name in feature_selection:
         reg_alpha=LGB_REG_ALPHA,
         reg_lambda=LGB_REG_LAMBDA,
         early_stopping_rounds=LGB_EARLY_STOP,
+        param_grid=LGB_PARAM_GRID,
+        n_trials=LGB_N_TRIALS,
         random_state=RANDOM_STATE,
         name=f"LightGBM_{sensor_name}",
         sensor=sensor_name,
@@ -486,6 +490,8 @@ if X_combined_train is not None:
         reg_alpha=LGB_REG_ALPHA,
         reg_lambda=LGB_REG_LAMBDA,
         early_stopping_rounds=LGB_EARLY_STOP,
+        param_grid=LGB_PARAM_GRID,
+        n_trials=LGB_N_TRIALS,
         random_state=RANDOM_STATE,
         name="LightGBM_Combined",
         sensor="combined",

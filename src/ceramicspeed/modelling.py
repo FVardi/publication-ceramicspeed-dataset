@@ -48,6 +48,7 @@ from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from tqdm.auto import tqdm
 
 __all__ = [
     "ModelResult",
@@ -184,9 +185,13 @@ def evaluate_on_holdout(
     """
     y_test = np.asarray(y_test, dtype=float)
 
-    # Pipeline models handle scaling internally; LightGBM doesn't need it;
-    # linear models use the stored scaler.
-    if isinstance(result.estimator, (lgb.LGBMRegressor, Pipeline)):
+    # LightGBM: pass DataFrame directly so feature names match those stored
+    # during fit — avoids sklearn's feature-name-mismatch warning.
+    # Pipeline models handle scaling internally.
+    # Linear models use the stored scaler.
+    if isinstance(result.estimator, lgb.LGBMRegressor):
+        X_scaled = X_test
+    elif isinstance(result.estimator, Pipeline):
         X_scaled = X_test.values
     else:
         X_scaled = result.scaler.transform(X_test.values)
@@ -322,27 +327,28 @@ def train_elastic_net_cv(
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_train.values)
 
-    # Select hyperparameters once on the full training set
-    final_model = ElasticNetCV(
-        l1_ratio=_l1_ratios,
-        alphas=alphas,
-        cv=n_splits,
-        max_iter=max_iter,
-        random_state=random_state,
-    )
-    final_model.fit(X_scaled, y_train)
-    best_alpha = final_model.alpha_
-    best_l1_ratio = final_model.l1_ratio_
-
-    # Single KFold with fixed hyperparameters for OOF predictions
+    # Nested CV: HP selection is local to each outer fold's training split so
+    # the OOF validation data never influences HP choice.
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     y_pred_oof = np.empty_like(y_train)
     fold_metrics: list[dict[str, float]] = []
 
     for fold_idx, (tr_idx, val_idx) in enumerate(cv.split(X_scaled)):
+        # Inner CV: select alpha / l1_ratio on this fold's training data only
+        inner_cv = ElasticNetCV(
+            l1_ratio=_l1_ratios,
+            alphas=alphas,
+            cv=n_splits,
+            max_iter=max_iter,
+            random_state=random_state,
+        )
+        inner_cv.fit(X_scaled[tr_idx], y_train[tr_idx])
+        fold_alpha = inner_cv.alpha_
+        fold_l1_ratio = inner_cv.l1_ratio_
+
         fold_model = ElasticNet(
-            alpha=best_alpha,
-            l1_ratio=best_l1_ratio,
+            alpha=fold_alpha,
+            l1_ratio=fold_l1_ratio,
             max_iter=max_iter,
         )
         fold_model.fit(X_scaled[tr_idx], y_train[tr_idx])
@@ -353,9 +359,19 @@ def train_elastic_net_cv(
             "fold": fold_idx,
             **m,
             "n_val": len(val_idx),
-            "alpha": best_alpha,
-            "l1_ratio": best_l1_ratio,
+            "alpha": fold_alpha,
+            "l1_ratio": fold_l1_ratio,
         })
+
+    # Final model: HP selection on the full training set
+    final_model = ElasticNetCV(
+        l1_ratio=_l1_ratios,
+        alphas=alphas,
+        cv=n_splits,
+        max_iter=max_iter,
+        random_state=random_state,
+    )
+    final_model.fit(X_scaled, y_train)
 
     return ModelResult(
         name=name,
@@ -537,17 +553,8 @@ def train_polynomial_cv(
     X_sel = X_train.iloc[:, top_idx]
     _alphas = alphas or np.logspace(-3, 4, 15)
 
-    # Select alpha using a reference scaler+poly on the full training set
-    scaler_ref = StandardScaler()
-    X_scaled_ref = scaler_ref.fit_transform(X_sel.values)
-    poly_ref = PolynomialFeatures(degree=degree, include_bias=False)
-    X_poly_ref = poly_ref.fit_transform(X_scaled_ref)
-
-    ridge_cv = RidgeCV(alphas=_alphas, cv=n_splits)
-    ridge_cv.fit(X_poly_ref, y_train)
-    best_alpha = float(ridge_cv.alpha_)
-
-    # OOF loop with fixed alpha — each fold re-fits its own scaler and poly
+    # Nested CV: alpha selection is local to each outer fold's training split.
+    # RidgeCV with cv=None uses GCV (efficient leave-one-out) as the inner CV.
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     y_pred_oof = np.empty_like(y_train)
     fold_metrics: list[dict[str, float]] = []
@@ -563,7 +570,12 @@ def train_polynomial_cv(
             fold_scaler.transform(X_sel.values[val_idx])
         )
 
-        fold_model = Ridge(alpha=best_alpha)
+        # Inner HP selection on this fold's training data only (GCV)
+        inner_ridge_cv = RidgeCV(alphas=_alphas)
+        inner_ridge_cv.fit(X_tr_poly, y_train[tr_idx])
+        fold_alpha = float(inner_ridge_cv.alpha_)
+
+        fold_model = Ridge(alpha=fold_alpha)
         fold_model.fit(X_tr_poly, y_train[tr_idx])
         y_pred_oof[val_idx] = fold_model.predict(X_val_poly)
 
@@ -572,8 +584,14 @@ def train_polynomial_cv(
             "fold": fold_idx,
             **m,
             "n_val": len(val_idx),
-            "alpha": best_alpha,
+            "alpha": fold_alpha,
         })
+
+    # Select alpha on the full training set for the final model only
+    scaler_ref = StandardScaler()
+    poly_ref = PolynomialFeatures(degree=degree, include_bias=False)
+    X_poly_ref = poly_ref.fit_transform(scaler_ref.fit_transform(X_sel.values))
+    best_alpha = float(RidgeCV(alphas=_alphas).fit(X_poly_ref, y_train).alpha_)
 
     # Final model: Pipeline refit on full training set.
     # _ColumnSelector is first so the full feature matrix can be passed in
@@ -631,17 +649,22 @@ def train_lightgbm_cv(
     reg_alpha: float = 0.0,
     reg_lambda: float = 1.0,
     early_stopping_rounds: int = 50,
+    param_grid: dict[str, list] | None = None,
+    n_trials: int = 50,
     random_state: int = 42,
     name: str = "LightGBM",
     sensor: str = "unknown",
 ) -> ModelResult:
-    """Train a LightGBM regressor with single-level KFold CV on the training set.
+    """Train a LightGBM regressor with nested KFold CV on the training set.
 
-    Each fold trains a LightGBM model with early stopping on the fold's
-    validation set (to determine the optimal number of boosting rounds),
-    then predicts on the fold's validation data.  The final model is refit
-    on the full training set using a fixed ``n_estimators`` (no early
-    stopping, since there is no held-out set to stop on).
+    If ``param_grid`` is provided, an inner 3-fold ``GridSearchCV`` runs on
+    each outer fold's training slice to select ``learning_rate``,
+    ``num_leaves``, ``max_depth``, or any other keys in the grid.  A fast
+    fixed ``n_estimators`` (200) is used for screening; early stopping then
+    determines the true number of rounds for the actual fold training.
+
+    Without ``param_grid`` the behaviour is unchanged (fixed hyperparameters
+    from the call arguments, early stopping only).
 
     Parameters
     ----------
@@ -652,9 +675,17 @@ def train_lightgbm_cv(
     n_splits:
         Number of KFold splits.
     n_estimators, learning_rate, max_depth, num_leaves, ... : various
-        LightGBM hyperparameters.
+        LightGBM base hyperparameters (used as defaults / fixed values when
+        the corresponding key is absent from ``param_grid``).
     early_stopping_rounds:
         Stop if validation metric doesn't improve for this many rounds.
+    param_grid:
+        Dict mapping hyperparameter names to lists of candidate values,
+        e.g. ``{"learning_rate": [0.01, 0.05], "num_leaves": [31, 63]}``.
+        Each list becomes ``suggest_categorical`` choices in the Optuna
+        study.  ``None`` skips tuning entirely.
+    n_trials:
+        Number of Optuna trials per study (default 50).
     random_state:
         Random seed.
     name, sensor:
@@ -664,6 +695,8 @@ def train_lightgbm_cv(
     -------
     ModelResult
     """
+    import optuna
+
     feature_names = X_train.columns.tolist()
     y_train = np.asarray(y_train, dtype=float)
 
@@ -678,7 +711,7 @@ def train_lightgbm_cv(
         reg_alpha=reg_alpha,
         reg_lambda=reg_lambda,
         random_state=random_state,
-        n_jobs=-1,
+        n_jobs=1,
         verbosity=-1,
     )
 
@@ -687,38 +720,105 @@ def train_lightgbm_cv(
     scaler = StandardScaler()
     scaler.fit(X_train.values)
 
-    X = X_train.values
+    X = X_train  # keep as DataFrame so feature names propagate to all LGBMRegressor fits
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+
+    # n_estimators used for fast Optuna screening (no early stopping)
+    _screen_n = min(200, n_estimators)
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    def _make_objective(X_tr: pd.DataFrame, y_tr: np.ndarray) -> object:
+        """Return an Optuna objective that evaluates HPs via 3-fold inner CV."""
+        inner_cv = KFold(n_splits=3, shuffle=True, random_state=random_state)
+
+        def objective(trial: optuna.Trial) -> float:
+            params = {
+                **base_params,
+                "n_estimators": _screen_n,
+                **{k: trial.suggest_categorical(k, v) for k, v in param_grid.items()},
+            }
+            scores = []
+            for itr, ival in inner_cv.split(X_tr):
+                m = lgb.LGBMRegressor(**params)
+                m.fit(X_tr.iloc[itr], y_tr[itr], callbacks=[lgb.log_evaluation(period=0)])
+                scores.append(float(np.sqrt(mean_squared_error(y_tr[ival], m.predict(X_tr.iloc[ival])))))
+            return float(np.mean(scores))
+
+        return objective
 
     y_pred_oof = np.empty_like(y_train)
     fold_metrics: list[dict[str, float]] = []
     best_iters: list[int] = []
 
-    for fold_idx, (tr_idx, val_idx) in enumerate(cv.split(X)):
-        model = lgb.LGBMRegressor(**base_params)
+    fold_iter = tqdm(
+        enumerate(cv.split(X)),
+        total=n_splits,
+        desc=f"{name} — CV folds",
+        unit="fold",
+    )
+    for fold_idx, (tr_idx, val_idx) in fold_iter:
+        fold_params = dict(base_params)
+
+        if param_grid:
+            study = optuna.create_study(
+                direction="minimize",
+                sampler=optuna.samplers.TPESampler(seed=random_state + fold_idx),
+            )
+            with tqdm(total=n_trials, desc=f"  fold {fold_idx+1}/{n_splits} — Optuna", unit="trial", leave=False) as pbar:
+                def _optuna_cb(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
+                    pbar.update(1)
+                    pbar.set_postfix(best_rmse=f"{study.best_value:.4f}")
+                study.optimize(
+                    _make_objective(X.iloc[tr_idx], y_train[tr_idx]),
+                    n_trials=n_trials,
+                    callbacks=[_optuna_cb],
+                )
+            fold_params.update(study.best_params)
+
+        model = lgb.LGBMRegressor(**fold_params)
         model.fit(
-            X[tr_idx],
+            X.iloc[tr_idx],
             y_train[tr_idx],
-            eval_set=[(X[val_idx], y_train[val_idx])],
+            eval_set=[(X.iloc[val_idx], y_train[val_idx])],
             callbacks=[
                 lgb.early_stopping(early_stopping_rounds, verbose=False),
                 lgb.log_evaluation(period=0),
             ],
         )
-        y_pred_oof[val_idx] = model.predict(X[val_idx])
+        y_pred_oof[val_idx] = model.predict(X.iloc[val_idx])
         best_iters.append(model.best_iteration_)
 
         m = _compute_metrics(y_train[val_idx], y_pred_oof[val_idx])
+        fold_iter.set_postfix(r2=f"{m['r2']:.3f}", rmse=f"{m['rmse']:.3f}")
         fold_metrics.append({
             "fold": fold_idx,
             **m,
             "n_val": len(val_idx),
             "best_iteration": model.best_iteration_,
+            **({"best_params": str(study.best_params)} if param_grid else {}),
         })
 
-    # Final model: refit on full training set using the mean best iteration
+    # Final model: Optuna study on the full training set, then refit
+    final_params = dict(base_params)
+    if param_grid:
+        final_study = optuna.create_study(
+            direction="minimize",
+            sampler=optuna.samplers.TPESampler(seed=random_state),
+        )
+        with tqdm(total=n_trials, desc="  final model — Optuna", unit="trial", leave=False) as pbar:
+            def _final_optuna_cb(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
+                pbar.update(1)
+                pbar.set_postfix(best_rmse=f"{study.best_value:.4f}")
+            final_study.optimize(
+                _make_objective(X, y_train),
+                n_trials=n_trials,
+                callbacks=[_final_optuna_cb],
+            )
+        final_params.update(final_study.best_params)
+
     mean_best_iter = max(1, int(np.mean(best_iters)))
-    final_params = {**base_params, "n_estimators": mean_best_iter}
+    final_params["n_estimators"] = mean_best_iter
     final_model = lgb.LGBMRegressor(**final_params)
     final_model.fit(X, y_train)
 
