@@ -178,21 +178,15 @@ _sensors = [
 ]
 
 
-_kappa_cfg = cfg.get("kappa", {})
-_kappa_bounds = _kappa_cfg.get("boundaries", [0.5, 1.0])
-_kappa_labels = _kappa_cfg.get("labels", ["κ < 0.5", "0.5 ≤ κ < 1", "1 ≤ κ"])
-_kappa_colors = _kappa_cfg.get("colors", ["#d62728", "#ff7f0e", "#2ca02c"])
-
-
-def _scatter_regime(ax: plt.Axes, x: np.ndarray, y: np.ndarray, kappa: np.ndarray) -> None:
-    """Scatter coloured by kappa regime (< 0.5 / 0.5–1 / ≥ 1) with a legend."""
-    lo, hi = _kappa_bounds
-    masks = [kappa < lo, (kappa >= lo) & (kappa < hi), kappa >= hi]
-    for mask, label, color in zip(masks, _kappa_labels, _kappa_colors):
-        if mask.any():
-            ax.scatter(x[mask], y[mask], c=color, label=label,
-                       s=10, alpha=0.7, edgecolors="none")
-    ax.legend(fontsize=8, markerscale=2)
+def _scatter_kwargs(kappa: np.ndarray) -> dict:
+    return dict(
+        c=kappa,
+        cmap="viridis",
+        norm=mcolors.Normalize(vmin=kappa.min(), vmax=kappa.max()),
+        s=10,
+        alpha=0.6,
+        edgecolors="none",
+    )
 
 
 # %%
@@ -206,10 +200,11 @@ for ax, (label, feat_df, meta) in zip(axes, _sensors):
     kappa = meta["kappa"].values
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X_scaled)
-    _scatter_regime(ax, X_pca[:, 0], X_pca[:, 1], kappa)
+    sc = ax.scatter(X_pca[:, 0], X_pca[:, 1], **_scatter_kwargs(kappa))
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} var.)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} var.)")
     ax.set_title(f"PCA — {label}")
+    fig.colorbar(sc, ax=ax, label="κ")
     ax.grid(ls=":", alpha=0.4)
 
 fig.suptitle("PCA", fontsize=13)
@@ -229,10 +224,11 @@ for ax, (label, feat_df, meta) in zip(axes, _sensors):
     kappa = meta["kappa"].values
     perplexity = min(30, max(5, len(feat_df) // 5))
     X_tsne = TSNE(n_components=2, perplexity=perplexity, random_state=RANDOM_STATE).fit_transform(X_scaled)
-    _scatter_regime(ax, X_tsne[:, 0], X_tsne[:, 1], kappa)
+    sc = ax.scatter(X_tsne[:, 0], X_tsne[:, 1], **_scatter_kwargs(kappa))
     ax.set_xlabel("t-SNE 1")
     ax.set_ylabel("t-SNE 2")
     ax.set_title(f"t-SNE — {label}  (perplexity={perplexity})")
+    fig.colorbar(sc, ax=ax, label="κ")
     ax.grid(ls=":", alpha=0.4)
 
 fig.suptitle("t-SNE", fontsize=13)
@@ -252,7 +248,8 @@ for ax, (label, feat_df, meta) in zip(axes, _sensors):
     if _UMAP_AVAILABLE:
         X_scaled = StandardScaler().fit_transform(feat_df.values)
         X_umap = umap_lib.UMAP(n_components=2, random_state=RANDOM_STATE).fit_transform(X_scaled)
-        _scatter_regime(ax, X_umap[:, 0], X_umap[:, 1], kappa)
+        sc = ax.scatter(X_umap[:, 0], X_umap[:, 1], **_scatter_kwargs(kappa))
+        fig.colorbar(sc, ax=ax, label="κ")
         ax.set_xlabel("UMAP 1")
         ax.set_ylabel("UMAP 2")
         ax.grid(ls=":", alpha=0.4)
@@ -276,16 +273,7 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 7))
 for ax, (label, feat_df, meta) in zip(axes, _sensors):
     kappa = meta["kappa"].values
     feature_names = feat_df.columns.tolist()
-    # Step 1 — quantile transform: map each feature to uniform [0, 1].
-    # Step 2 — symmetric power stretch with exponent < 1, which creates a
-    # U-shaped distribution (density ∝ (y−0.5)²): values are pushed toward
-    # 0 and 1 so each sample is pulled strongly by a few anchors rather than
-    # weakly by all, spreading the projection away from the centre.
-    # Output stays in [0, 1] by construction — no rescaling needed.
-    X_uniform = QuantileTransformer(
-        output_distribution="uniform", random_state=RANDOM_STATE
-    ).fit_transform(feat_df.values)
-    X_norm = 0.5 + 0.5 * np.sign(X_uniform - 0.5) * np.abs(2 * X_uniform - 1) ** (1 / 3)
+    X_norm = MinMaxScaler().fit_transform(feat_df.values)
 
     # Sort features so that correlated neighbours are adjacent on the circle,
     # minimising visual crossing of the RadViz springs.
@@ -317,11 +305,12 @@ for ax, (label, feat_df, meta) in zip(axes, _sensors):
         ax.plot(*anchors[i], "k.", ms=5, alpha=0.7)
         ax.annotate(name, xy=anchors[i], xytext=1.13 * anchors[i],
                     ha="center", va="center", fontsize=7)
-    _scatter_regime(ax, coords[:, 0], coords[:, 1], kappa)
+    sc = ax.scatter(coords[:, 0], coords[:, 1], **_scatter_kwargs(kappa))
     ax.set_xlim(-1.55, 1.55)
     ax.set_ylim(-1.55, 1.55)
     ax.set_aspect("equal")
     ax.set_title(f"RadViz — {label}")
+    fig.colorbar(sc, ax=ax, label="κ")
     ax.grid(ls=":", alpha=0.4)
 
 fig.suptitle("RadViz  (anchors sorted by hierarchical clustering of |r|)", fontsize=13)
