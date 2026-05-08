@@ -19,6 +19,7 @@ Usage
 
 import argparse
 import json
+import math
 
 import numpy as np
 import pandas as pd
@@ -137,8 +138,19 @@ if not feat_sel_path.exists():
 with open(feat_sel_path) as fh:
     feature_selection = json.load(fh)
 
+ae_df_all = ae_df  # preserve full feature set for plots that override selection
+ul_df_all = ul_df
+
 ae_df = ae_df[feature_selection["AE"]["retained"]]
 ul_df = ul_df[feature_selection["UL"]["retained"]]
+
+# _sensors is defined here so it always reflects the filtered DataFrames.
+# Defining it in the visualizations cell would cause stale references if
+# cells are re-run out of order.
+_sensors = [
+    ("AE", ae_df, ae_metadata),
+    ("UL", ul_df, ul_metadata),
+]
 
 for label, feat_df, sel in [("AE", ae_df, feature_selection["AE"]), ("UL", ul_df, feature_selection["UL"])]:
     print(f"{label}: using {len(sel['retained'])} / {len(sel['all_columns'])} selected features: {sel['retained']}")
@@ -163,161 +175,59 @@ for label, feat_df, meta in [("AE", ae_df, ae_metadata), ("UL", ul_df, ul_metada
 
 # %%
 # =============================================================================
-# Visualizations — shared setup
+# Feature vs κ  (scatter coloured by RPM + binned mean)
 # =============================================================================
 
-from scipy.cluster.hierarchy import linkage, leaves_list
-from scipy.spatial.distance import squareform
-
-RANDOM_STATE: int = cfg.get("random_state", 42)
-
-# Sensor bundles iterated in every plot cell below
-_sensors = [
-    ("AE", ae_df, ae_metadata),
-    ("UL", ul_df, ul_metadata),
+HARDCODED_AE_FEATURES = [
+    "AE_1000-2000kHz__complexity",
+    "AE_500-1000kHz__complexity",
+    "AE_500-1000kHz__frequency_weighted_std",
+    "AE_500-1000kHz__dominant_frequency",
+    "AE_500-1000kHz__spectral_std",
+    "frequency_skewness",
 ]
 
+_plot_sensors = [
+    ("AE", ae_df_all[HARDCODED_AE_FEATURES], ae_metadata),
+    ("UL", ul_df,                             ul_metadata),
+]
 
-def _scatter_kwargs(kappa: np.ndarray) -> dict:
-    return dict(
-        c=kappa,
-        cmap="viridis",
-        norm=mcolors.Normalize(vmin=kappa.min(), vmax=kappa.max()),
-        s=10,
-        alpha=0.6,
-        edgecolors="none",
-    )
-
-
-# %%
-# =============================================================================
-# PCA
-# =============================================================================
-
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-for ax, (label, feat_df, meta) in zip(axes, _sensors):
-    X_scaled = StandardScaler().fit_transform(feat_df.values)
+for label, feat_df, meta in _plot_sensors:
+    features = feat_df.columns.tolist()
+    n_feat = len(features)
+    rpm = meta["rpm"].values
     kappa = meta["kappa"].values
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X_scaled)
-    sc = ax.scatter(X_pca[:, 0], X_pca[:, 1], **_scatter_kwargs(kappa))
-    ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} var.)")
-    ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} var.)")
-    ax.set_title(f"PCA — {label}")
-    fig.colorbar(sc, ax=ax, label="κ")
-    ax.grid(ls=":", alpha=0.4)
 
-fig.suptitle("PCA", fontsize=13)
-fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_pca.png", dpi=150)
-plt.show()
-print("Saved: eda_pca.png")
+    ncols = min(n_feat, 2)
+    nrows = math.ceil(n_feat / ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), squeeze=False)
+    axes_flat = [axes[r][c] for r in range(nrows) for c in range(ncols)]
 
-# %%
-# =============================================================================
-# t-SNE
-# =============================================================================
+    for ax in axes_flat[n_feat:]:
+        ax.set_visible(False)
 
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-for ax, (label, feat_df, meta) in zip(axes, _sensors):
-    X_scaled = StandardScaler().fit_transform(feat_df.values)
-    kappa = meta["kappa"].values
-    perplexity = min(30, max(5, len(feat_df) // 5))
-    X_tsne = TSNE(n_components=2, perplexity=perplexity, random_state=RANDOM_STATE).fit_transform(X_scaled)
-    sc = ax.scatter(X_tsne[:, 0], X_tsne[:, 1], **_scatter_kwargs(kappa))
-    ax.set_xlabel("t-SNE 1")
-    ax.set_ylabel("t-SNE 2")
-    ax.set_title(f"t-SNE — {label}  (perplexity={perplexity})")
-    fig.colorbar(sc, ax=ax, label="κ")
-    ax.grid(ls=":", alpha=0.4)
+    for ax, feat in zip(axes_flat, features):
+        y = feat_df[feat].values
+        sc = ax.scatter(kappa, y, c=rpm, cmap="plasma", s=10, alpha=0.5, edgecolors="none")
+        fig.colorbar(sc, ax=ax, label="RPM")
 
-fig.suptitle("t-SNE", fontsize=13)
-fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_tsne.png", dpi=150)
-plt.show()
-print("Saved: eda_tsne.png")
+        bins = pd.cut(pd.Series(kappa), bins=12)
+        trend = pd.Series(y).groupby(bins, observed=True).mean()
+        bin_mids = [iv.mid for iv in trend.index]
+        ax.plot(bin_mids, trend.values, "r-o", ms=4, lw=1.5, label="bin mean")
 
-# %%
-# =============================================================================
-# UMAP
-# =============================================================================
-
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-for ax, (label, feat_df, meta) in zip(axes, _sensors):
-    kappa = meta["kappa"].values
-    if _UMAP_AVAILABLE:
-        X_scaled = StandardScaler().fit_transform(feat_df.values)
-        X_umap = umap_lib.UMAP(n_components=2, random_state=RANDOM_STATE).fit_transform(X_scaled)
-        sc = ax.scatter(X_umap[:, 0], X_umap[:, 1], **_scatter_kwargs(kappa))
-        fig.colorbar(sc, ax=ax, label="κ")
-        ax.set_xlabel("UMAP 1")
-        ax.set_ylabel("UMAP 2")
+        ax.set_xlabel("κ")
+        ax.set_ylabel(feat)
+        ax.set_title(f"{label} — {feat}")
+        ax.legend(fontsize=8)
         ax.grid(ls=":", alpha=0.4)
-    else:
-        ax.text(0.5, 0.5, "umap-learn not installed\npip install umap-learn",
-                ha="center", va="center", transform=ax.transAxes, fontsize=11)
-    ax.set_title(f"UMAP — {label}")
 
-fig.suptitle("UMAP", fontsize=13)
-fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_umap.png", dpi=150)
-plt.show()
-print("Saved: eda_umap.png")
-
-# %%
-# =============================================================================
-# RadViz  (feature anchors sorted by hierarchical clustering of |correlation|)
-# =============================================================================
-
-fig, axes = plt.subplots(1, 2, figsize=(14, 7))
-for ax, (label, feat_df, meta) in zip(axes, _sensors):
-    kappa = meta["kappa"].values
-    feature_names = feat_df.columns.tolist()
-    X_norm = MinMaxScaler().fit_transform(feat_df.values)
-
-    # Sort features so that correlated neighbours are adjacent on the circle,
-    # minimising visual crossing of the RadViz springs.
-    if len(feature_names) > 2:
-        corr_abs = np.abs(np.corrcoef(X_norm.T))
-        np.fill_diagonal(corr_abs, 1.0)
-        dist = np.clip(1.0 - corr_abs, 0.0, None)
-        dist = (dist + dist.T) / 2          # enforce exact symmetry
-        np.fill_diagonal(dist, 0.0)
-        Z = linkage(squareform(dist), method="ward")
-        order = leaves_list(Z)
-    else:
-        order = np.arange(len(feature_names))
-
-    feature_names_sorted = [feature_names[i] for i in order]
-    X_sorted = X_norm[:, order]
-
-    # Project onto unit circle
-    n_feat = len(feature_names_sorted)
-    angles = np.linspace(0, 2 * np.pi, n_feat, endpoint=False)
-    anchors = np.column_stack([np.cos(angles), np.sin(angles)])
-    weight_sum = X_sorted.sum(axis=1, keepdims=True)
-    weight_sum = np.where(weight_sum == 0, 1.0, weight_sum)
-    coords = (X_sorted @ anchors) / weight_sum
-
-    theta = np.linspace(0, 2 * np.pi, 300)
-    ax.plot(np.cos(theta), np.sin(theta), "k-", lw=0.6, alpha=0.25)
-    for i, name in enumerate(feature_names_sorted):
-        ax.plot(*anchors[i], "k.", ms=5, alpha=0.7)
-        ax.annotate(name, xy=anchors[i], xytext=1.13 * anchors[i],
-                    ha="center", va="center", fontsize=7)
-    sc = ax.scatter(coords[:, 0], coords[:, 1], **_scatter_kwargs(kappa))
-    ax.set_xlim(-1.55, 1.55)
-    ax.set_ylim(-1.55, 1.55)
-    ax.set_aspect("equal")
-    ax.set_title(f"RadViz — {label}")
-    fig.colorbar(sc, ax=ax, label="κ")
-    ax.grid(ls=":", alpha=0.4)
-
-fig.suptitle("RadViz  (anchors sorted by hierarchical clustering of |r|)", fontsize=13)
-fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_radviz.png", dpi=150)
-plt.show()
-print("Saved: eda_radviz.png")
+    fig.suptitle(f"Features vs κ — {label} sensor", fontsize=13)
+    fig.tight_layout()
+    fname = f"eda_feature_vs_kappa_{label.lower()}.png"
+    plt.savefig(OUTPUT_DIR / fname, dpi=150)
+    plt.show()
+    print(f"Saved: {fname}")
 
 # %%
 # =============================================================================

@@ -172,7 +172,7 @@ def extract_features(signal_data: np.ndarray, fs: float) -> dict[str, float]:
             "frequency_kurtosis": 0.0, "normalized_bandwidth": 0.0,
         }
 
-    dominant_frequency: float = float(np.argmax((fft_mag / K) ** 2) * (fs / K))
+    dominant_frequency: float = float(freq[int(np.argmax(fft_mag ** 2))])
     spectral_mean: float = float(np.mean(fft_mag))
     spectral_std: float = float(np.std(fft_mag))
     center_frequency: float = float(np.sum(freq * fft_mag) / _fft_sum)

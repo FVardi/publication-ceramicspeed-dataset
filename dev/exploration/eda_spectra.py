@@ -1,16 +1,16 @@
 """
-eda_few_files.py
+eda_spectra.py
 ================
 Quick inspection of a small number of sweeps — waveforms and FFT spectra.
 """
 
 # %%
+import math
 import numpy as np
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 from scipy.signal import hilbert
 
-from ceramicspeed.config import get_input_dir, load_config
+from ceramicspeed.config import get_input_dir, get_output_dir, load_config
 from ceramicspeed.loading import discover_hdf5_files
 from ceramicspeed import eda as _eda
 
@@ -25,18 +25,14 @@ SENSORS     = ("AE", "UL")
 WAVEFORM_MS = 20.0
 ENV_SHOW_MS = 20.0
 
-SENSOR_FMAX_KHZ = {"UL": 20.0}    # x-axis upper cap per sensor (kHz); None = full range
-SENSOR_FMIN_KHZ = {"AE": 0.0}     # x-axis lower cap per sensor (kHz); None = start from DC
-
-# Spectral flatness subbands [kHz]
-FLATNESS_BANDS = {
-    "AE": [(20, 500), (500, 1000), (1000, 2000)],  # None = Nyquist
-}
+AE_BANDS_KHZ = [(20, 500), (500, 1000), (1000, 2000)]
+UL_FMAX_KHZ  = 20.0
 
 # -----------------------------------------------------------------------------
 
-cfg       = load_config(CONFIG_PATH)
-INPUT_DIR = get_input_dir(cfg)
+cfg        = load_config(CONFIG_PATH)
+INPUT_DIR  = get_input_dir(cfg)
+OUTPUT_DIR = get_output_dir(cfg)
 
 FILE_PATTERNS = cfg.get("filters", {}).get("file_patterns") or None
 files = discover_hdf5_files(INPUT_DIR, file_patterns=FILE_PATTERNS)
@@ -44,7 +40,7 @@ print(f"Found {len(files)} HDF5 file(s)")
 
 # %%
 # -----------------------------------------------------------------------------
-# Load N_SWEEPS sweeps
+# Load sweeps
 # -----------------------------------------------------------------------------
 
 sweep_names = cfg.get("sweep_selection") or None
@@ -59,108 +55,135 @@ sweeps = _eda.load_sweeps(
 print(f"Loaded {len(sweeps)} sweeps")
 sweeps.sort(key=lambda r: r.get("kappa", float("inf")))
 
-
-def spectral_flatness(mag: np.ndarray) -> float:
-    """Geometric mean / arithmetic mean of magnitude bins."""
-    m = mag[mag > 0]
-    if len(m) == 0:
-        return float("nan")
-    return float(np.exp(np.mean(np.log(m))) / np.mean(m))
+n_cols = 2
+n_rows = math.ceil(len(sweeps) / n_cols)
 
 
-def flatness_annotation(sensor: str, f_khz: np.ndarray, mag: np.ndarray, fs: float) -> str:
-    bands = FLATNESS_BANDS.get(sensor)
-    if not bands:
-        return ""
-    nyq = fs / 2e3  # kHz
-    parts = []
-    for lo, hi in bands:
-        hi_eff = hi if hi is not None else nyq
-        band = (f_khz >= lo) & (f_khz < hi_eff)
-        label = f"{lo}-{int(hi_eff)}kHz" if hi is not None else f"{lo}kHz-Nyq"
-        sf = spectral_flatness(mag[band])
-        parts.append(f"SF {label}={sf:.3f}")
-    return "<br>" + "<br>".join(parts)
-
-
-# %%
-# -----------------------------------------------------------------------------
-# Raw FFT spectra
-# -----------------------------------------------------------------------------
-
-for sensor in SENSORS:
-    fmax = SENSOR_FMAX_KHZ.get(sensor)
-    fmin = SENSOR_FMIN_KHZ.get(sensor)
-    fig = make_subplots(
-        rows=len(sweeps), cols=1,
-        subplot_titles=[
-            f"{sensor}<br>RPM={r['rpm']:.0f}  κ={r.get('kappa', float('nan')):.2f}"
-            for r in sweeps
-        ],
-        shared_xaxes=False,
-        shared_yaxes=True,
-    )
-    for row_i, rec in enumerate(sweeps):
+def _plot_grid(sweeps, sensor, fmin_khz, fmax_khz, y_data_fn, ylabel, color, title, fname):
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(7 * n_cols, 4 * n_rows), squeeze=False)
+    for i, rec in enumerate(sweeps):
+        ax = axes[i // n_cols][i % n_cols]
         v = rec["waveform"].get(sensor)
         if v is None:
+            ax.set_visible(False)
+            continue
+        fs = rec["fs"]
+        N  = len(v)
+        mag   = y_data_fn(v, fs)
+        f_khz = np.fft.rfftfreq(N, d=1.0 / fs) / 1e3
+        if len(mag) > len(f_khz):
+            mag = mag[: len(f_khz)]
+        mask = (f_khz >= fmin_khz) & (f_khz <= fmax_khz)
+        ax.plot(f_khz[mask], mag[mask], lw=0.8, color=color)
+        kappa = rec.get("kappa", float("nan"))
+        ax.set_title(f"{rec['sweep']}  RPM={rec['rpm']:.0f}  κ={kappa:.2f}", fontsize=8)
+        ax.set_xlabel("Frequency [kHz]")
+        ax.set_ylabel(ylabel)
+        ax.set_xlim(fmin_khz, fmax_khz)
+        ax.grid(ls=":", alpha=0.3)
+    for i in range(len(sweeps), n_rows * n_cols):
+        axes[i // n_cols][i % n_cols].set_visible(False)
+    fig.suptitle(title, fontsize=11)
+    fig.tight_layout()
+    plt.savefig(OUTPUT_DIR / fname, dpi=150)
+    plt.show()
+    print(f"Saved: {fname}")
+
+
+def _fft_mag(v, fs):
+    return np.abs(np.fft.rfft(v)) / len(v)
+
+
+def _env_mag(v, fs):
+    mag = np.abs(np.fft.rfft(np.abs(hilbert(v)))) / len(v)
+    mag[0] = 0.0   # zero DC instead of dropping (keeps index alignment)
+    return mag
+
+
+def _plot_waveform_grid(sweeps, sensor, color, title, fname):
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(7 * n_cols, 4 * n_rows), squeeze=False)
+    for i, rec in enumerate(sweeps):
+        ax = axes[i // n_cols][i % n_cols]
+        v = rec["waveform"].get(sensor)
+        if v is None:
+            ax.set_visible(False)
             continue
         fs  = rec["fs"]
-        N   = len(v)
-        mag = np.abs(np.fft.rfft(v)) / N
-        f   = np.fft.rfftfreq(N, d=1.0 / fs) / 1e3   # kHz
-        mask = f > fmin if fmin else slice(None)
-        mag, f = mag[mask], f[mask]
-        fig.add_trace(
-            go.Scatter(x=f, y=mag, mode="lines", line=dict(width=0.8),
-                       name=rec["sweep"], showlegend=False),
-            row=row_i + 1, col=1,
-        )
-        fig.update_xaxes(title_text="Frequency [kHz]",
-                         range=[0, fmax] if fmax else None,
-                         row=row_i + 1, col=1)
-        fig.update_yaxes(title_text="|FFT|", row=row_i + 1, col=1)
-        fig.layout.annotations[row_i].text += flatness_annotation(sensor, f, mag, fs)
-    fig.update_layout(title_text=f"Raw FFT spectra — {sensor}", height=400 * len(sweeps))
-    fig.show()
+        t_ms = np.arange(len(v)) / fs * 1e3
+        ax.plot(t_ms, v, lw=0.5, color=color)
+        kappa = rec.get("kappa", float("nan"))
+        ax.set_title(f"{rec['sweep']}  RPM={rec['rpm']:.0f}  κ={kappa:.2f}", fontsize=8)
+        ax.set_xlabel("Time [ms]")
+        ax.set_ylabel("Amplitude [V]")
+        ax.grid(ls=":", alpha=0.3)
+    for i in range(len(sweeps), n_rows * n_cols):
+        axes[i // n_cols][i % n_cols].set_visible(False)
+    fig.suptitle(title, fontsize=11)
+    fig.tight_layout()
+    plt.savefig(OUTPUT_DIR / fname, dpi=150)
+    plt.show()
+    print(f"Saved: {fname}")
 
 
 # %%
 # -----------------------------------------------------------------------------
-# Envelope FFT spectra
+# Waveform — AE
 # -----------------------------------------------------------------------------
 
-for sensor in SENSORS:
-    fmax = SENSOR_FMAX_KHZ.get(sensor)
-    fmin = SENSOR_FMIN_KHZ.get(sensor)
-    fig = make_subplots(
-        rows=len(sweeps), cols=1,
-        subplot_titles=[
-            f"{sensor}<br>RPM={r['rpm']:.0f}  κ={r.get('kappa', float('nan')):.2f}"
-            for r in sweeps
-        ],
-        shared_xaxes=False,
-        shared_yaxes=True,
-    )
-    for row_i, rec in enumerate(sweeps):
-        v = rec["waveform"].get(sensor)
-        if v is None:
-            continue
-        fs      = rec["fs"]
-        N       = len(v)
-        env     = np.abs(hilbert(v))
-        mag     = np.abs(np.fft.rfft(env)) / N
-        f       = np.fft.rfftfreq(N, d=1.0 / fs) / 1e3   # kHz
-        mask = f > fmin if fmin else slice(None)
-        mag, f = mag[mask], f[mask]
-        fig.add_trace(
-            go.Scatter(x=f, y=mag, mode="lines", line=dict(width=0.8),
-                       name=rec["sweep"], showlegend=False),
-            row=row_i + 1, col=1,
-        )
-        fig.update_xaxes(title_text="Frequency [kHz]",
-                         range=[0, fmax] if fmax else None,
-                         row=row_i + 1, col=1)
-        fig.update_yaxes(title_text="|FFT|", type="log", row=row_i + 1, col=1)
-        fig.layout.annotations[row_i].text += flatness_annotation(sensor, f, mag, fs)
-    fig.update_layout(title_text=f"Envelope spectra — {sensor}", height=400 * len(sweeps))
-    fig.show()
+_plot_waveform_grid(sweeps, "AE", "steelblue", "Waveform — AE", "eda_waveform_ae.png")
+
+# %%
+# -----------------------------------------------------------------------------
+# Waveform — UL
+# -----------------------------------------------------------------------------
+
+_plot_waveform_grid(sweeps, "UL", "steelblue", "Waveform — UL", "eda_waveform_ul.png")
+
+# %%
+# -----------------------------------------------------------------------------
+# Spectrum — AE (full range)
+# -----------------------------------------------------------------------------
+
+_plot_grid(sweeps, "AE", 0, max(fmax for _, fmax in AE_BANDS_KHZ), _fft_mag, "|FFT| [V]", "steelblue",
+           "Spectrum — AE  full range",
+           "eda_spectrum_ae_full.png")
+
+# %%
+# -----------------------------------------------------------------------------
+# Spectrum — AE (per band)
+# -----------------------------------------------------------------------------
+
+for fmin, fmax in AE_BANDS_KHZ:
+    _plot_grid(sweeps, "AE", fmin, fmax, _fft_mag, "|FFT| [V]", "steelblue",
+               f"Spectrum — AE  {fmin}–{fmax} kHz",
+               f"eda_spectrum_ae_{fmin}-{fmax}khz.png")
+
+# %%
+# -----------------------------------------------------------------------------
+# Spectrum — UL
+# -----------------------------------------------------------------------------
+
+_plot_grid(sweeps, "UL", 0, UL_FMAX_KHZ, _fft_mag, "|FFT| [V]", "steelblue",
+           "Spectrum — UL  0–20 kHz",
+           "eda_spectrum_ul.png")
+
+# %%
+# -----------------------------------------------------------------------------
+# Envelope spectrum — AE (per band)
+# -----------------------------------------------------------------------------
+
+for fmin, fmax in AE_BANDS_KHZ:
+    _plot_grid(sweeps, "AE", fmin, fmax, _env_mag, "|FFT env| [V]", "darkorange",
+               f"Envelope spectrum — AE  {fmin}–{fmax} kHz",
+               f"eda_envelope_spectrum_ae_{fmin}-{fmax}khz.png")
+
+# %%
+# -----------------------------------------------------------------------------
+# Envelope spectrum — UL
+# -----------------------------------------------------------------------------
+
+_plot_grid(sweeps, "UL", 0, UL_FMAX_KHZ, _env_mag, "|FFT env| [V]", "darkorange",
+           "Envelope spectrum — UL  0–20 kHz",
+           "eda_envelope_spectrum_ul.png")
+
+# %%

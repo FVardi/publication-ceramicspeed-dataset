@@ -142,12 +142,33 @@ def mutual_information(
 
 def feature_ranking(
     spearman_df: pd.DataFrame,
+    pearson_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Rank features by Spearman |rho|, sorted descending."""
+    """Rank features by combined Spearman |ρ| and Pearson |r|.
+
+    Spearman captures monotonic relationships; Pearson captures linear slope
+    steepness.  When both are provided the combined score is their mean, so a
+    feature scores high only if it is both monotone and linearly steep.
+    When *pearson_df* is omitted, only Spearman is used (backward compatible).
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ``|rho|``, and (if Pearson given) ``|r|`` and ``combined``.
+        Sorted by the primary score descending.
+    """
     ranking = pd.DataFrame(index=spearman_df.index)
     ranking["|rho|"] = spearman_df["rho"].abs()
-    ranking["rank_rho"] = ranking["|rho|"].rank(ascending=False)
-    return ranking.sort_values("rank_rho")
+
+    if pearson_df is not None:
+        ranking["|r|"] = pearson_df["r"].reindex(ranking.index).abs()
+        ranking["combined"] = (ranking["|rho|"] + ranking["|r|"]) / 2
+        sort_col = "combined"
+    else:
+        sort_col = "|rho|"
+
+    ranking["rank"] = ranking[sort_col].rank(ascending=False)
+    return ranking.sort_values("rank")
 
 
 # ---------------------------------------------------------------------------

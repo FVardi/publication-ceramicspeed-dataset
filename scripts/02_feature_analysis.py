@@ -21,6 +21,7 @@ Usage
 import argparse
 import json
 
+
 import matplotlib.pyplot as plt
 
 from ceramicspeed.loading import load_parquet_pair
@@ -28,6 +29,7 @@ from ceramicspeed.cleaning import clean_features
 from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.analysis import (
     spearman_correlation,
+    pearson_correlation,
     feature_ranking,
     correlation_matrix,
     variance_inflation_factors,
@@ -124,19 +126,42 @@ us_kappa = us_metadata["kappa"]
 
 # %%
 # =============================================================================
-# Correlation analysis: Spearman
+# Correlation analysis: Spearman + Pearson
 # =============================================================================
 
 ae_spearman = spearman_correlation(ae_df, ae_kappa)
 us_spearman = spearman_correlation(us_df, us_kappa)
 
+ae_pearson = pearson_correlation(ae_df, ae_kappa)
+us_pearson = pearson_correlation(us_df, us_kappa)
+
 # %%
 # =============================================================================
-# Feature ranking by |ρ|
+# Threshold filter — both |ρ| ≥ 0.5 and |r| ≥ 0.5 required
 # =============================================================================
 
-ae_ranking = feature_ranking(ae_spearman)
-us_ranking = feature_ranking(us_spearman)
+CORR_MIN = 0.1
+
+ae_keep = (ae_spearman["rho"].abs() >= CORR_MIN) & (ae_pearson["r"].abs() >= CORR_MIN)
+us_keep = (us_spearman["rho"].abs() >= CORR_MIN) & (us_pearson["r"].abs() >= CORR_MIN)
+
+ae_df       = ae_df[ae_keep[ae_keep].index]
+us_df       = us_df[us_keep[us_keep].index]
+ae_spearman = ae_spearman.loc[ae_keep[ae_keep].index]
+ae_pearson  = ae_pearson.loc[ae_keep[ae_keep].index]
+us_spearman = us_spearman.loc[us_keep[us_keep].index]
+us_pearson  = us_pearson.loc[us_keep[us_keep].index]
+
+print(f"AE: {ae_keep.sum()} / {len(ae_keep)} features pass |ρ| ≥ {CORR_MIN} and |r| ≥ {CORR_MIN}")
+print(f"UL: {us_keep.sum()} / {len(us_keep)} features pass |ρ| ≥ {CORR_MIN} and |r| ≥ {CORR_MIN}")
+
+# %%
+# =============================================================================
+# Feature ranking by combined |ρ| + |r|
+# =============================================================================
+
+ae_ranking = feature_ranking(ae_spearman, ae_pearson)
+us_ranking = feature_ranking(us_spearman, us_pearson)
 
 # %%
 print("AE — top 10 features by combined rank:")
@@ -147,23 +172,34 @@ print(us_ranking.head(10).to_string())
 
 # %%
 # =============================================================================
-# Feature correlation bar plot — ranked by |ρ| per sensor
+# Feature correlation bar plot — Spearman ρ and Pearson r, sorted by combined rank
 # =============================================================================
 
 import numpy as np
 
-for sensor_label, spearman in [("AE", ae_spearman), ("UL", us_spearman)]:
-    _rho = spearman["rho"].sort_values(key=np.abs, ascending=True)  # ascending for horizontal bar
-    _colors = ["C0" if v >= 0 else "C3" for v in _rho]
+for sensor_label, ranking, spearman, pearson in [
+    ("AE", ae_ranking, ae_spearman, ae_pearson),
+    ("UL", us_ranking, us_spearman, us_pearson),
+]:
+    feature_order = ranking.sort_values("rank", ascending=False).index.tolist()
+    rho = spearman["rho"].reindex(feature_order).values
+    r   = pearson["r"].reindex(feature_order).values
 
-    fig_r, ax_r = plt.subplots(figsize=(8, max(4, 0.35 * len(_rho))))
-    ax_r.barh(_rho.index, _rho.values, color=_colors)
+    y = np.arange(len(feature_order))
+    h = 0.35
+
+    fig_r, ax_r = plt.subplots(figsize=(8, max(4, 0.4 * len(feature_order))))
+    ax_r.barh(y + h / 2, rho, h, label="Spearman ρ", color="C0", alpha=0.85)
+    ax_r.barh(y - h / 2, r,   h, label="Pearson r",  color="C1", alpha=0.85)
+    ax_r.set_yticks(y)
+    ax_r.set_yticklabels(feature_order)
     ax_r.axvline(0, color="k", lw=0.8)
-    ax_r.set_xlabel("Spearman ρ with κ")
+    ax_r.set_xlabel("Correlation with κ")
     ax_r.set_title(f"{sensor_label} — feature correlation ranking")
+    ax_r.legend(loc="lower right")
     ax_r.grid(ls=":", axis="x", alpha=0.4)
     fig_r.tight_layout()
-    _fname = f"feature_ranking_{'ae' if 'AE' in sensor_label else 'us'}_barplot.png"
+    _fname = f"feature_ranking_{'ae' if sensor_label == 'AE' else 'us'}_barplot.png"
     plt.savefig(OUTPUT_DIR / _fname, dpi=150)
     plt.show()
     print(f"Saved: {_fname}")
@@ -283,5 +319,4 @@ print("Saved: feature_ranking_ae.csv, feature_ranking_us.csv")
 
 if __name__ == "__main__":
     print("\n02_feature_analysis complete.")
-
 
