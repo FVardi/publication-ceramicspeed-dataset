@@ -61,6 +61,11 @@ args = parse_args()
 cfg = load_config(args.config)
 
 OUTPUT_DIR = get_output_dir(cfg)
+FIGURES_DIR = OUTPUT_DIR / "figures"
+TABLES_DIR = OUTPUT_DIR / "tables"
+for _d in [FIGURES_DIR, TABLES_DIR]:
+    _d.mkdir(exist_ok=True)
+
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
 
@@ -200,7 +205,7 @@ for sensor_label, ranking, spearman, pearson in [
     ax_r.grid(ls=":", axis="x", alpha=0.4)
     fig_r.tight_layout()
     _fname = f"feature_ranking_{'ae' if sensor_label == 'AE' else 'us'}_barplot.png"
-    plt.savefig(OUTPUT_DIR / _fname, dpi=150)
+    plt.savefig(FIGURES_DIR / _fname, dpi=150)
     plt.show()
     print(f"Saved: {_fname}")
 
@@ -220,7 +225,7 @@ plot_pca_kappa(us_pca_coords, us_kappa, us_pca,
                ax=axes[1], title="Ultrasound — PCA colored by κ regime")
 
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "pca_kappa_regimes.png", dpi=600)
+plt.savefig(FIGURES_DIR / "pca_kappa_regimes.png", dpi=600)
 plt.show()
 print("Saved: pca_kappa_regimes.png")
 
@@ -238,7 +243,7 @@ _, _, us_corr_mat = plot_correlation_matrix(
     us_df, method="spearman", ax=axes[1], title="US — Spearman inter-feature |ρ|"
 )
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "inter_feature_correlation.png", dpi=150)
+plt.savefig(FIGURES_DIR / "inter_feature_correlation.png", dpi=150)
 plt.show()
 print("Saved: inter_feature_correlation.png")
 
@@ -255,7 +260,7 @@ fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 plot_vif(ae_vif, ax=axes[0], title="AE — Variance Inflation Factor")
 plot_vif(us_vif, ax=axes[1], title="US — Variance Inflation Factor")
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "vif_barplot.png", dpi=150)
+plt.savefig(FIGURES_DIR / "vif_barplot.png", dpi=150)
 plt.show()
 print("Saved: vif_barplot.png")
 
@@ -308,8 +313,8 @@ with open(out_path, "w") as fh:
     json.dump(feature_selection_output, fh, indent=2)
 print(f"Saved: {out_path.name}")
 
-ae_ranking.to_csv(OUTPUT_DIR / "feature_ranking_ae.csv")
-us_ranking.to_csv(OUTPUT_DIR / "feature_ranking_us.csv")
+ae_ranking.to_csv(TABLES_DIR / "feature_ranking_ae.csv")
+us_ranking.to_csv(TABLES_DIR / "feature_ranking_us.csv")
 print("Saved: feature_ranking_ae.csv, feature_ranking_us.csv")
 
 # %%

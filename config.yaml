@@ -124,12 +124,6 @@ modelling:
     top_k:  5      # restrict to top-k features by |r| before expansion
     alphas: null
 
-  bayesian_ridge:
-    max_iter: 300
-    param_grid:
-      alpha_1:  [1.0e-7, 1.0e-6, 1.0e-5]
-      lambda_1: [1.0e-7, 1.0e-6, 1.0e-5]
-
   lightgbm:
     n_estimators:        500
     learning_rate:       0.05
@@ -159,7 +153,7 @@ modelling:
 # Full values are in the modelling section above.
 
 debug:
-  enabled:               false  # set true to always run in debug mode
+  enabled:               False  # set true to always run in debug mode
   cv_n_splits:           3      # outer folds  (full: 5)
   n_trials:              2      # Optuna trials per LightGBM fold  (full: 50)
   n_estimators:          40     # LightGBM max trees  (full: 500)

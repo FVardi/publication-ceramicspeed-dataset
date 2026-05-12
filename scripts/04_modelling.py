@@ -1,22 +1,26 @@
 """
-03_modelling.py
+04_modelling.py
 ===============
-Train and evaluate regression models for predicting kappa from acoustic
-emission and ultrasound features.
+Final model training and holdout evaluation.
 
 Pipeline position: 4th script — reads features.parquet + metadata.parquet
 from 01_feature_generation and feature_selection.json from 02_feature_analysis.
+Run after 03_evaluation.py (unbiased nested CV performance estimates) and
+before 05_holdout_tests.py (significance tests on holdout predictions).
 
-Evaluation strategy
--------------------
-1. 80/20 random hold-out split (stratified by sensor).
-2. Nested KFold CV on the 80% training set:
-   - Outer loop: unbiased out-of-fold evaluation.
-   - Inner loop: hyperparameter selection per outer fold.
-3. Final model refit on the full training set.
-4. Final evaluation on the 20% hold-out test set.
+What this script does
+---------------------
+1. Reproduces the same 80/20 sweep-level holdout split as 03_evaluation.py.
+2. Selects final hyperparameters via CV on the full 80% training set:
+   - Elastic Net:  ElasticNetCV (alpha, l1_ratio)
+   - Polynomial:   RidgeCV (alpha)
+   - LightGBM:     Optuna (learning_rate, num_leaves, max_depth)
+3. Refits each final model on the full 80% training set.
+4. Evaluates on the 20% holdout — this is the reported test performance.
+5. Saves SHAP values, feature weights, and holdout prediction CSVs
+   for use by 05_holdout_tests.py.
 
-Models: Elastic Net, Bayesian Ridge, LightGBM (per-sensor + combined).
+Models: Elastic Net, Polynomial, LightGBM (per-sensor AE/UL + combined).
 
 Usage
 -----
@@ -91,6 +95,13 @@ if DEBUG:
     print("*** DEBUG MODE — reduced parameters for fast testing ***")
 
 OUTPUT_DIR = get_output_dir(cfg)
+FIGURES_DIR = OUTPUT_DIR / "figures"
+TABLES_DIR = OUTPUT_DIR / "tables"
+PREDICTIONS_DIR = OUTPUT_DIR / "predictions"
+SHAP_DIR = OUTPUT_DIR / "shap"
+for _d in [FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR, SHAP_DIR]:
+    _d.mkdir(exist_ok=True)
+
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
 RANDOM_STATE: int = cfg.get("random_state", 42)
@@ -349,13 +360,13 @@ def _save_shap_results(result: ModelResult, X_holdout: pd.DataFrame, tag: str) -
         return
 
     # Raw SHAP values
-    shap_path = OUTPUT_DIR / f"shap_values_{tag}.csv"
+    shap_path = SHAP_DIR / f"shap_values_{tag}.csv"
     shap_df.to_csv(shap_path, index=True)
     print(f"Saved: {shap_path.name}")
 
     # Mean |SHAP| importance bar plot
     shap_imp = get_shap_feature_importance(shap_df)
-    shap_imp_path = OUTPUT_DIR / f"shap_importance_{tag}.csv"
+    shap_imp_path = SHAP_DIR / f"shap_importance_{tag}.csv"
     shap_imp.to_csv(shap_imp_path, header=["mean_abs_shap"])
     print(f"Saved: {shap_imp_path.name}")
 
@@ -365,7 +376,7 @@ def _save_shap_results(result: ModelResult, X_holdout: pd.DataFrame, tag: str) -
         title=f"SHAP importance — {result.name}",
     )
     fig.tight_layout()
-    fig_path = OUTPUT_DIR / f"shap_importance_{tag}.png"
+    fig_path = FIGURES_DIR / f"shap_importance_{tag}.png"
     plt.savefig(fig_path, dpi=150)
     plt.show()
     print(f"Saved: {fig_path.name}")
@@ -373,7 +384,7 @@ def _save_shap_results(result: ModelResult, X_holdout: pd.DataFrame, tag: str) -
     # Beeswarm plot (SHAP built-in — creates its own axes)
     try:
         shap_lib.plots.beeswarm(explanation, max_display=min(20, shap_df.shape[1]), show=False)
-        bw_path = OUTPUT_DIR / f"shap_beeswarm_{tag}.png"
+        bw_path = FIGURES_DIR / f"shap_beeswarm_{tag}.png"
         plt.savefig(bw_path, dpi=150, bbox_inches="tight")
         plt.show()
         print(f"Saved: {bw_path.name}")
@@ -430,43 +441,6 @@ if X_combined_train is not None:
     )
     results.append(result)
     _save_shap_results(result, X_combined_test, tag=result.name.lower())
-
-# --- Bayesian Ridge (per-sensor) — disabled: overlaps too much with Elastic Net
-# for sensor_name in feature_selection:
-#     X_tr, y_tr, _ = sensor_train[sensor_name]
-#     X_te, y_te, _ = sensor_test[sensor_name]
-#
-#     print(f"\n{'='*60}")
-#     print(f"Training Bayesian Ridge — {sensor_name}")
-#     print(f"{'='*60}")
-#
-#     result = _train_and_eval(
-#         train_bayesian_ridge_cv, X_tr, y_tr, X_te, y_te,
-#         n_splits=CV_N_SPLITS,
-#         max_iter=BAYES_MAX_ITER,
-#         random_state=RANDOM_STATE,
-#         name=f"BayesianRidge_{sensor_name}",
-#         sensor=sensor_name,
-#     )
-#     results.append(result)
-
-# --- Bayesian Ridge (combined) — disabled: overlaps too much with Elastic Net
-# if X_combined_train is not None:
-#     print(f"\n{'='*60}")
-#     print("Training Bayesian Ridge — Combined (AE + Ultrasound)")
-#     print(f"{'='*60}")
-#
-#     result = _train_and_eval(
-#         train_bayesian_ridge_cv,
-#         X_combined_train, y_combined_train,
-#         X_combined_test, y_combined_test,
-#         n_splits=CV_N_SPLITS,
-#         max_iter=BAYES_MAX_ITER,
-#         random_state=RANDOM_STATE,
-#         name="BayesianRidge_Combined",
-#         sensor="combined",
-#     )
-#     results.append(result)
 
 # --- Polynomial Regression (per-sensor) --------------------------------------
 for sensor_name in feature_selection:
@@ -583,7 +557,7 @@ print("MODEL COMPARISON  (CV = cross-validation on train set, HO = hold-out test
 print("=" * 80)
 print(summary_df.to_string(index=False))
 
-summary_df.to_csv(OUTPUT_DIR / "model_comparison.csv", index=False)
+summary_df.to_csv(TABLES_DIR / "model_comparison.csv", index=False)
 print("\nSaved: model_comparison.csv")
 
 # %%
@@ -637,7 +611,7 @@ for ax, result in zip(_axes_flat, results):
     ax.grid(ls=":", alpha=0.4)
 fig.suptitle("CV Out-of-Fold Predictions vs True κ (Training Set)", fontsize=13)
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "model_pred_vs_actual_cv.png", dpi=150)
+plt.savefig(FIGURES_DIR / "model_pred_vs_actual_cv.png", dpi=150)
 plt.show()
 print("Saved: model_pred_vs_actual_cv.png")
 
@@ -663,7 +637,7 @@ for ax, result in zip(_axes_flat, results):
         ax.grid(ls=":", alpha=0.4)
 fig.suptitle("Hold-Out Test Set: Predicted vs True κ", fontsize=13)
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "model_pred_vs_actual_holdout.png", dpi=150)
+plt.savefig(FIGURES_DIR / "model_pred_vs_actual_holdout.png", dpi=150)
 plt.show()
 print("Saved: model_pred_vs_actual_holdout.png")
 
@@ -677,7 +651,7 @@ for result in results:
     fig, ax = plot_coefficients_log(result, top_n=min(20, n_features))
     fig.tight_layout()
     fname = f"model_coefs_log_{result.name.lower()}.png"
-    plt.savefig(OUTPUT_DIR / fname, dpi=150)
+    plt.savefig(FIGURES_DIR / fname, dpi=150)
     plt.show()
     print(f"Saved: {fname}")
 
@@ -696,7 +670,7 @@ for ax, result in zip(_axes_flat, results):
 
 fig.suptitle("R² per Cross-Validation Fold (Training Set)", fontsize=13)
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "model_cv_fold_r2.png", dpi=150)
+plt.savefig(FIGURES_DIR / "model_cv_fold_r2.png", dpi=150)
 plt.show()
 print("Saved: model_cv_fold_r2.png")
 
@@ -725,7 +699,7 @@ for ax, result in zip(_axes_flat, results):
 
 fig.suptitle("Residual Analysis (Hold-Out Test Set)", fontsize=13)
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "model_residuals_holdout.png", dpi=150)
+plt.savefig(FIGURES_DIR / "model_residuals_holdout.png", dpi=150)
 plt.show()
 print("Saved: model_residuals_holdout.png")
 
@@ -744,11 +718,11 @@ for result in results:
         weight_label: weights,
         f"abs_{weight_label}": np.abs(weights),
     }).sort_values(f"abs_{weight_label}", ascending=False)
-    weight_path = OUTPUT_DIR / f"model_weights_{tag}.csv"
+    weight_path = TABLES_DIR / f"model_weights_{tag}.csv"
     weight_df.to_csv(weight_path, index=False)
     print(f"Saved: {weight_path.name}")
 
-    fold_path = OUTPUT_DIR / f"model_folds_{tag}.csv"
+    fold_path = TABLES_DIR / f"model_folds_{tag}.csv"
     pd.DataFrame(result.fold_metrics).to_csv(fold_path, index=False)
     print(f"Saved: {fold_path.name}")
 
@@ -759,7 +733,7 @@ for result in results:
             "y_pred": result.holdout_y_pred,
             "residual": result.holdout_y_true - result.holdout_y_pred,
         })
-        ho_path = OUTPUT_DIR / f"model_holdout_{tag}.csv"
+        ho_path = PREDICTIONS_DIR / f"model_holdout_{tag}.csv"
         ho_df.to_csv(ho_path, index=False)
         print(f"Saved: {ho_path.name}")
 
@@ -774,7 +748,7 @@ _combined_results = [r for r in results if r.sensor == "combined"]
 _sensor_prefixes = list(feature_selection.keys())  # e.g. ["AE", "UL"]
 
 for result in _combined_results:
-    shap_csv = OUTPUT_DIR / f"shap_values_{result.name.lower()}.csv"
+    shap_csv = SHAP_DIR / f"shap_values_{result.name.lower()}.csv"
     if not shap_csv.exists():
         continue
     shap_df_combined = pd.read_csv(shap_csv, index_col=0)
@@ -789,7 +763,7 @@ for result in _combined_results:
     group_df = pd.DataFrame(
         {"sensor": list(group_imp.keys()), "total_mean_abs_shap": list(group_imp.values())}
     ).sort_values("total_mean_abs_shap", ascending=False)
-    contrib_path = OUTPUT_DIR / f"shap_sensor_contribution_{result.name.lower()}.csv"
+    contrib_path = SHAP_DIR / f"shap_sensor_contribution_{result.name.lower()}.csv"
     group_df.to_csv(contrib_path, index=False)
     print(f"Saved: {contrib_path.name}")
 
@@ -799,7 +773,7 @@ for result in _combined_results:
     ax.set_title(f"Sensor contribution — {result.name}")
     ax.invert_yaxis()
     fig.tight_layout()
-    contrib_fig_path = OUTPUT_DIR / f"shap_sensor_contribution_{result.name.lower()}.png"
+    contrib_fig_path = FIGURES_DIR / f"shap_sensor_contribution_{result.name.lower()}.png"
     plt.savefig(contrib_fig_path, dpi=150)
     plt.show()
     print(f"Saved: {contrib_fig_path.name}")

@@ -453,7 +453,9 @@ def pairwise_tests_dataframe(
                     row["dm_stat"] = dm_stat
                     row["dm_p"] = p_dm
 
-                y_true = holdout_y_true.get(model_a) or holdout_y_true.get(model_b)
+                y_true = holdout_y_true.get(model_a)
+                if y_true is None:
+                    y_true = holdout_y_true.get(model_b)
                 if run_bootstrap and y_true is not None and model_a in holdout_y_pred and model_b in holdout_y_pred:
                     mean_diff, ci_lo, ci_hi = bootstrap_rmse_diff_ci(
                         y_true,
