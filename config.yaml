@@ -151,3 +151,18 @@ modelling:
 # feature_override:
 #   AE: [mobility, spectral_flatness]
 #   UL: [mobility, spectral_flatness]
+
+# =============================================================================
+# Debug / fast mode  (activated via --debug flag or debug.enabled: true)
+# =============================================================================
+# Override heavy parameters for quick sanity checks.
+# Full values are in the modelling section above.
+
+debug:
+  enabled:               false  # set true to always run in debug mode
+  cv_n_splits:           3      # outer folds  (full: 5)
+  n_trials:              2      # Optuna trials per LightGBM fold  (full: 50)
+  n_estimators:          40     # LightGBM max trees  (full: 500)
+  early_stopping_rounds: 10     # LightGBM early stop  (full: 50)
+  n_repeats:             2      # repeated-CV repeats in 04_evaluation  (full: 10)
+  n_boot:                200    # bootstrap resamples in 04_evaluation  (full: 10000)

@@ -52,6 +52,8 @@ from ceramicspeed.modelling import (
     clip_predictions,
     results_summary_table,
     get_feature_weights,
+    compute_shap_values,
+    get_shap_feature_importance,
     ModelResult,
 )
 from ceramicspeed.visualization import (
@@ -60,6 +62,7 @@ from ceramicspeed.visualization import (
     plot_cv_fold_metrics,
     plot_residuals,
     plot_bayesian_uncertainty,
+    plot_shap_importance,
 )
 
 # %%
@@ -71,12 +74,21 @@ from ceramicspeed.visualization import (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=str, default=None)
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Fast mode: reduced CV splits, Optuna trials, and LightGBM trees for quick sanity checks.",
+    )
     args, _ = parser.parse_known_args()
     return args
 
 
 args = parse_args()
 cfg = load_config(args.config)
+
+DEBUG: bool = args.debug or bool(cfg.get("debug", {}).get("enabled", False))
+if DEBUG:
+    print("*** DEBUG MODE — reduced parameters for fast testing ***")
 
 OUTPUT_DIR = get_output_dir(cfg)
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
@@ -87,6 +99,11 @@ RANDOM_STATE: int = cfg.get("random_state", 42)
 model_cfg = cfg.get("modelling", {})
 CV_N_SPLITS: int = model_cfg.get("cv_n_splits", 5)
 TEST_SIZE: float = model_cfg.get("test_size", 0.2)
+
+_dbg = cfg.get("debug", {})
+
+if DEBUG:
+    CV_N_SPLITS = _dbg.get("cv_n_splits", 3)
 
 enet_cfg = model_cfg.get("elastic_net", {})
 ENET_ALPHAS: list[float] | None = enet_cfg.get("alphas")
@@ -114,6 +131,14 @@ LGB_REG_LAMBDA: float = lgb_cfg.get("reg_lambda", 1.0)
 LGB_EARLY_STOP: int = lgb_cfg.get("early_stopping_rounds", 50)
 LGB_PARAM_GRID: dict | None = lgb_cfg.get("param_grid") or None
 LGB_N_TRIALS: int = lgb_cfg.get("n_trials", 50)
+
+if DEBUG:
+    LGB_N_ESTIMATORS = _dbg.get("n_estimators", 40)
+    LGB_EARLY_STOP   = _dbg.get("early_stopping_rounds", 10)
+    LGB_N_TRIALS     = _dbg.get("n_trials", 2)
+    LGB_PARAM_GRID   = None  # skip Optuna grid entirely in debug mode
+    print(f"  cv_n_splits={CV_N_SPLITS}, n_estimators={LGB_N_ESTIMATORS}, "
+          f"early_stop={LGB_EARLY_STOP}, n_trials={LGB_N_TRIALS}, param_grid=None")
 
 
 # %%
@@ -313,6 +338,49 @@ def _train_and_eval(train_fn, X_tr, y_tr, X_te, y_te, **kwargs) -> ModelResult:
     return result
 
 
+def _save_shap_results(result: ModelResult, X_holdout: pd.DataFrame, tag: str) -> None:
+    """Compute SHAP on the holdout set and save values, importance bar, and beeswarm."""
+    try:
+        import shap as shap_lib
+        shap_df = compute_shap_values(result, X_holdout)
+        explanation = compute_shap_values(result, X_holdout, return_explanation=True)
+    except (ImportError, NotImplementedError) as exc:
+        print(f"Skipping SHAP for {result.name}: {exc}")
+        return
+
+    # Raw SHAP values
+    shap_path = OUTPUT_DIR / f"shap_values_{tag}.csv"
+    shap_df.to_csv(shap_path, index=True)
+    print(f"Saved: {shap_path.name}")
+
+    # Mean |SHAP| importance bar plot
+    shap_imp = get_shap_feature_importance(shap_df)
+    shap_imp_path = OUTPUT_DIR / f"shap_importance_{tag}.csv"
+    shap_imp.to_csv(shap_imp_path, header=["mean_abs_shap"])
+    print(f"Saved: {shap_imp_path.name}")
+
+    fig, ax = plot_shap_importance(
+        shap_df,
+        top_n=min(20, shap_df.shape[1]),
+        title=f"SHAP importance — {result.name}",
+    )
+    fig.tight_layout()
+    fig_path = OUTPUT_DIR / f"shap_importance_{tag}.png"
+    plt.savefig(fig_path, dpi=150)
+    plt.show()
+    print(f"Saved: {fig_path.name}")
+
+    # Beeswarm plot (SHAP built-in — creates its own axes)
+    try:
+        shap_lib.plots.beeswarm(explanation, max_display=min(20, shap_df.shape[1]), show=False)
+        bw_path = OUTPUT_DIR / f"shap_beeswarm_{tag}.png"
+        plt.savefig(bw_path, dpi=150, bbox_inches="tight")
+        plt.show()
+        print(f"Saved: {bw_path.name}")
+    except Exception as exc:
+        print(f"Beeswarm plot failed for {result.name}: {exc}")
+
+
 # %%
 # =============================================================================
 # Train all models
@@ -340,6 +408,7 @@ for sensor_name in feature_selection:
         sensor=sensor_name,
     )
     results.append(result)
+    _save_shap_results(result, X_te, tag=result.name.lower())
 
 # --- Elastic Net (combined) ---------------------------------------------------
 if X_combined_train is not None:
@@ -360,6 +429,7 @@ if X_combined_train is not None:
         sensor="combined",
     )
     results.append(result)
+    _save_shap_results(result, X_combined_test, tag=result.name.lower())
 
 # --- Bayesian Ridge (per-sensor) — disabled: overlaps too much with Elastic Net
 # for sensor_name in feature_selection:
@@ -418,6 +488,7 @@ for sensor_name in feature_selection:
         sensor=sensor_name,
     )
     results.append(result)
+    _save_shap_results(result, X_te, tag=result.name.lower())
 
 # --- Polynomial Regression (combined) ----------------------------------------
 if X_combined_train is not None:
@@ -438,6 +509,7 @@ if X_combined_train is not None:
         sensor="combined",
     )
     results.append(result)
+    _save_shap_results(result, X_combined_test, tag=result.name.lower())
 
 # --- LightGBM (per-sensor) ---------------------------------------------------
 for sensor_name in feature_selection:
@@ -468,6 +540,7 @@ for sensor_name in feature_selection:
         sensor=sensor_name,
     )
     results.append(result)
+    _save_shap_results(result, X_te, tag=result.name.lower())
 
 # --- LightGBM (combined) -----------------------------------------------------
 if X_combined_train is not None:
@@ -497,6 +570,7 @@ if X_combined_train is not None:
         sensor="combined",
     )
     results.append(result)
+    _save_shap_results(result, X_combined_test, tag=result.name.lower())
 
 # %%
 # =============================================================================
@@ -688,6 +762,82 @@ for result in results:
         ho_path = OUTPUT_DIR / f"model_holdout_{tag}.csv"
         ho_df.to_csv(ho_path, index=False)
         print(f"Saved: {ho_path.name}")
+
+# %%
+# =============================================================================
+# SHAP sensor contribution — combined models
+# =============================================================================
+# For each combined model, group SHAP importance by sensor prefix (AE__ / UL__)
+# to show which modality dominates predictions.
+
+_combined_results = [r for r in results if r.sensor == "combined"]
+_sensor_prefixes = list(feature_selection.keys())  # e.g. ["AE", "UL"]
+
+for result in _combined_results:
+    shap_csv = OUTPUT_DIR / f"shap_values_{result.name.lower()}.csv"
+    if not shap_csv.exists():
+        continue
+    shap_df_combined = pd.read_csv(shap_csv, index_col=0)
+    shap_imp_combined = shap_df_combined.abs().mean(axis=0)
+
+    # Group by sensor prefix
+    group_imp: dict[str, float] = {}
+    for prefix in _sensor_prefixes:
+        cols = [c for c in shap_imp_combined.index if c.startswith(f"{prefix}__")]
+        group_imp[prefix] = float(shap_imp_combined[cols].sum()) if cols else 0.0
+
+    group_df = pd.DataFrame(
+        {"sensor": list(group_imp.keys()), "total_mean_abs_shap": list(group_imp.values())}
+    ).sort_values("total_mean_abs_shap", ascending=False)
+    contrib_path = OUTPUT_DIR / f"shap_sensor_contribution_{result.name.lower()}.csv"
+    group_df.to_csv(contrib_path, index=False)
+    print(f"Saved: {contrib_path.name}")
+
+    fig, ax = plt.subplots(figsize=(5, 3))
+    ax.barh(group_df["sensor"], group_df["total_mean_abs_shap"], color=["#1f77b4", "#ff7f0e"])
+    ax.set_xlabel("Sum of mean |SHAP|")
+    ax.set_title(f"Sensor contribution — {result.name}")
+    ax.invert_yaxis()
+    fig.tight_layout()
+    contrib_fig_path = OUTPUT_DIR / f"shap_sensor_contribution_{result.name.lower()}.png"
+    plt.savefig(contrib_fig_path, dpi=150)
+    plt.show()
+    print(f"Saved: {contrib_fig_path.name}")
+
+# %%
+# =============================================================================
+# Save best hyperparameters for 04_evaluation.py
+# =============================================================================
+
+import json as _json
+from sklearn.pipeline import Pipeline as _Pipeline
+
+best_params: dict[str, dict] = {}
+for result in results:
+    est = result.estimator
+    p: dict = {}
+    # Unwrap Pipeline to get the core estimator for HP extraction
+    core = est[-1] if isinstance(est, _Pipeline) else est
+    if hasattr(core, "alpha_") and hasattr(core, "l1_ratio_"):
+        # ElasticNetCV — selected alpha and l1_ratio
+        p = {"alpha": float(core.alpha_), "l1_ratio": float(core.l1_ratio_)}
+    elif isinstance(est, _Pipeline) and "ridge" in est.named_steps:
+        # Polynomial — Ridge alpha
+        p = {"alpha": float(est.named_steps["ridge"].alpha)}
+    elif hasattr(core, "n_estimators"):
+        # LightGBM
+        lgb_keys = [
+            "n_estimators", "learning_rate", "max_depth", "num_leaves",
+            "min_child_samples", "subsample", "colsample_bytree",
+            "reg_alpha", "reg_lambda",
+        ]
+        p = {k: v for k, v in core.get_params().items() if k in lgb_keys}
+    best_params[result.name] = p
+
+params_path = OUTPUT_DIR / "best_params.json"
+with open(params_path, "w") as fh:
+    _json.dump(best_params, fh, indent=2)
+print(f"\nSaved: {params_path.name}")
 
 # %%
 # =============================================================================

@@ -60,6 +60,8 @@ __all__ = [
     "clip_predictions",
     "results_summary_table",
     "get_feature_weights",
+    "compute_shap_values",
+    "get_shap_feature_importance",
 ]
 
 
@@ -267,6 +269,110 @@ def get_feature_weights(result: ModelResult) -> tuple[np.ndarray, bool]:
     raise AttributeError(
         f"{type(est).__name__} has neither coef_ nor feature_importances_"
     )
+
+
+def _unwrap_estimator(est: Any) -> Any:
+    if isinstance(est, Pipeline):
+        return est.steps[-1][1]
+    return est
+
+
+def compute_shap_values(
+    result: ModelResult,
+    X: pd.DataFrame,
+    *,
+    return_explanation: bool = False,
+) -> "pd.DataFrame | shap.Explanation":
+    """Compute SHAP values for a fitted model.
+
+    Supports LightGBM (TreeExplainer), Elastic Net (LinearExplainer), and
+    Polynomial Regression (LinearExplainer on the Ridge step with poly-expanded
+    features).
+
+    Parameters
+    ----------
+    result:
+        A trained ModelResult.
+    X:
+        Feature matrix matching result.feature_names for linear/tree models,
+        or the *original* feature matrix for Pipeline (Polynomial) models —
+        the pipeline's internal steps handle the transformation.
+    return_explanation:
+        If True, return a shap.Explanation object (needed for beeswarm plots).
+        If False (default), return a plain DataFrame of SHAP values.
+
+    Returns
+    -------
+    pd.DataFrame or shap.Explanation
+    """
+    try:
+        import shap
+    except ImportError as exc:
+        raise ImportError(
+            "SHAP is required. Install with `pip install shap`."
+        ) from exc
+
+    est = _unwrap_estimator(result.estimator)
+
+    # ------------------------------------------------------------------
+    # LightGBM — TreeExplainer
+    # ------------------------------------------------------------------
+    if isinstance(est, lgb.LGBMRegressor):
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X, columns=result.feature_names)
+        X_input = X.loc[:, result.feature_names]
+        explainer = shap.TreeExplainer(est)
+        explanation = explainer(X_input)
+        if return_explanation:
+            return explanation
+        vals = explanation.values
+        if isinstance(vals, list):
+            vals = vals[0]
+        return pd.DataFrame(vals, columns=result.feature_names, index=X_input.index)
+
+    # ------------------------------------------------------------------
+    # Pipeline (Polynomial) — LinearExplainer on the Ridge step
+    # ------------------------------------------------------------------
+    if isinstance(result.estimator, Pipeline):
+        pipeline = result.estimator
+        # Transform X through all steps except the final Ridge
+        X_transformed = X.values if isinstance(X, pd.DataFrame) else X
+        for _, step in pipeline.steps[:-1]:
+            X_transformed = step.transform(X_transformed)
+        ridge = pipeline.steps[-1][1]
+        explainer = shap.LinearExplainer(ridge, X_transformed)
+        explanation = explainer(X_transformed)
+        # Attach feature names so beeswarm labels work
+        explanation.feature_names = result.feature_names
+        if return_explanation:
+            return explanation
+        return pd.DataFrame(
+            explanation.values,
+            columns=result.feature_names,
+        )
+
+    # ------------------------------------------------------------------
+    # Elastic Net — LinearExplainer (scaler applied externally)
+    # ------------------------------------------------------------------
+    if not isinstance(X, pd.DataFrame):
+        X = pd.DataFrame(X, columns=result.feature_names)
+    X_input = X.loc[:, result.feature_names]
+    X_scaled = result.scaler.transform(X_input.values)
+    explainer = shap.LinearExplainer(est, X_scaled)
+    explanation = explainer(X_scaled)
+    explanation.feature_names = result.feature_names
+    if return_explanation:
+        return explanation
+    return pd.DataFrame(
+        explanation.values,
+        columns=result.feature_names,
+        index=X_input.index,
+    )
+
+
+def get_shap_feature_importance(shap_df: pd.DataFrame) -> pd.Series:
+    """Return mean absolute SHAP value importance for each feature."""
+    return shap_df.abs().mean(axis=0).sort_values(ascending=False)
 
 
 # ---------------------------------------------------------------------------

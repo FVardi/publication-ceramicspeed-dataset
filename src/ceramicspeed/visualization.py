@@ -44,6 +44,7 @@ __all__ = [
     "plot_predicted_vs_actual",
     "plot_coefficients",
     "plot_coefficients_log",
+    "plot_shap_importance",
     "plot_cv_fold_metrics",
     "plot_residuals",
     "plot_bayesian_uncertainty",
@@ -461,6 +462,38 @@ def plot_coefficients_log(
     subtitle = f"  ({', '.join(subtitle_parts)})" if subtitle_parts else ""
     chart_label = "importances" if is_importance else "coefficients"
     ax.set_title(f"{result.name} — Top {top_n} {chart_label} (log){subtitle}")
+
+    return fig, ax
+
+
+def plot_shap_importance(
+    shap_df: pd.DataFrame,
+    top_n: int = 20,
+    ax: plt.Axes | None = None,
+    title: str = "SHAP feature importance",
+) -> tuple[plt.Figure, plt.Axes]:
+    """Horizontal bar chart of mean absolute SHAP values."""
+    mean_abs = shap_df.abs().mean(axis=0).sort_values(ascending=False).head(top_n)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(9, max(4, len(mean_abs) * 0.3)))
+    else:
+        fig = ax.get_figure()
+
+    y_pos = np.arange(len(mean_abs))
+    ax.barh(
+        y_pos,
+        mean_abs.values,
+        color="#2ca02c",
+        edgecolor="white",
+        lw=0.5,
+    )
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(mean_abs.index, fontsize=8)
+    ax.invert_yaxis()
+    ax.set_xlabel("Mean |SHAP value|")
+    ax.set_title(title)
+    ax.grid(axis="x", ls=":", alpha=0.4)
 
     return fig, ax
 
