@@ -47,6 +47,8 @@ cfg = load_config(args.config)
 
 OUTPUT_DIR = get_output_dir(cfg)
 INPUT_DIR  = get_input_dir(cfg)
+EDA_DIR = OUTPUT_DIR / "eda"
+EDA_DIR.mkdir(exist_ok=True)
 
 SENSORS: tuple[str, ...] = ("AE", "UL")
 SWEEP_SELECTION: list[str] = cfg.get("sweep_selection", [])
@@ -130,7 +132,7 @@ sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 fig.colorbar(sm, ax=axes, label="κ", shrink=0.6)
 fig.suptitle("Individual sweep spectra", fontsize=12)
 fig.tight_layout()
-plt.savefig(OUTPUT_DIR / "eda_spectra.png", dpi=150)
+plt.savefig(EDA_DIR / "eda_spectra.png", dpi=150)
 plt.show()
 print("Saved: eda_spectra.png")
 

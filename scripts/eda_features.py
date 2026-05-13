@@ -58,6 +58,8 @@ args = parse_args()
 cfg = load_config(args.config)
 
 OUTPUT_DIR = get_output_dir(cfg)
+EDA_DIR = OUTPUT_DIR / "eda"
+EDA_DIR.mkdir(exist_ok=True)
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
 
@@ -225,7 +227,7 @@ for label, feat_df, meta in _plot_sensors:
     fig.suptitle(f"Features vs κ — {label} sensor", fontsize=13)
     fig.tight_layout()
     fname = f"eda_feature_vs_kappa_{label.lower()}.png"
-    plt.savefig(OUTPUT_DIR / fname, dpi=150)
+    plt.savefig(EDA_DIR / fname, dpi=150)
     plt.show()
     print(f"Saved: {fname}")
 

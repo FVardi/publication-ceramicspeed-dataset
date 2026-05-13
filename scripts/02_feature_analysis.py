@@ -61,9 +61,10 @@ args = parse_args()
 cfg = load_config(args.config)
 
 OUTPUT_DIR = get_output_dir(cfg)
-FIGURES_DIR = OUTPUT_DIR / "figures"
-TABLES_DIR = OUTPUT_DIR / "tables"
-for _d in [FIGURES_DIR, TABLES_DIR]:
+SCRIPT_DIR = OUTPUT_DIR / "02_feature_analysis"
+FIGURES_DIR = SCRIPT_DIR / "figures"
+TABLES_DIR = SCRIPT_DIR / "tables"
+for _d in [SCRIPT_DIR, FIGURES_DIR, TABLES_DIR]:
     _d.mkdir(exist_ok=True)
 
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]

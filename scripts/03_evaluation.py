@@ -34,6 +34,7 @@ Usage
 
 import argparse
 import json
+import os
 import warnings
 
 import lightgbm as lgb
@@ -41,11 +42,12 @@ import optuna
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.linear_model import ElasticNet, ElasticNetCV, Ridge, RidgeCV
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ceramicspeed.loading import load_parquet_pair
 from ceramicspeed.cleaning import filter_by_metadata
@@ -80,10 +82,11 @@ if DEBUG:
     print("*** DEBUG MODE — reduced parameters for fast testing ***")
 
 OUTPUT_DIR = get_output_dir(cfg)
-FIGURES_DIR = OUTPUT_DIR / "figures"
-TABLES_DIR = OUTPUT_DIR / "tables"
-PREDICTIONS_DIR = OUTPUT_DIR / "predictions"
-for _d in [FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR]:
+SCRIPT_DIR = OUTPUT_DIR / "03_evaluation"
+FIGURES_DIR = SCRIPT_DIR / "figures"
+TABLES_DIR = SCRIPT_DIR / "tables"
+PREDICTIONS_DIR = SCRIPT_DIR / "predictions"
+for _d in [SCRIPT_DIR, FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR]:
     _d.mkdir(exist_ok=True)
 
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
@@ -95,7 +98,7 @@ CV_N_SPLITS: int = model_cfg.get("cv_n_splits", 5)
 TEST_SIZE: float = model_cfg.get("test_size", 0.2)
 
 _dbg = cfg.get("debug", {})
-CV_N_REPEATS: int = 10   # R — number of CV repeats
+CV_N_REPEATS: int = model_cfg.get("n_repeats", 10)
 
 if DEBUG:
     CV_N_SPLITS  = _dbg.get("cv_n_splits", 3)
@@ -132,6 +135,18 @@ if DEBUG:
     LGB_N_TRIALS_NESTED = _dbg.get("n_trials", 2)
     print(f"  n_estimators={LGB_N_ESTIMATORS}, early_stop={LGB_EARLY_STOP}, "
           f"n_trials_nested={LGB_N_TRIALS_NESTED}")
+
+# Number of loky worker processes and LightGBM threads per worker.
+# Product targets full CPU utilisation: _N_WORKERS × _LGB_THREADS ≈ cpu_count.
+# In debug mode run sequentially to avoid process-spawn overhead on short tasks.
+_N_WORKERS: int = 1 if DEBUG else max(1, (os.cpu_count() or 1) // 4)
+_LGB_THREADS: int = max(1, (os.cpu_count() or 1) // _N_WORKERS)
+if not DEBUG:
+    print(f"Parallelism: {_N_WORKERS} workers × {_LGB_THREADS} LightGBM threads "
+          f"({_N_WORKERS * _LGB_THREADS}/{os.cpu_count()} cores). "
+          f"Workers start once — tqdm will appear stuck until the first batch of "
+          f"{min(_N_WORKERS, CV_N_REPEATS * CV_N_SPLITS)} folds completes.")
+
 
 # %%
 # =============================================================================
@@ -305,7 +320,7 @@ def _lgb_fold_score(
             reg_alpha=LGB_REG_ALPHA,
             reg_lambda=LGB_REG_LAMBDA,
             random_state=RANDOM_STATE,
-            n_jobs=1,
+            n_jobs=_LGB_THREADS,
             verbosity=-1,
         )
         inner_cv = KFold(n_splits=CV_N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
@@ -353,11 +368,18 @@ def repeated_nested_cv(
     desc: str = "",
 ) -> np.ndarray:
     """Run R×k repeated nested CV; return array of shape (R*k,) RMSE scores."""
+    fold_splits = [
+        (tr, val)
+        for r in range(n_repeats)
+        for tr, val in KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r).split(X)
+    ]
     scores = []
-    for r in tqdm(range(n_repeats), desc=desc or "repeats", leave=False):
-        cv = KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r)
-        for tr_idx, val_idx in cv.split(X):
-            scores.append(fold_score_fn(X, y, tr_idx, val_idx))
+    with tqdm(total=len(fold_splits), desc=desc or "folds", leave=False) as pbar:
+        for score in Parallel(n_jobs=_N_WORKERS, return_as="generator")(
+            delayed(fold_score_fn)(X, y, tr, val) for tr, val in fold_splits
+        ):
+            scores.append(score)
+            pbar.update(1)
     return np.array(scores)
 
 

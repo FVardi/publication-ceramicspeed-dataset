@@ -95,11 +95,12 @@ if DEBUG:
     print("*** DEBUG MODE — reduced parameters for fast testing ***")
 
 OUTPUT_DIR = get_output_dir(cfg)
-FIGURES_DIR = OUTPUT_DIR / "figures"
-TABLES_DIR = OUTPUT_DIR / "tables"
-PREDICTIONS_DIR = OUTPUT_DIR / "predictions"
-SHAP_DIR = OUTPUT_DIR / "shap"
-for _d in [FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR, SHAP_DIR]:
+SCRIPT_DIR = OUTPUT_DIR / "04_modelling"
+FIGURES_DIR = SCRIPT_DIR / "figures"
+TABLES_DIR = SCRIPT_DIR / "tables"
+PREDICTIONS_DIR = SCRIPT_DIR / "predictions"
+SHAP_DIR = SCRIPT_DIR / "shap"
+for _d in [SCRIPT_DIR, FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR, SHAP_DIR]:
     _d.mkdir(exist_ok=True)
 
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]

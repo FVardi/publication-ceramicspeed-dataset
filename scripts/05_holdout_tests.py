@@ -73,10 +73,14 @@ if DEBUG:
     print("*** DEBUG MODE ***")
 
 OUTPUT_DIR = get_output_dir(cfg)
-TABLES_DIR = OUTPUT_DIR / "tables"
-PREDICTIONS_DIR = OUTPUT_DIR / "predictions"
-SHAP_DIR = OUTPUT_DIR / "shap"
-for _d in [TABLES_DIR, PREDICTIONS_DIR, SHAP_DIR]:
+SCRIPT_DIR = OUTPUT_DIR / "05_holdout_tests"
+TABLES_DIR = SCRIPT_DIR / "tables"
+SHAP_DIR = SCRIPT_DIR / "shap"
+# Read-only paths pointing at upstream script outputs
+PREDICTIONS_DIR = OUTPUT_DIR / "03_evaluation" / "predictions"   # repeated_cv_scores.csv
+MODEL_PREDICTIONS_DIR = OUTPUT_DIR / "04_modelling" / "predictions"  # model_holdout_*.csv
+MODEL_SHAP_DIR = OUTPUT_DIR / "04_modelling" / "shap"            # shap_importance_*.csv
+for _d in [SCRIPT_DIR, TABLES_DIR, SHAP_DIR]:
     _d.mkdir(exist_ok=True)
 
 model_cfg = cfg.get("modelling", {})
@@ -135,7 +139,7 @@ holdout_y_pred: dict[str, np.ndarray] = {}
 holdout_residuals: dict[str, np.ndarray] = {}
 
 for model_name in cv_scores:
-    ho_path = PREDICTIONS_DIR / f"model_holdout_{model_name.lower()}.csv"
+    ho_path = MODEL_PREDICTIONS_DIR / f"model_holdout_{model_name.lower()}.csv"
     if not ho_path.exists():
         print(f"WARNING: {ho_path.name} not found — holdout tests skipped for {model_name}")
         continue
@@ -277,7 +281,7 @@ for fs in feature_sets:
     imp_map: dict[str, pd.Series] = {}
     for mt in model_types:
         tag = f"{mt}_{fs}".lower()
-        imp_path = SHAP_DIR / f"shap_importance_{tag}.csv"
+        imp_path = MODEL_SHAP_DIR / f"shap_importance_{tag}.csv"
         if imp_path.exists():
             imp_series = pd.read_csv(imp_path, index_col=0, header=0).iloc[:, 0]
             imp_map[mt] = imp_series

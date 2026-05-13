@@ -113,6 +113,7 @@ random_state: 42
 modelling:
   test_size:   0.2
   cv_n_splits: 5
+  n_repeats:   5      # repeated-CV repeats (full: 10)
 
   elastic_net:
     alphas:    [0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 5.0, 10.0, 100.0]
@@ -135,16 +136,11 @@ modelling:
     reg_alpha:           0.0
     reg_lambda:          1.0
     early_stopping_rounds: 50
-    n_trials:            50    # Optuna trials per study (outer fold + final model)
+    n_trials:            20    # Optuna trials per study (outer fold + final model)
     param_grid:
       learning_rate: [0.01, 0.05, 0.1]
       num_leaves:    [15, 31, 63]
       max_depth:     [4, 6, -1]
-
-# Optional: override auto-selected features in 04_modelling.py
-# feature_override:
-#   AE: [mobility, spectral_flatness]
-#   UL: [mobility, spectral_flatness]
 
 # =============================================================================
 # Debug / fast mode  (activated via --debug flag or debug.enabled: true)
