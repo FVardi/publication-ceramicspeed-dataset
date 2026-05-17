@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  13 MAY 2026 16:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  17 MAY 2026 14:14
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -377,31 +377,31 @@ LaTeX Info: Redefining \cite on input line 694.
 ) (c:/texlive/2025/texmf-dist/tex/latex/base/textcomp.sty
 Package: textcomp 2024/04/24 v2.1b Standard LaTeX package
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 39.
+Package hyperref Info: Option `colorlinks' set `true' on input line 48.
  (c:/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count332
 ) (./main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 47.
-LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 56.
+LaTeX Font Info:    ... okay on input line 56.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -456,18 +456,18 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (c:/texlive/2025/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-Package hyperref Info: Link coloring ON on input line 47.
+Package hyperref Info: Link coloring ON on input line 56.
  (./main.out) (./main.out)
 \@outlinefile=\write3
 \openout3 = `main.out'.
 
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 54.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 63.
  (c:/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 54.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 63.
  (c:/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
@@ -476,7 +476,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.114 \clearpage
+l.122 \clearpage
                  [1] (./main.toc)
 \tf@toc=\write4
 \openout4 = `main.toc'.
@@ -488,117 +488,131 @@ l.114 \clearpage
 ]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 204.
+(hyperref)                removing `math shift' on input line 215.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 204.
+(hyperref)                removing `\kappa' on input line 215.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 204.
+(hyperref)                removing `math shift' on input line 215.
 
-[4] [5]
-Overfull \hbox (0.6791pt too wide) in paragraph at lines 298--303
+[4]
+Overfull \hbox (9.35608pt too wide) in paragraph at lines 242--248
+\T1/cmr/m/n/12 The op-er-at-ing vis-cos-ity $\OML/cmm/m/it/12 ^^W[]$ \T1/cmr/m/n/12 is com-puted from the ASTM D341 Walther viscosity--temperature
+ []
+
+[5]
+Overfull \hbox (0.6791pt too wide) in paragraph at lines 308--313
 []\T1/cmr/m/n/12 Spectral shape features---frequency kur-to-sis, nor-malised band-width, spec-tral flatness---
  []
 
 [6]
 
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 356.
+LaTeX Warning: Reference `tab:ops' on page 7 undefined on input line 350.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 356.
+(hyperref)                removing `math shift' on input line 366.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 356.
-
-[7] [8]
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 491.
+(hyperref)                removing `\kappa' on input line 366.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 491.
+(hyperref)                removing `math shift' on input line 366.
+
+[7] [8] [9]
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 527.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 491.
+(hyperref)                removing `\kappa' on input line 527.
 
-[9]
-<figures/ae_us_hjorth_mobility_scatter.png, id=266, 1011.78pt x 361.35pt>
-File: figures/ae_us_hjorth_mobility_scatter.png Graphic file (type png)
-<use figures/ae_us_hjorth_mobility_scatter.png>
-Package pdftex.def Info: figures/ae_us_hjorth_mobility_scatter.png  used on input line 534.
-(pdftex.def)             Requested size: 318.66948pt x 113.80931pt.
-<figures/feature_ranking_ae_barplot.png, id=268, 578.16pt x 657.657pt>
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 527.
+
+[10]
+<figures/feature_ranking_ae_barplot.png, id=274, 578.16pt x 2659.536pt>
 File: figures/feature_ranking_ae_barplot.png Graphic file (type png)
 <use figures/feature_ranking_ae_barplot.png>
-Package pdftex.def Info: figures/feature_ranking_ae_barplot.png  used on input line 543.
-(pdftex.def)             Requested size: 386.96027pt x 440.16629pt.
- [10 <./figures/ae_us_hjorth_mobility_scatter.png>]
-<figures/feature_ranking_us_barplot.png, id=275, 578.16pt x 657.657pt>
+Package pdftex.def Info: figures/feature_ranking_ae_barplot.png  used on input line 578.
+(pdftex.def)             Requested size: 386.96027pt x 1780.01318pt.
+ [11]
+Overfull \vbox (1116.23009pt too high) has occurred while \output is active []
+
+ [12 <./figures/feature_ranking_ae_barplot.png>]
+<figures/feature_ranking_us_barplot.png, id=288, 578.16pt x 520.344pt>
 File: figures/feature_ranking_us_barplot.png Graphic file (type png)
 <use figures/feature_ranking_us_barplot.png>
-Package pdftex.def Info: figures/feature_ranking_us_barplot.png  used on input line 551.
-(pdftex.def)             Requested size: 386.96027pt x 440.16629pt.
- [11 <./figures/feature_ranking_ae_barplot.png>] [12{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc} <./figures/feature_ranking_us_barplot.png>] [13]
-<figures/band_confound_partial_comparison.png, id=300, 722.7pt x 361.35pt>
-File: figures/band_confound_partial_comparison.png Graphic file (type png)
-<use figures/band_confound_partial_comparison.png>
-Package pdftex.def Info: figures/band_confound_partial_comparison.png  used on input line 664.
-(pdftex.def)             Requested size: 386.96027pt x 193.483pt.
- [14 <./figures/band_confound_partial_comparison.png>]
-<figures/pca_kappa_regimes.png, id=312, 1156.32pt x 433.62pt>
+Package pdftex.def Info: figures/feature_ranking_us_barplot.png  used on input line 587.
+(pdftex.def)             Requested size: 386.96027pt x 348.26343pt.
+ [13 <./figures/feature_ranking_us_barplot.png>]
+<figures/pca_kappa_regimes.png, id=296, 1156.32pt x 433.62pt>
 File: figures/pca_kappa_regimes.png Graphic file (type png)
 <use figures/pca_kappa_regimes.png>
-Package pdftex.def Info: figures/pca_kappa_regimes.png  used on input line 686.
+Package pdftex.def Info: figures/pca_kappa_regimes.png  used on input line 636.
 (pdftex.def)             Requested size: 318.66948pt x 119.5006pt.
-
-Overfull \hbox (3.12311pt too wide) in paragraph at lines 717--720
+ [14 <./figures/pca_kappa_regimes.png>]
+Overfull \hbox (3.12311pt too wide) in paragraph at lines 666--670
 []\T1/cmr/bx/n/12 LightGBM \T1/cmr/m/n/12 (gradient-boosted de-ci-sion trees): hy-per-pa-ram-e-ters (learn-ing rate, num-
  []
 
-[15 <./figures/pca_kappa_regimes.png>]
-Overfull \hbox (5.27635pt too wide) in paragraph at lines 781--786
-[]\T1/cmr/bx/n/12 Model con-sis-tency. \T1/cmr/m/n/12 The close agree-ment be-tween CV and hold-out $\OML/cmm/m/it/12 R[]$ \T1/cmr/m/n/12 for LightGBM-
+
+Overfull \hbox (5.04163pt too wide) in paragraph at lines 666--670
+\T1/cmr/m/n/12 ber of leaves, tree depth, min-i-mum child sam-ples, $\OML/cmm/m/it/12 `[]$ \T1/cmr/m/n/12 reg-u-lar-i-sa-tion) tuned by Bayesian
  []
 
-[16]
-<figures/model_pred_vs_actual_holdout.png, id=331, 1300.86pt x 1734.48pt>
+
+Package natbib Warning: Citation `nadeau_inference_2003' on page 15 undefined on input line 698.
+
+
+Package natbib Warning: Citation `harvey_testing_1997' on page 15 undefined on input line 716.
+
+[15{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] [16]
+<figures/model_pred_vs_actual_holdout.png, id=320, 1300.86pt x 1300.86pt>
 File: figures/model_pred_vs_actual_holdout.png Graphic file (type png)
 <use figures/model_pred_vs_actual_holdout.png>
-Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 794.
-(pdftex.def)             Requested size: 455.24411pt x 606.99771pt.
- [17]
-<figures/model_cv_fold_r2.png, id=338, 1300.86pt x 1156.32pt>
-File: figures/model_cv_fold_r2.png Graphic file (type png)
-<use figures/model_cv_fold_r2.png>
-Package pdftex.def Info: figures/model_cv_fold_r2.png  used on input line 803.
-(pdftex.def)             Requested size: 386.96027pt x 343.95213pt.
- [18 <./figures/model_pred_vs_actual_holdout.png>] [19 <./figures/model_cv_fold_r2.png>] [20]
+Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 799.
+(pdftex.def)             Requested size: 455.24411pt x 455.24828pt.
+ [17 <./figures/model_pred_vs_actual_holdout.png>]
+Overfull \hbox (8.33243pt too wide) in paragraph at lines 823--835
+ [][] 
+ []
+
+<figures/shap_beeswarm_lgb_ae.png, id=329, 650.43pt x 433.62pt>
+File: figures/shap_beeswarm_lgb_ae.png Graphic file (type png)
+<use figures/shap_beeswarm_lgb_ae.png>
+Package pdftex.def Info: figures/shap_beeswarm_lgb_ae.png  used on input line 839.
+(pdftex.def)             Requested size: 386.96027pt x 257.97733pt.
+[18 <./figures/shap_beeswarm_lgb_ae.png>] [19]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 881.
+(hyperref)                removing `math shift' on input line 908.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 881.
+(hyperref)                removing `\kappa' on input line 908.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 881.
+(hyperref)                removing `math shift' on input line 908.
 
 
-Overfull \hbox (9.67136pt too wide) in paragraph at lines 916--919
+Overfull \hbox (9.67136pt too wide) in paragraph at lines 945--949
 []\T1/cmr/bx/n/12 VFD har-monic con-tam-i-na-tion. \T1/cmr/m/n/12 Switch-ing arte-facts at $\OMS/cmsy/m/n/12 ^^Y$$\OT1/cmr/m/n/12 5 []$ \T1/cmr/m/n/12 af-fect low-frequency
  []
 
-[21] [22] [23] (./main.bbl) [24
+[20] [21] [22] [23] (./main.bbl)
+
+Package natbib Warning: There were undefined citations.
+
+[24
 
 ] (./main.aux)
  ***********
@@ -607,27 +621,24 @@ L3 programming layer <2025-11-06>
  ***********
 
 
-Package rerunfilecheck Warning: File `main.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
+LaTeX Warning: There were undefined references.
 
-Package rerunfilecheck Info: Checksums for `main.out':
-(rerunfilecheck)             Before: E8D0CD370AB778ACEA540F0D3E2951AC;5527
-(rerunfilecheck)             After:  ED362EB03E54BDD91F85302860AA4FB8;5498.
+Package rerunfilecheck Info: File `main.out' has not changed.
+(rerunfilecheck)             Checksum: 6604059EDC09F7EF5AE72BA4AC3DC147;5888.
  ) 
 Here is how much of TeX's memory you used:
- 14591 strings out of 467538
- 228963 string characters out of 5423724
- 673306 words of memory out of 5000000
- 43186 multiletter control sequences out of 15000+600000
- 650108 words of font info for 98 fonts, out of 8000000 for 9000
+ 14572 strings out of 467538
+ 228259 string characters out of 5423724
+ 671847 words of memory out of 5000000
+ 43172 multiletter control sequences out of 15000+600000
+ 648551 words of font info for 96 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,13n,79p,653b,575s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfss0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on main.pdf (25 pages, 1923691 bytes).
+ 75i,11n,79p,589b,573s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfss0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
+Output written on main.pdf (25 pages, 6567479 bytes).
 PDF statistics:
- 512 PDF objects out of 1000 (max. 8388607)
- 421 compressed objects within 5 object streams
- 112 named destinations out of 1000 (max. 500000)
- 268 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 504 PDF objects out of 1000 (max. 8388607)
+ 419 compressed objects within 5 object streams
+ 109 named destinations out of 1000 (max. 500000)
+ 266 words of extra memory for PDF output out of 10000 (max. 10000000)
 
