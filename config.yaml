@@ -75,12 +75,16 @@ band_width_hz: 100_000
 sensor_prefilter:
   UL: {f_lo: 0, f_hi: 20_000}
 
-# Additional feature set per frequency band (AE only — UL is below 20 kHz)
+# Additional feature set per frequency band.
+# UL bands operate on the prefiltered (0–20 kHz) signal.
 frequency_bands:
   AE:
     - {f_lo:       20_000, f_hi:    500_000, label: "AE_20-500kHz"}
     - {f_lo:      500_000, f_hi:  1_000_000, label: "AE_500-1000kHz"}
     - {f_lo:    1_000_000, f_hi: 2_000_000, label: "AE_1000-2000kHz"}
+  UL:
+    - {f_lo:      0, f_hi:  10_000, label: "US_0-10kHz"}
+    - {f_lo: 10_000, f_hi:  20_000, label: "US_10-20kHz"}
 
 # =============================================================================
 # Kappa regime boundaries  (EDA visualisation + feature binning)

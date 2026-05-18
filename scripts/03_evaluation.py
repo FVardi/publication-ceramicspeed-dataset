@@ -215,6 +215,9 @@ for sensor_name, sel_info in feature_selection.items():
     print(f"  {sensor_name}: {X_tr.shape[0]} samples, {X_tr.shape[1]} features")
 
 
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+
+
 def _build_keyed(df_src, meta_src, sensor_name, retained):
     mask = df_src["sensor"] == sensor_name
     X = df_src.loc[mask, ["file", "sweep"] + retained].copy()
@@ -223,7 +226,8 @@ def _build_keyed(df_src, meta_src, sensor_name, retained):
     X["kappa"] = km["kappa"].values
     valid = X[retained].notna().all(axis=1)
     X = X[valid].set_index(["file", "sweep"])
-    return X.rename(columns=lambda c: f"{sensor_name}__{c}" if c != "kappa" else c)
+    label = _SENSOR_LABEL.get(sensor_name, sensor_name)
+    return X.rename(columns=lambda c: c if (c == "kappa" or c.startswith(f"{label}_")) else f"{label}__{c}")
 
 
 retained_map = {
@@ -397,7 +401,7 @@ sensor_names = list(feature_selection.keys())
 # --- Elastic Net ---
 for sensor_name in sensor_names:
     X_tr, y_tr = sensor_train[sensor_name]
-    model_name = f"ElasticNet_{sensor_name}"
+    model_name = f"ElasticNet_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _enet_fold_score, desc=model_name)
 
@@ -410,7 +414,7 @@ if X_combined_train is not None:
 # --- Polynomial ---
 for sensor_name in sensor_names:
     X_tr, y_tr = sensor_train[sensor_name]
-    model_name = f"Polynomial_{sensor_name}"
+    model_name = f"Polynomial_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _poly_fold_score, desc=model_name)
 
@@ -423,7 +427,7 @@ if X_combined_train is not None:
 # --- LightGBM (nested Optuna HP search per outer fold) ---
 for sensor_name in sensor_names:
     X_tr, y_tr = sensor_train[sensor_name]
-    model_name = f"LightGBM_{sensor_name}"
+    model_name = f"LightGBM_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _lgb_fold_score, desc=model_name)
 

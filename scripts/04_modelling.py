@@ -281,6 +281,9 @@ for sensor_name, sel_info in feature_selection.items():
 # is guaranteed even if different NaN rows were dropped per sensor
 # =============================================================================
 
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+
+
 def _build_keyed(df_src, meta_src, sensor_name, retained):
     """Return feature DataFrame indexed by (file, sweep) with kappa and rpm columns."""
     mask = df_src["sensor"] == sensor_name
@@ -291,7 +294,8 @@ def _build_keyed(df_src, meta_src, sensor_name, retained):
     X["rpm"] = km["rpm"].values
     valid = X[retained].notna().all(axis=1)
     X = X[valid].set_index(["file", "sweep"])
-    return X.rename(columns=lambda c: f"{sensor_name}__{c}" if c not in ("kappa", "rpm") else c)
+    label = _SENSOR_LABEL.get(sensor_name, sensor_name)
+    return X.rename(columns=lambda c: c if (c in ("kappa", "rpm") or c.startswith(f"{label}_")) else f"{label}__{c}")
 
 
 def _merge_sensors(df_src, meta_src, retained_map):
@@ -416,7 +420,7 @@ for sensor_name in feature_selection:
         l1_ratios=ENET_L1_RATIOS,
         max_iter=ENET_MAX_ITER,
         random_state=RANDOM_STATE,
-        name=f"ElasticNet_{sensor_name}",
+        name=f"ElasticNet_{_SENSOR_LABEL.get(sensor_name, sensor_name)}",
         sensor=sensor_name,
     )
     results.append(result)
@@ -459,7 +463,7 @@ for sensor_name in feature_selection:
         n_splits=CV_N_SPLITS,
         alphas=POLY_ALPHAS,
         random_state=RANDOM_STATE,
-        name=f"Polynomial_{sensor_name}",
+        name=f"Polynomial_{_SENSOR_LABEL.get(sensor_name, sensor_name)}",
         sensor=sensor_name,
     )
     results.append(result)
@@ -511,7 +515,7 @@ for sensor_name in feature_selection:
         param_grid=LGB_PARAM_GRID,
         n_trials=LGB_N_TRIALS,
         random_state=RANDOM_STATE,
-        name=f"LightGBM_{sensor_name}",
+        name=f"LightGBM_{_SENSOR_LABEL.get(sensor_name, sensor_name)}",
         sensor=sensor_name,
     )
     results.append(result)
@@ -755,11 +759,12 @@ for result in _combined_results:
     shap_df_combined = pd.read_csv(shap_csv, index_col=0)
     shap_imp_combined = shap_df_combined.abs().mean(axis=0)
 
-    # Group by sensor prefix
+    # Group by sensor prefix (use display label to match renamed combined-model columns)
     group_imp: dict[str, float] = {}
     for prefix in _sensor_prefixes:
-        cols = [c for c in shap_imp_combined.index if c.startswith(f"{prefix}__")]
-        group_imp[prefix] = float(shap_imp_combined[cols].sum()) if cols else 0.0
+        display = _SENSOR_LABEL.get(prefix, prefix)
+        cols = [c for c in shap_imp_combined.index if c.startswith(f"{display}__")]
+        group_imp[display] = float(shap_imp_combined[cols].sum()) if cols else 0.0
 
     group_df = pd.DataFrame(
         {"sensor": list(group_imp.keys()), "total_mean_abs_shap": list(group_imp.values())}
