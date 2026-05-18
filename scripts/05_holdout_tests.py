@@ -248,6 +248,8 @@ def _align_predictions(model_a: str, model_b: str) -> _AlignedPreds | None:
         merged = df_a.merge(df_b, on=["file", "sweep"], how="inner")
         if len(merged) == 0:
             return None
+        assert np.allclose(merged["y_true_a"].values, merged["y_true_b"].values), \
+            f"y_true mismatch between {model_a} and {model_b} on common sweeps"
         return _AlignedPreds(
             y_true=merged["y_true_a"].values,
             e_a=merged["y_true_a"].values - merged["y_pred_a"].values,

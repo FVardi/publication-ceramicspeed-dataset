@@ -16,9 +16,9 @@ HDF5 files
 features.parquet + metadata.parquet
     ↓ 02_feature_analysis.py
 feature_selection.json  (+ correlation/VIF/PCA figures)
-    ↓ 03_modelling.py
+    ↓ 04_modelling.py
 9 fitted models + holdout predictions + SHAP
-    ↓ 04_evaluation.py
+    ↓ 03_evaluation.py
 repeated CV scores + stat tests + performance table
 ```
 
@@ -73,10 +73,10 @@ Band features (AE only): 20–500 kHz, 500k–1M Hz, 1M–2M Hz — each band ge
 
 ---
 
-### 03 — Modelling (`scripts/03_modelling.py`)
+### 03 — Evaluation (`scripts/03_evaluation.py`)
 
 **Input:** `features.parquet`, `metadata.parquet`, `feature_selection.json`  
-**Output:** Holdout prediction CSVs, SHAP CSVs, figures, `best_params.json`
+**Output:** Repeated CV scores, performance table, stat test tables, SHAP agreement tables, figures
 
 **Train/test split:** 80/20 stratified at sweep level — both sensors for a given sweep always land in the same partition. Combined models (AE + UL) use an inner join on (file, sweep).
 
@@ -97,10 +97,10 @@ Band features (AE only): 20–500 kHz, 500k–1M Hz, 1M–2M Hz — each band ge
 
 ---
 
-### 04 — Evaluation (`scripts/04_evaluation.py`)
+### 04 — Modelling (`scripts/04_modelling.py`)
 
-**Input:** `features.parquet`, `metadata.parquet`, `feature_selection.json`, `best_params.json`, holdout prediction CSVs  
-**Output:** Repeated CV scores, performance table, stat test tables, SHAP agreement tables, figures
+**Input:** `features.parquet`, `metadata.parquet`, `feature_selection.json`  
+**Output:** Holdout prediction CSVs, SHAP CSVs, figures, `best_params.json`
 
 Reproduces the identical 80/20 split and runs **repeated nested CV (R=10 × k=5 = 50 scores per model)** with full HP re-selection per fold for linear models; fixed params from `best_params.json` for LightGBM (no early stopping in eval folds — intentional, so folds are not used for selection).
 
