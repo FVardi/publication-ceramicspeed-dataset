@@ -49,24 +49,24 @@ Computed from one-sided FFT magnitude spectrum.
 | `frequency_skewness` / `frequency_kurtosis` | Shape of power-weighted frequency distribution |
 | `normalized_bandwidth` | Fractional bandwidth proxy |
 
-### Optional band features
-Physics-motivated bandpass sub-bands (disabled by default, enabled in `config.yaml`):
-- AE: 0–50 kHz, 50–190 kHz
-- UL: 0–4 kHz, 6–10 kHz
+### Band features
+Physics-motivated bandpass sub-bands (enabled in `config.yaml` under `frequency_bands`):
+- AE: 20–500 kHz, 500–1000 kHz, 1000–2000 kHz
+- UL: 0–10 kHz, 10–20 kHz (applied to the 0–20 kHz pre-filtered signal)
 
-Each band produces a full copy of all 26 features with a label prefix, e.g. `AE_50-190kHz__mobility`.
+Each band produces a full copy of all 26 features with a label prefix, e.g. `AE_20-500kHz__rms`.
 
 ---
 
-## Models (4)
+## Models (3)
 
-All models are trained per sensor (AE and UL separately). Evaluation uses 80/20 hold-out split + 5-fold KFold CV on the training set. Metrics: R², MAE, RMSE.
+Three model types × three sensor configurations (AE only, UL only, AE+UL combined) = 9 models total.
+Evaluation uses 80/20 hold-out split + repeated nested 5-fold StratifiedKFold CV (5 repeats = 25 scores per model). Metrics: R², MAE, RMSE.
 
 | Model | Type | Regularisation | Notes |
 |---|---|---|---|
-| **Elastic Net** | Linear | L1 + L2 | alpha and l1_ratio tuned via `ElasticNetCV`; sparse feature selection |
-| **Bayesian Ridge** | Linear | Empirical Bayes | Self-tunes alpha/lambda via EM; no grid search needed |
-| **Polynomial (deg 2)** | Linear + interaction terms | Ridge (L2) | `PolynomialFeatures` → `Ridge`; alpha tuned via `RidgeCV` |
-| **LightGBM** | Gradient boosted trees | L1 + L2 on leaves | Early stopping per fold; final model uses mean best iteration |
+| **Elastic Net** | Linear | L1 + L2 | alpha and l1_ratio tuned via `ElasticNetCV` inside each outer fold |
+| **Polynomial (deg 2)** | Linear + interaction terms | Ridge (L2) | top-k features selected per fold; alpha via `RidgeCV` inside each outer fold |
+| **LightGBM** | Gradient boosted trees | L1 + L2 on leaves | Optuna HP search (20 trials) with early stopping inside each outer fold |
 
-Feature importances (linear: signed coefficients; LightGBM: split importance) are stored in `ModelResult` for inspection.
+Feature importances (linear: signed coefficients; LightGBM: SHAP values via TreeExplainer) are saved per model.

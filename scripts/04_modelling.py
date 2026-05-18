@@ -240,6 +240,7 @@ print(f"  Test  kappa: [{meta_test['kappa'].min():.2f}, {meta_test['kappa'].max(
 
 sensor_train: dict[str, tuple[pd.DataFrame, np.ndarray, np.ndarray]] = {}
 sensor_test: dict[str, tuple[pd.DataFrame, np.ndarray, np.ndarray]] = {}
+sensor_test_sweep_ids: dict[str, pd.DataFrame] = {}
 
 for sensor_name, sel_info in feature_selection.items():
     if sensor_name in FEATURE_OVERRIDE:
@@ -264,13 +265,16 @@ for sensor_name, sel_info in feature_selection.items():
     X_te = df_test.loc[te_mask, retained].reset_index(drop=True)
     y_te = meta_test.loc[te_mask, "kappa"].reset_index(drop=True)
     rpm_te_all = meta_test.loc[te_mask, "rpm"].reset_index(drop=True)
+    sweep_ids_te = df_test.loc[te_mask, ["file", "sweep"]].reset_index(drop=True)
     valid_te = X_te.notna().all(axis=1)
     X_te = X_te[valid_te].reset_index(drop=True)
     y_te = y_te[valid_te].values
     rpm_te = rpm_te_all[valid_te].values
+    sweep_ids_te = sweep_ids_te[valid_te].reset_index(drop=True)
 
     sensor_train[sensor_name] = (X_tr, y_tr, rpm_tr)
     sensor_test[sensor_name] = (X_te, y_te, rpm_te)
+    sensor_test_sweep_ids[sensor_name] = sweep_ids_te
 
     print(f"  Features: {retained}")
     print(f"  Train: {X_tr.shape}  |  Test: {X_te.shape}")
@@ -302,17 +306,24 @@ def _merge_sensors(df_src, meta_src, retained_map):
     parts = []
     for sname, ret in retained_map.items():
         parts.append(_build_keyed(df_src, meta_src, sname, ret))
+    n_before = len(parts[0])
     merged = parts[0]
     for part in parts[1:]:
         # inner join: only sweeps present for all sensors
         feat_cols = [c for c in part.columns if c not in ("kappa", "rpm")]
         merged = merged.join(part[feat_cols], how="inner")
+    n_after = len(merged)
+    if n_after < n_before:
+        print(f"  Inner join: {n_before} → {n_after} sweeps "
+              f"({n_before - n_after} dropped — at least one sensor missing)")
     feat_cols = [c for c in merged.columns if c not in ("kappa", "rpm")]
+    sweep_ids = merged.index.to_frame(index=False)
     return (
         merged[feat_cols].values,
         merged["kappa"].values,
         feat_cols,
         merged["rpm"].values,
+        sweep_ids,
     )
 
 
@@ -325,11 +336,13 @@ retained_map = {
 rpm_combined_train: np.ndarray | None = None
 rpm_combined_test: np.ndarray | None = None
 
+combined_test_sweep_ids: pd.DataFrame | None = None
+
 try:
-    X_combined_train, y_combined_train, combined_feature_names, rpm_combined_train = _merge_sensors(
+    X_combined_train, y_combined_train, combined_feature_names, rpm_combined_train, _ = _merge_sensors(
         df_train, meta_train, retained_map
     )
-    X_combined_test, y_combined_test, _, rpm_combined_test = _merge_sensors(
+    X_combined_test, y_combined_test, _, rpm_combined_test, combined_test_sweep_ids = _merge_sensors(
         df_test, meta_test, retained_map
     )
     X_combined_train = pd.DataFrame(X_combined_train, columns=combined_feature_names)
@@ -731,13 +744,20 @@ for result in results:
     pd.DataFrame(result.fold_metrics).to_csv(fold_path, index=False)
     print(f"Saved: {fold_path.name}")
 
-    # Save hold-out predictions
+    # Save hold-out predictions (with sweep identifiers for cross-model alignment)
     if result.holdout_y_true is not None:
+        if result.sensor == "combined":
+            _sweep_ids = combined_test_sweep_ids
+        else:
+            _sweep_ids = sensor_test_sweep_ids.get(result.sensor)
         ho_df = pd.DataFrame({
             "y_true": result.holdout_y_true,
             "y_pred": result.holdout_y_pred,
             "residual": result.holdout_y_true - result.holdout_y_pred,
         })
+        if _sweep_ids is not None and len(_sweep_ids) == len(ho_df):
+            ho_df.insert(0, "sweep", _sweep_ids["sweep"].values)
+            ho_df.insert(0, "file", _sweep_ids["file"].values)
         ho_path = PREDICTIONS_DIR / f"model_holdout_{tag}.csv"
         ho_df.to_csv(ho_path, index=False)
         print(f"Saved: {ho_path.name}")

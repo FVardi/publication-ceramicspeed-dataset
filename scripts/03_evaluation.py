@@ -45,7 +45,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.linear_model import ElasticNet, ElasticNetCV, Ridge, RidgeCV
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from tqdm import tqdm
 
@@ -240,10 +240,15 @@ y_combined_train: np.ndarray | None = None
 
 try:
     parts = [_build_keyed(df_train, meta_train, sname, ret) for sname, ret in retained_map.items()]
+    n_before = len(parts[0])
     merged = parts[0]
     for part in parts[1:]:
         feat_cols = [c for c in part.columns if c != "kappa"]
         merged = merged.join(part[feat_cols], how="inner")
+    n_after = len(merged)
+    if n_after < n_before:
+        print(f"  Inner join: {n_before} → {n_after} sweeps "
+              f"({n_before - n_after} dropped — at least one sensor missing)")
     feat_cols = [c for c in merged.columns if c != "kappa"]
     X_combined_train = pd.DataFrame(merged[feat_cols].values, columns=feat_cols)
     y_combined_train = merged["kappa"].values
@@ -372,10 +377,15 @@ def repeated_nested_cv(
     desc: str = "",
 ) -> np.ndarray:
     """Run R×k repeated nested CV; return array of shape (R*k,) RMSE scores."""
+    # Bin κ into 5 quantile-based strata so rare high/low values are spread
+    # evenly across folds rather than potentially concentrating in one fold.
+    y_bins = pd.qcut(np.asarray(y), q=5, labels=False, duplicates="drop").astype(int)
     fold_splits = [
         (tr, val)
         for r in range(n_repeats)
-        for tr, val in KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r).split(X)
+        for tr, val in StratifiedKFold(
+            n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r
+        ).split(X, y_bins)
     ]
     scores = []
     with tqdm(total=len(fold_splits), desc=desc or "folds", leave=False) as pbar:

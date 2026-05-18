@@ -89,9 +89,15 @@ def _ensure_viscosity(meta: dict) -> dict:
     are used as constants.
     """
     out = dict(meta)
-    for key, value in _VISCOSITY_FALLBACK.items():
-        if key not in out:
-            out[key] = value
+    injected = [k for k in _VISCOSITY_FALLBACK if k not in out]
+    for key in injected:
+        out[key] = _VISCOSITY_FALLBACK[key]
+    if injected:
+        logger.warning(
+            "Viscosity metadata missing — falling back to hardcoded Keratech 22 "
+            "constants for: %s. Verify this file uses the correct lubricant.",
+            injected,
+        )
     return out
 
 #: Default signal-cleaning settings.  Callers can override individual
@@ -268,7 +274,11 @@ def load_and_process_file(
     scfg = _resolve_signal_cfg(signal_clean_cfg)
     do_clean = scfg.pop("enabled", True)
 
-    hdf5_data = load_hdf5_file(file_path, sensors=sensors)
+    try:
+        hdf5_data = load_hdf5_file(file_path, sensors=sensors)
+    except Exception as exc:
+        logger.error("Failed to read HDF5 file %s: %s — skipping.", file_path, exc)
+        return [], [], []
 
     file_name = hdf5_data["file_name"]
     fs = hdf5_data["fs"]

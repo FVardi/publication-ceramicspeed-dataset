@@ -109,6 +109,21 @@ sweep_selection:
   - sweep_2449
 
 # =============================================================================
+# Feature analysis & selection
+# =============================================================================
+
+feature_selection:
+  corr_min: 0.1        # Minimum |Spearman ρ| AND |Pearson r| required to retain a feature
+  vif_threshold: 10.0  # Features with VIF above this are candidates for greedy removal
+
+# =============================================================================
+# Evaluation
+# =============================================================================
+
+evaluation:
+  shap_top_k: 10  # Number of top features per model for cross-model SHAP agreement tables
+
+# =============================================================================
 # Modelling
 # =============================================================================
 

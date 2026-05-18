@@ -70,6 +70,10 @@ for _d in [SCRIPT_DIR, FIGURES_DIR, TABLES_DIR]:
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
 
+feat_sel_cfg = cfg.get("feature_selection", {})
+CORR_MIN: float = feat_sel_cfg.get("corr_min", 0.1)
+VIF_THRESHOLD: float = feat_sel_cfg.get("vif_threshold", 10.0)
+
 # %%
 # =============================================================================
 # Load data and split by sensor before cleaning
@@ -143,10 +147,9 @@ us_pearson = pearson_correlation(us_df, us_kappa)
 
 # %%
 # =============================================================================
-# Threshold filter — both |ρ| ≥ 0.5 and |r| ≥ 0.5 required
+# Threshold filter — both |ρ| ≥ CORR_MIN and |r| ≥ CORR_MIN required
+# (configured via feature_selection.corr_min in config.yaml)
 # =============================================================================
-
-CORR_MIN = 0.1
 
 ae_keep = (ae_spearman["rho"].abs() >= CORR_MIN) & (ae_pearson["r"].abs() >= CORR_MIN)
 us_keep = (us_spearman["rho"].abs() >= CORR_MIN) & (us_pearson["r"].abs() >= CORR_MIN)
@@ -270,8 +273,8 @@ print("Saved: vif_barplot.png")
 # Redundancy summary — flag features by all three criteria
 # =============================================================================
 
-ae_redundancy = identify_redundant_features(ae_corr_mat, ae_vif)
-us_redundancy = identify_redundant_features(us_corr_mat, us_vif)
+ae_redundancy = identify_redundant_features(ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
+us_redundancy = identify_redundant_features(us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
 
 # %%
 print("AE redundancy flags:")
@@ -285,8 +288,8 @@ print(us_redundancy.to_string())
 # Greedy redundancy reduction — retained feature subsets
 # =============================================================================
 
-ae_retained = reduce_redundant_features(ae_df, ae_kappa, ae_corr_mat, ae_vif)
-us_retained = reduce_redundant_features(us_df, us_kappa, us_corr_mat, us_vif)
+ae_retained = reduce_redundant_features(ae_df, ae_kappa, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
+us_retained = reduce_redundant_features(us_df, us_kappa, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
 
 # %%
 print(f"\nAE: {len(ae_df.columns)} → {len(ae_retained)} features retained")

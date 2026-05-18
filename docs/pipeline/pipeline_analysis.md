@@ -2,7 +2,7 @@
 
 **Project:** CeramicSpeed — Lubrication condition monitoring via AE and UL  
 **Target variable:** κ (kappa) — ISO 281 viscosity ratio  
-**Date:** 2026-05-12
+**Created:** 2026-05-12 | **Last reviewed:** 2026-05-18 | **Fixes applied:** 2026-05-18
 
 ---
 
@@ -125,83 +125,96 @@ The structure is solid — reproducible YAML config, rigorous nested CV, three-m
 
 ### High severity
 
-**1. Polynomial top-k feature selection is biased**
+**1. Polynomial top-k feature selection bias** ✓ Fixed 2026-05-18
 
-In `scripts/04_evaluation.py:262` and equivalently in script 03, Pearson correlation is computed on the **full training set** to select the top-k features before the outer fold split. This means feature selection can see validation data, invalidating the nested CV for the Polynomial model. The top-k selection must be performed inside the outer fold using only that fold's training indices.
+~~In `scripts/04_evaluation.py:262`, Pearson correlation is computed on the **full training set** to select the top-k features before the outer fold split.~~
 
-**2. Viscosity fallback is silent**
+*Clarification:* `scripts/03_evaluation.py:_poly_fold_score` was already correct — it uses only `X_vals[tr, j]`. The bug was in `src/ceramicspeed/modelling.py:train_polynomial_cv`, where the internal CV for alpha selection used top-k features pre-selected on the full training set (mild leakage into alpha selection). Fixed by computing top-k inside each fold loop independently; the final model still uses global top-k (legitimate).
 
-`src/ceramicspeed/loading.py` applies Keratech 22 viscosity constants whenever the measurement file lacks viscosity metadata. No warning is printed, no flag is set in the output. Since κ is entirely derived from viscosity, systematically wrong values could be present for a subset of experiments without any trace.
+**2. Viscosity fallback is silent** ✓ Fixed 2026-05-18
 
-**3. Pre-filter / band-filter inconsistency**
+~~`src/ceramicspeed/loading.py` applies Keratech 22 viscosity constants whenever the measurement file lacks viscosity metadata with no warning.~~
 
-Broadband UL features are extracted from the pre-filtered signal (0–20 kHz), but AE band-specific features are extracted from the raw cleaned signal. The two code paths diverge without documentation of the rationale, making the design easy to misread or accidentally break when modifying feature extraction.
+`_ensure_viscosity` now emits `logger.warning(...)` listing the injected keys whenever fallback values are applied.
 
-**4. Combined model data loss is silent**
+**3. Pre-filter / band-filter inconsistency** — documented, by design
 
-The inner join on (file, sweep) used to build the combined AE+UL feature matrix drops any sweep where one sensor is missing. There is no log of how many sweeps were lost, so combined models could be trained on substantially less data than single-sensor models without any visible signal.
+Broadband UL features are extracted from the pre-filtered signal (0–20 kHz), but AE band-specific features are extracted from the raw cleaned signal. The rationale is documented in `config.yaml` under `sensor_prefilter`. No code change needed.
 
-**5. Correlation threshold hardcoded and unjustified**
+**4. Combined model data loss is silent** ✓ Fixed 2026-05-18
 
-`CORR_MIN = 0.1` in `scripts/02_feature_analysis.py` is the gate for feature retention. No reference or rationale is given. A threshold of 0.1 is permissive (retains weakly correlated features). It should live in `config.yaml` with a comment explaining the choice.
+~~The inner join on (file, sweep) drops sweeps silently.~~
+
+`_merge_sensors` in `scripts/04_modelling.py` now prints a before → after sweep count with the number of dropped rows. Additionally, holdout CSVs now include `file` and `sweep` columns so `scripts/05_holdout_tests.py` can align cross-model comparisons on the common subset rather than skipping them.
+
+**5. Correlation threshold hardcoded and unjustified** ✓ Fixed 2026-05-18
+
+~~`CORR_MIN = 0.1` hardcoded in `scripts/02_feature_analysis.py`.~~
+
+Moved to `config.yaml` under `feature_selection.corr_min`. The misleading comment (which said "0.5") has been corrected. `VIF_THRESHOLD` also moved to `feature_selection.vif_threshold` and passed explicitly to `identify_redundant_features` and `reduce_redundant_features`.
 
 ---
 
 ### Medium severity
 
-**6. No κ regime stratification in CV**
+**6. No κ regime stratification in CV** ✓ Fixed 2026-05-18
 
-`KFold` splits are random. Rare high-κ or low-κ samples can concentrate in one fold, making CV estimates unreliable for the tails of the distribution. `StratifiedKFold` on the three κ regime labels (< 0.5, 0.5–1.0, ≥ 1.0) would give more reliable and reproducible estimates.
+~~`KFold` splits are random. Rare high-κ or low-κ samples can concentrate in one fold.~~
 
-**7. Cross-feature-set holdout tests are incomplete**
+`repeated_nested_cv` in `scripts/03_evaluation.py` now uses `StratifiedKFold` with 5 quantile-based κ bins, ensuring rare high/low κ values are spread evenly across folds.
 
-The Wilcoxon / Diebold-Mariano tests in `scripts/04_evaluation.py:536` only run if `len(y_true_a) == len(y_true_b)` and values are `allclose`. Because combined models have fewer samples (inner join), sensor-vs-combined comparisons are silently skipped — leaving the most practically interesting comparison unevaluated at the holdout level.
+**7. Cross-feature-set holdout tests are incomplete** ✓ Fixed 2026-05-18
 
-**8. SHAP for Polynomial is misleading**
+~~Wilcoxon / Diebold-Mariano tests silently skipped when combined and single-sensor models have different test set sizes.~~
 
-`LinearExplainer` is applied to degree-2 expanded features (e.g., `rms²`, `rms × kurtosis`), not to the original features. These interaction-term importances are not directly comparable to the original-feature SHAP values from Elastic Net or LightGBM, and should not appear in the same cross-model agreement tables without a note.
+Holdout CSVs now include `file` and `sweep` columns (added in `scripts/04_modelling.py`). `scripts/05_holdout_tests.py` now uses `_align_predictions()` which merges models on their common sweeps before running tests, replacing the old length-match + allclose check.
 
-**9. Publication reporting gaps**
+**8. SHAP for Polynomial is misleading** ✓ Documented 2026-05-18
 
-- No confidence intervals on absolute model performance (only ΔRMSE between models is CI-bounded)
-- No regime-level classification accuracy (κ < 0.5 / 0.5–1.0 / ≥ 1.0 confusion matrix or F1)
-- No holdout regime-stratified test — the most practically relevant question (does the model generalise to the right lubrication regime?) is not answered with a dedicated metric
+`LinearExplainer` is applied to degree-2 expanded features (e.g., `rms²`, `rms × kurtosis`), not to the original features. These interaction-term importances are not directly comparable to ElasticNet or LightGBM SHAP values. A NOTE comment has been added in `scripts/05_holdout_tests.py` before the cross-model agreement computation.
+
+**9. Publication reporting gaps** — partially resolved
+
+- ✓ Fixed 2026-05-18 — Bootstrap CIs on absolute holdout R², MAE, RMSE added to `05_holdout_tests.py` via `bootstrap_metric_ci()` in `src/ceramicspeed/evaluation.py`. Results saved to `outputs/05_holdout_tests/tables/holdout_metrics_with_ci.csv`.
+- No regime-level classification accuracy (κ < 0.5 / 0.5–1.0 / ≥ 1.0 confusion matrix or F1) — not pursued; this is a regression task and regime breakdown is not a standard expectation.
 
 ---
 
 ### Low severity
 
-**10. Signal cleaning disabled by default**
+**10. Signal cleaning disabled by default** — resolved
 
-`signal_cleaning.enabled: true` appears in a comment but `enabled: false` is the config default. Whether this is intentional (data is already clean) or a development shortcut is not documented.
+`signal_cleaning.enabled: true` in `config.yaml` (was previously `false` in an older version; now correctly enabled).
 
 **11. Several tunable parameters are hardcoded throughout the codebase:**
 
-| Parameter | Location | Value | Should be |
-|---|---|---|---|
-| PCA variance threshold | `src/ceramicspeed/analysis.py` | 95% | `config.yaml` |
-| SHAP top-k agreement | `src/ceramicspeed/evaluation.py` | 10 | `config.yaml` |
-| Saturation flat tolerance | `src/ceramicspeed/cleaning.py` | 1e-10 | `config.yaml` |
-| VIF threshold | `src/ceramicspeed/analysis.py` | hardcoded | `config.yaml` |
-| Z-score spike threshold | `src/ceramicspeed/features.py` | 6.0 | `config.yaml` |
+| Parameter | Location | Status |
+|---|---|---|
+| SHAP top-k agreement | `scripts/05_holdout_tests.py` | ✓ Moved to `evaluation.shap_top_k` in `config.yaml` |
+| VIF threshold | `scripts/02_feature_analysis.py` | ✓ Moved to `feature_selection.vif_threshold` in `config.yaml` |
+| Saturation flat tolerance | `src/ceramicspeed/cleaning.py` | open — minor, internal constant |
+| Z-score spike threshold default | `src/ceramicspeed/loading.py` DEFAULT_SIGNAL_CLEAN_CFG | open — already overridable via config |
 
-**12. No error handling for malformed HDF5 files**
+**12. No error handling for malformed HDF5 files** ✓ Fixed 2026-05-18
 
-`src/ceramicspeed/loading.py` has no try-except around h5py reads. A single malformed file crashes the parallel worker and loses all data from that job.
+~~A single malformed file crashes the parallel worker.~~
+
+`load_and_process_file` in `src/ceramicspeed/loading.py` now wraps the `load_hdf5_file` call in a try-except, logs the error, and returns empty results so the parallel job continues.
 
 ---
 
 ## Prioritised Recommendations
 
-| Priority | Fix | Effort | Impact |
+| Priority | Fix | Status | Impact |
 |---|---|---|---|
-| 1 | Fix polynomial top-k selection — use only current fold's train indices | Medium | High — fixes biased CV |
-| 2 | Warn (or error) when viscosity fallback is applied | Low | High — data integrity |
-| 3 | Log combined model data loss (sweep count before/after inner join) | Low | High — silent data loss |
-| 4 | Move `CORR_MIN` to `config.yaml`; justify threshold choice | Low | Medium |
-| 5 | Add stratified CV by κ regime | Medium | Medium |
-| 6 | Add regime classification metrics (confusion matrix / F1 per regime) | Medium | High — publication |
-| 7 | Enable holdout-level tests for cross-feature-set pairs (relax alignment check) | Medium | Medium |
-| 8 | Document pre-filter vs band-filter design intent | Low | Medium |
-| 9 | Add try-except around HDF5 loads with per-file error logging | Low | Low-Medium |
-| 10 | Move all hardcoded thresholds to `config.yaml` | Low | Medium — maintainability |
+| 1 | Per-fold top-k in `train_polynomial_cv` — fold-local feature selection | ✓ Fixed | High |
+| 2 | Warn when viscosity fallback is applied | ✓ Fixed | High — data integrity |
+| 3 | Log combined model data loss (sweep count before/after inner join) | ✓ Fixed | High |
+| 4 | Move `CORR_MIN` and `VIF_THRESHOLD` to `config.yaml` | ✓ Fixed | Medium |
+| 5 | Stratified CV by κ quantile bins | ✓ Fixed | Medium |
+| 6 | Add regime classification metrics (confusion matrix / F1 per regime) | **Open** | High — publication |
+| 7 | Enable holdout-level tests for cross-feature-set pairs | ✓ Fixed | Medium |
+| 8 | Document pre-filter vs band-filter design intent | ✓ Documented in config | Medium |
+| 9 | HDF5 error handling with per-file logging | ✓ Fixed | Low-Medium |
+| 10 | Move SHAP top-k to `config.yaml` | ✓ Fixed | Low |
+| 11 | Add confidence intervals on absolute holdout performance metrics | **Open** | High — publication |

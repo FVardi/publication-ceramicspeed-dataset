@@ -311,6 +311,62 @@ def bootstrap_rmse_diff_ci(
     return float(observed), lower, upper
 
 
+def bootstrap_metric_ci(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    n_boot: int = 10_000,
+    alpha: float = 0.05,
+    random_state: int = 42,
+) -> dict[str, tuple[float, float, float]]:
+    """Bootstrap confidence intervals for R², MAE, and RMSE of a single model.
+
+    Parameters
+    ----------
+    y_true:
+        True target values.
+    y_pred:
+        Model predictions aligned with y_true.
+    n_boot:
+        Number of bootstrap resamples (default 10,000).
+    alpha:
+        CI level: returns (1−alpha)×100% interval (default 0.05 → 95% CI).
+    random_state:
+        Seed for reproducibility.
+
+    Returns
+    -------
+    dict mapping metric name → (point_estimate, lower_ci, upper_ci)
+    """
+    from sklearn.metrics import r2_score, mean_absolute_error
+
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    n = len(y_true)
+
+    rng = np.random.default_rng(random_state)
+    boot_r2   = np.empty(n_boot)
+    boot_mae  = np.empty(n_boot)
+    boot_rmse = np.empty(n_boot)
+
+    for i in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        yt, yp = y_true[idx], y_pred[idx]
+        boot_r2[i]   = r2_score(yt, yp)
+        boot_mae[i]  = mean_absolute_error(yt, yp)
+        boot_rmse[i] = np.sqrt(np.mean((yt - yp) ** 2))
+
+    lo, hi = alpha / 2, 1 - alpha / 2
+    obs_r2   = float(r2_score(y_true, y_pred))
+    obs_mae  = float(mean_absolute_error(y_true, y_pred))
+    obs_rmse = float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
+
+    return {
+        "r2":   (obs_r2,   float(np.percentile(boot_r2,   100 * lo)), float(np.percentile(boot_r2,   100 * hi))),
+        "mae":  (obs_mae,  float(np.percentile(boot_mae,  100 * lo)), float(np.percentile(boot_mae,  100 * hi))),
+        "rmse": (obs_rmse, float(np.percentile(boot_rmse, 100 * lo)), float(np.percentile(boot_rmse, 100 * hi))),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Cross-model feature agreement
 # ---------------------------------------------------------------------------
