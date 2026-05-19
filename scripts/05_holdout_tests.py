@@ -32,9 +32,12 @@ Usage
 
 import argparse
 import json
+import sys
 import warnings
 from itertools import combinations
 from typing import NamedTuple
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 import numpy as np
 import pandas as pd
@@ -111,6 +114,10 @@ with open(feat_sel_path) as fh:
 
 sensor_names = list(feature_selection.keys())
 
+# Map internal sensor keys to display labels (UL→US)
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+display_sensor_names = [_SENSOR_LABEL.get(s, s) for s in sensor_names]
+
 # %%
 # =============================================================================
 # Load repeated CV scores from 03_evaluation.py
@@ -126,7 +133,7 @@ cv_scores_df = pd.read_csv(cv_scores_path)
 cv_scores: dict[str, np.ndarray] = {col: cv_scores_df[col].values for col in cv_scores_df.columns}
 
 has_combined = any("_Combined" in n for n in cv_scores)
-feature_sets = sensor_names + (["Combined"] if has_combined else [])
+feature_sets = display_sensor_names + (["Combined"] if has_combined else [])
 model_types = ["ElasticNet", "Polynomial", "LightGBM"]
 
 print(f"Loaded CV scores for {len(cv_scores)} models "
@@ -363,6 +370,8 @@ print(f"\nSaved: {holdout_metrics_path.name}")
 for fs in feature_sets:
     imp_map: dict[str, pd.Series] = {}
     for mt in model_types:
+        if mt == "Polynomial":
+            continue  # Polynomial SHAP is on expanded features — not comparable to original-feature SHAP
         tag = f"{mt}_{fs}".lower()
         imp_path = MODEL_SHAP_DIR / f"shap_importance_{tag}.csv"
         if imp_path.exists():
@@ -370,9 +379,6 @@ for fs in feature_sets:
             imp_map[mt] = imp_series
     if len(imp_map) < 2:
         continue
-    # NOTE: Polynomial SHAP values are computed over degree-2 expanded features
-    # (e.g. rms², rms×kurtosis), not original features. Polynomial feature ranks
-    # in this agreement table are not directly comparable to ElasticNet or LightGBM.
     top_k = min(SHAP_TOP_K, min(len(s) for s in imp_map.values()))
     agree_df = cross_model_agreement(imp_map, top_k=top_k)
     agree_path = SHAP_DIR / f"shap_agreement_{fs.lower()}.csv"

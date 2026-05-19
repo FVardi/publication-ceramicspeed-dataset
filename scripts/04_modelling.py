@@ -36,6 +36,9 @@ Usage
 import argparse
 import json
 import math
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -743,6 +746,14 @@ for result in results:
     fold_path = TABLES_DIR / f"model_folds_{tag}.csv"
     pd.DataFrame(result.fold_metrics).to_csv(fold_path, index=False)
     print(f"Saved: {fold_path.name}")
+
+    # Save CV out-of-fold predictions (used by 06_plots.py to regenerate CV scatter)
+    _rpm_cv = _cv_rpm.get(result.sensor, np.array([]))
+    cv_df = pd.DataFrame({"y_true": result.y_true, "y_pred": result.y_pred})
+    if len(_rpm_cv) == len(result.y_true):
+        cv_df["rpm"] = _rpm_cv
+    cv_df.to_csv(PREDICTIONS_DIR / f"model_cv_{tag}.csv", index=False)
+    print(f"Saved: model_cv_{tag}.csv")
 
     # Save hold-out predictions (with sweep identifiers for cross-model alignment)
     if result.holdout_y_true is not None:

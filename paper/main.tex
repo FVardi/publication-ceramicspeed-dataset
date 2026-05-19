@@ -20,6 +20,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{todonotes}
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{multirow}
@@ -141,23 +142,22 @@ research attention than vibration-based fault detection and remaining useful lif
 estimation, which are now mature technologies deployed widely in industry.
 The principal reason is that lubrication-related signal changes are subtler and more
 entangled with operating conditions than the impulse signatures of surface spalling or
-raceway cracks.
-Accurate, online LCM would enable condition-based relubrication: applying lubricant at
+raceway cracks.\todo{Find reference for this} Accurate, online LCM would enable condition-based relubrication: applying lubricant at
 the right time in the right quantity rather than following time-based schedules that
 systematically produce both under- and over-lubrication~\cite{wakiru_review_2019}.
 
-Passive, non-invasive sensing methods---acoustic emission (AE), vibration, and passive
-ultrasound---are the most practically attractive for industrial LCM because they require
+Passive, non-invasive sensing methods -- acoustic emission (AE), vibration, and passive
+ultrasound (US) -- are practically attractive for industrial LCM because they require
 no bearing modification and can be retrofitted to bearings in service.
 Among these, AE is sensitive to the broadband stress waves emitted by asperity contact
 events and micro-crack propagation across a wide frequency range (typically
-50~kHz--\SI{4}{MHz}), while passive ultrasound at 38--40~kHz is already industrially
+50~kHz--\SI{4}{MHz})\todo{Find reference for this}, while passive ultrasound at 38--40~kHz is already industrially
 deployed for threshold-based lubrication assessment~\cite{lineham_ultrasonic_2008}.
 Despite both being in practical use, they have not been studied simultaneously in a unified
 regression framework with a physics-based lubrication reference variable.
 
-A key advance in the field has been the use of the ISO~281 viscosity ratio $\kappa$ as a
-continuous regression target~\cite{jakobsen_detecting_2023,jakobsen_low_2024}.
+The ISO~281 viscosity ratio $\kappa$ has been used as a
+continuous regression target~\cite{jakobsen_detecting_2023,jakobsen_low_2024} to develop models, which are sensitive to lubrication changes.
 Since $\kappa$ encodes the ratio of actual lubricant viscosity to the minimum required for
 full elastohydrodynamic lubrication (EHL) at the current operating conditions, a
 model trained to predict $\kappa$ implicitly learns the operating-condition dependence
@@ -166,7 +166,7 @@ Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} demonstrate $\k
 regression from vibration and passive ultrasound features using LASSO and neural
 networks, establishing the methodological foundation that this paper builds upon.
 
-The complementarity of AE and passive acoustic sensing for LCM has been argued on
+The complementarity of AE and passive US for LCM has been argued on
 physical grounds in several reviews~\cite{shang_comprehensive_2024,wang_advanced_2024},
 but has not been quantified experimentally in a unified framework.
 Whether jointly exploiting both sensor modalities improves $\kappa$ prediction over
@@ -178,23 +178,19 @@ impose cost and complexity, and are only justified if they provide non-redundant
 This paper makes the following contributions:
 \begin{enumerate}
   \item \textbf{Novel dual-channel experiment.} The first study to simultaneously acquire
-    AE and passive UL signals from a ball bearing and regress both, individually
+    AE and passive US signals from a ball bearing and regress both, individually
     and jointly, to $\kappa$ using a common dataset and analytical ground truth.
   \item \textbf{Sub-band feature extraction for AE.} Features are computed from the
     broadband AE signal and from three frequency sub-bands (20--500~kHz,
     500~kHz--1~MHz, 1--2~MHz), enabling model-driven identification of the most
     informative AE frequency range for lubrication state prediction.
-  \item \textbf{Quantified fusion test.} The first quantitative test of AE--UL
-    complementarity in a unified experimental framework, including a negative fusion result
+  \item \textbf{Quantified fusion test.} The first quantitative test of AE--US
+    complementarity in a unified experimental framework, including a positive fusion result
     that directly addresses an open question in the LCM literature.
   \item \textbf{Rigorous statistical evaluation.} Model comparisons are grounded in
     repeated nested cross-validation and corrected significance tests (Nadeau--Bengio,
     Holm--Bonferroni, Wilcoxon, Diebold--Mariano, bootstrap $\Delta$RMSE) that properly
     account for data re-use in cross-validated estimates.
-  \item \textbf{Open dataset.} A publicly available simultaneous AE + passive UL
-    bearing dataset with analytically derived $\kappa$ reference values, addressing the
-    absence of standardised benchmark data identified as a primary gap in the
-    field~\cite{shang_comprehensive_2024}.
 \end{enumerate}
 
 The remainder of the paper is organised as follows.

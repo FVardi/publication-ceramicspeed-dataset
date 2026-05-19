@@ -20,7 +20,9 @@ Usage
 
 import argparse
 import json
+import sys
 
+sys.stdout.reconfigure(encoding="utf-8")
 
 import matplotlib.pyplot as plt
 

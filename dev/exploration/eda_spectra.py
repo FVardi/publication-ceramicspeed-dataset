@@ -134,10 +134,10 @@ _plot_waveform_grid(sweeps, "AE", "steelblue", "Waveform — AE", "eda_waveform_
 
 # %%
 # -----------------------------------------------------------------------------
-# Waveform — UL
+# Waveform — US
 # -----------------------------------------------------------------------------
 
-_plot_waveform_grid(sweeps, "UL", "steelblue", "Waveform — UL", "eda_waveform_ul.png")
+_plot_waveform_grid(sweeps, "UL", "steelblue", "Waveform — US", "eda_waveform_us.png")
 
 # %%
 # -----------------------------------------------------------------------------
@@ -160,12 +160,12 @@ for fmin, fmax in AE_BANDS_KHZ:
 
 # %%
 # -----------------------------------------------------------------------------
-# Spectrum — UL
+# Spectrum — US
 # -----------------------------------------------------------------------------
 
 _plot_grid(sweeps, "UL", 0, UL_FMAX_KHZ, _fft_mag, "|FFT| [V]", "steelblue",
-           "Spectrum — UL  0–20 kHz",
-           "eda_spectrum_ul.png")
+           "Spectrum — US  0–20 kHz",
+           "eda_spectrum_us.png")
 
 # %%
 # -----------------------------------------------------------------------------
@@ -179,11 +179,11 @@ for fmin, fmax in AE_BANDS_KHZ:
 
 # %%
 # -----------------------------------------------------------------------------
-# Envelope spectrum — UL
+# Envelope spectrum — US
 # -----------------------------------------------------------------------------
 
 _plot_grid(sweeps, "UL", 0, UL_FMAX_KHZ, _env_mag, "|FFT env| [V]", "darkorange",
-           "Envelope spectrum — UL  0–20 kHz",
-           "eda_envelope_spectrum_ul.png")
+           "Envelope spectrum — US  0–20 kHz",
+           "eda_envelope_spectrum_us.png")
 
 # %%

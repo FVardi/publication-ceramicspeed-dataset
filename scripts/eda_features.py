@@ -63,6 +63,8 @@ EDA_DIR.mkdir(exist_ok=True)
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
 
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+
 # %%
 # =============================================================================
 # Load features + metadata
@@ -150,19 +152,21 @@ ul_df = ul_df[feature_selection["UL"]["retained"]]
 # Defining it in the visualizations cell would cause stale references if
 # cells are re-run out of order.
 _sensors = [
-    ("AE", ae_df, ae_metadata),
-    ("UL", ul_df, ul_metadata),
+    (_SENSOR_LABEL.get("AE", "AE"), ae_df, ae_metadata),
+    (_SENSOR_LABEL.get("UL", "UL"), ul_df, ul_metadata),
 ]
 
 for label, feat_df, sel in [("AE", ae_df, feature_selection["AE"]), ("UL", ul_df, feature_selection["UL"])]:
-    print(f"{label}: using {len(sel['retained'])} / {len(sel['all_columns'])} selected features: {sel['retained']}")
+    disp = _SENSOR_LABEL.get(label, label)
+    print(f"{disp}: using {len(sel['retained'])} / {len(sel['all_columns'])} selected features: {sel['retained']}")
 
 # %%
 # =============================================================================
 # Summary printout
 # =============================================================================
 
-for label, feat_df, meta in [("AE", ae_df, ae_metadata), ("UL", ul_df, ul_metadata)]:
+for _key, feat_df, meta in [("AE", ae_df, ae_metadata), ("UL", ul_df, ul_metadata)]:
+    label = _SENSOR_LABEL.get(_key, _key)
     feat_cols = feat_df.columns.tolist()
     print(f"\n{'='*60}")
     print(f"Sensor: {label}")
@@ -190,8 +194,8 @@ HARDCODED_AE_FEATURES = [
 ]
 
 _plot_sensors = [
-    ("AE", ae_df_all[HARDCODED_AE_FEATURES], ae_metadata),
-    ("UL", ul_df,                             ul_metadata),
+    (_SENSOR_LABEL.get("AE", "AE"), ae_df_all[HARDCODED_AE_FEATURES], ae_metadata),
+    (_SENSOR_LABEL.get("UL", "UL"), ul_df,                             ul_metadata),
 ]
 
 for label, feat_df, meta in _plot_sensors:
