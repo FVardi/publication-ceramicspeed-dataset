@@ -19,6 +19,17 @@
 \usepackage[english]{babel}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
+% Search order: paper/figures (committed fallbacks) then live script outputs.
+% Remove the ../outputs/... paths when packaging for journal submission
+% and run scripts/copy_figures.py to populate paper/figures/ instead.
+\graphicspath{
+  {figures/}
+  {../outputs/02_feature_analysis/figures/}
+  {../outputs/03_evaluation/figures/}
+  {../outputs/04_modelling/figures/}
+  {../outputs/06_plots/}
+  {../outputs/eda/}
+}
 \usepackage{booktabs}
 \usepackage{todonotes}
 \usepackage{array}
@@ -285,28 +296,6 @@ machinery noise components.
 Whether this partial independence translates into complementary $\kappa$ information is
 the central empirical question of this study.
 
-\subsection{Hjorth parameters and spectral shape features}
-\label{subsec:features_bg}
-
-Hjorth parameters are time-domain features derived from the signal's variance and its
-successive derivatives~\cite{hjorth_eeg_1970}.
-Mobility $M$ is defined as
-\begin{equation}
-  M = \sqrt{\frac{\mathrm{Var}(\dot{x})}{\mathrm{Var}(x)}},
-  \label{eq:mobility}
-\end{equation}
-where $\dot{x}$ is the time derivative of signal $x$.
-Mobility quantifies the mean frequency content of the signal: high mobility indicates a
-higher proportion of rapid transitions, consistent with impulsive asperity contact
-events.
-Complexity $C = M(\dot{x}) / M(x)$ quantifies the deviation from a pure sinusoid.
-
-Spectral shape features---frequency kurtosis, normalised bandwidth, spectral flatness---
-describe the distribution of signal energy across the frequency axis independently of
-absolute energy level.
-Unlike amplitude features (RMS, peak, variance), spectral shape features are invariant to
-overall amplitude scaling and are therefore less directly confounded by rotational speed.
-
 %% ============================================================================
 \section{Experimental Setup}
 \label{sec:setup}
@@ -319,11 +308,7 @@ The test rig is a custom-built bearing test stand at CeramicSpeed (Holstebro, De
 A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter
 $d_{pw} = \SI{38.0}{mm}$, 9 chrome steel rolling elements, dynamic load rating
 \SI{14000}{N}) is driven by a variable-frequency electric motor controlled through a
-variable-frequency drive (VFD).
-The bearing is loaded radially by a static weight and lubricated by a
-defined quantity of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$,
-$\nu_{100} = \SI{4.1}{cSt}$, NLGI grade~1 equivalent, ISO VG~22).
-Temperature is monitored by a PT100 sensor on the bearing housing and controlled
+variable-frequency drive (VFD). The bearing is loaded radially by a static weight and lubricated by a defined \todo{What is the amount?} quantity of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$). \todo{Do we need NLGI cosistency grade?} Temperature is monitored by a PT100 sensor on the bearing housing and controlled
 passively through the test duration and ambient conditions.
 
 \textit{Note on VFD noise:} Harmonic artefacts from the VFD switching frequency are
@@ -444,12 +429,18 @@ by the 99.9th/0.1st percentile), the sweep is flagged as clipped;
 median within a $\pm 5$-sample window.
 After cleaning, 1598 of 1600 sweep--sensor pairs are retained.
 
+\subsection{Waveform and spectral visualisation}
+\label{subsec:visualisation}
+\todo{Add example waveforms and spectra here to illustrate the raw signals and the effect of cleaning.}
+\todo{Show the sub-bands and explain the information in those.}
+
 \subsection{Feature extraction}
 \label{subsec:features_extract}
 
 Twenty-six features are computed from the cleaned voltage signal for each
 sweep--sensor pair, comprising 12~time-domain and 14~frequency-domain statistics:
 
+\todo{Make table with features and refer to papers where they are used.}
 \textbf{Time-domain (12):} peak, RMS, standard deviation, variance, skewness, kurtosis,
 crest factor, shape factor, impulse factor, margin factor, Hjorth mobility, Hjorth
 complexity.
@@ -477,43 +468,6 @@ The UL channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth
 before broadband feature extraction, consistent with the effective bandwidth of the
 heterodyned probe.
 No frequency sub-bands are computed for the UL channel, giving 26~candidate UL features.
-
-\subsection{Feature selection}
-\label{subsec:selection}
-
-A two-stage procedure reduces the high-dimensional candidate feature space before
-modelling.
-
-\textbf{Stage 1 --- Correlation threshold filter.}
-Features must satisfy both:
-\begin{equation}
-  |\rho(\text{feature},\, \kappa)| \geq 0.1
-  \quad \text{and} \quad
-  |r(\text{feature},\, \kappa)| \geq 0.1,
-  \label{eq:filter}
-\end{equation}
-where $\rho$ is the Spearman rank correlation and $r$ is the Pearson correlation with
-$\kappa$ computed across all retained sweeps for the sensor in question.
-Features failing either threshold are discarded; the remainder proceed to Stage~2.
-The combined Spearman--Pearson criterion screens for features that carry a monotonic
-relationship with $\kappa$ (Spearman) and a linear one (Pearson), requiring agreement
-between the two correlation estimates as a robustness check.
-
-\textbf{Stage 2 --- Redundancy reduction.}
-Features are flagged as redundant if they have VIF~$\geq 10$ \emph{and} at least one
-pairwise partner with absolute Spearman inter-feature correlation $|r_{ij}| \geq 0.90$.
-Flagged features are removed by a greedy procedure that retains the highest-$|\rho|$
-representative from each correlated cluster and discards the rest.
-This joint VIF--pairwise criterion avoids the aggressive pruning of a pure VIF filter
-while still eliminating near-duplicate features from multicollinear clusters.
-
-\textbf{Feature ranking.}
-All features passing Stage~1 are ranked by their combined absolute Spearman and Pearson
-correlation score $|\rho| + |r|$.
-The ranking guides the redundancy reduction (highest-ranked representatives are retained)
-and is reported for interpretability.
-
-All retained features are standardised to zero mean and unit variance before modelling.
 
 %% ============================================================================
 \section{Feature Analysis}
