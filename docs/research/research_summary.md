@@ -2,15 +2,15 @@
 
 ## Research Goal
 
-The central goal is to determine whether simultaneously acquired acoustic emission (AE) and passive ultrasound (UL) signals can be used to predict the ISO 281 viscosity ratio κ — a physics-grounded, continuous index of lubrication adequacy in rolling element bearings — and whether combining both sensor modalities improves prediction accuracy over either sensor used alone. Because both sensors are passive and non-invasive, the work is motivated by practical industrial retrofit: no bearing modification is required.
+The central goal is to determine whether simultaneously acquired acoustic emission (AE) and passive ultrasound (US) signals can be used to predict the ISO 281 viscosity ratio κ — a physics-grounded, continuous index of lubrication adequacy in rolling element bearings — and whether combining both sensor modalities improves prediction accuracy over either sensor used alone. Because both sensors are passive and non-invasive, the work is motivated by practical industrial retrofit: no bearing modification is required.
 
 ## Research Gap
 
-Inadequate lubrication is responsible for an estimated 30–80% of rolling element bearing failures, yet reliable online lubrication condition monitoring (LCM) remains unsolved. Prior work by Jakobsen et al. established κ regression from vibration and passive ultrasound using LASSO and neural networks. The present study addresses two gaps those works leave open: (1) AE has never been applied to κ regression; and (2) AE and passive ultrasound have never been studied simultaneously in a unified experimental and regression framework. It is therefore unknown whether the two modalities provide complementary κ information or largely redundant information.
+Inadequate lubrication is responsible for an estimated 30–80% of rolling element bearing failures, yet reliable online lubrication condition monitoring (LCM) remains unsolved. Prior work by Jakobsen et al. established κ regression from vibration and passive ultrasound using LASSO and neural networks. The present study addresses two gaps those works leave open: (1) AE has never been applied to κ regression; and (2) AE and passive ultrasound (US) have never been studied simultaneously in a unified experimental and regression framework. It is therefore unknown whether the two modalities provide complementary κ information or largely redundant information.
 
 ## Hypotheses
 
-The primary hypothesis is that a multi-sensor model combining AE and UL features will outperform either single-sensor model. A secondary hypothesis is that operating conditions (speed and temperature) substantially confound the raw feature–κ correlations, and that partial correlation analysis controlling for these variables will reveal a reduced but physically interpretable set of robust κ indicators.
+The primary hypothesis is that a multi-sensor model combining AE and US features will outperform either single-sensor model. A secondary hypothesis is that operating conditions (speed and temperature) substantially confound the raw feature–κ correlations, and that partial correlation analysis controlling for these variables will reveal a reduced but physically interpretable set of robust κ indicators.
 
 ## Experimental Setup
 
@@ -18,11 +18,21 @@ Experiments are conducted at CeramicSpeed (Holstebro, Denmark) on a custom beari
 
 ## Signal Processing and Feature Selection
 
-Each signal is cleaned (NaN/Inf interpolation, spike removal, clipping and saturation detection) before feature extraction. Because the UL sensor is a heterodyned probe with effective content below approximately 10 kHz, a sensor-specific pre-filter is applied to UL signals before feature computation, preventing the 790 kHz of out-of-band noise from biasing spectral features such as centre frequency and RMS frequency. In addition to broadband processing, physics-motivated bandpass-filtered variants are extracted: for AE, bands at 0–50 kHz, 50–200 kHz, and 200–800 kHz; for UL, bands at 0–4 kHz and 6–10 kHz (bracketing the VFD switching artefact at ~5 kHz). From each signal, 26 features are computed comprising 12 time-domain statistics (including Hjorth mobility and complexity) and 14 frequency-domain statistics (spectral shape, flatness, kurtosis, normalised bandwidth). Feature selection applies a Spearman rank correlation ranking followed by a variance inflation factor and pairwise correlation filter, retaining 10 AE and 11 UL features for modelling.
+Each signal is cleaned (NaN/Inf interpolation, spike removal, clipping and saturation detection) before feature extraction. Because the US sensor is a heterodyned probe with effective content below approximately 20 kHz, a sensor-specific pre-filter (0–20 kHz lowpass) is applied to US signals before feature computation, preventing out-of-band DAQ noise from biasing spectral features such as centre frequency and RMS frequency. In addition to broadband processing, physics-motivated bandpass-filtered variants are extracted: for AE, bands at 20–500 kHz, 500–1000 kHz, and 1000–2000 kHz; for US, bands at 0–10 kHz and 10–20 kHz. From each signal, 26 features are computed comprising 12 time-domain statistics (including Hjorth mobility and complexity) and 14 frequency-domain statistics (spectral shape, flatness, kurtosis, normalised bandwidth). Feature selection applies a Spearman rank correlation threshold (|ρ| ≥ 0.1 and |r| ≥ 0.1) followed by a variance inflation factor and pairwise correlation filter, retaining 32 AE features and 12 US features for modelling.
 
 ## Modelling
 
-Five model families are benchmarked across three sensor configurations (AE only, UL only, AE + UL combined): linear regression, Bayesian ridge regression, polynomial regression, LightGBM gradient boosting, and a shallow neural network. Models are tuned via 5-fold cross-validation on an 80% training split and evaluated on a held-out 20% test set. The best hold-out performance is achieved by LightGBM on AE features alone (R² = 0.64, RMSE = 0.19 κ-units). Fusing AE and UL features does not improve upon AE alone (R² = 0.60 combined), a negative fusion result attributed to the limited independent κ information carried by the heterodyned acoustic channel relative to AE.
+Three model families are benchmarked across three sensor configurations (AE only, US only, AE + US combined): Elastic Net, polynomial regression (degree 2), and LightGBM gradient boosting. Models are evaluated via repeated nested cross-validation (5 outer folds × 5 repeats, κ-stratified) on an 80% training split and evaluated on a held-out 20% test set.
+
+Key holdout results (LightGBM, 95% bootstrap CI):
+
+| Configuration | R² | RMSE |
+|---|---|---|
+| AE only | 0.951 [0.941, 0.959] | 0.078 [0.071, 0.085] |
+| US only | 0.805 [0.781, 0.827] | 0.155 [0.145, 0.165] |
+| AE + US combined | 0.960 [0.951, 0.966] | 0.071 [0.065, 0.078] |
+
+AE substantially outperforms US alone (ΔRMSE = 0.077, p < 0.001). The combined model outperforms AE alone by a modest but statistically significant margin (ΔRMSE = 0.007, 95% CI [0.004, 0.010], p < 0.001), indicating that US carries a small amount of κ information complementary to AE. Within each sensor configuration, LightGBM significantly outperforms both linear models (p < 0.001 for all pairs). Statistical testing uses the Nadeau-Bengio corrected repeated k-fold t-test with Holm-Bonferroni correction for within-feature-set comparisons, and Wilcoxon signed-rank, Diebold-Mariano, and bootstrap ΔRMSE CIs for cross-feature-set comparisons.
 
 ## Scope and Limitations
 

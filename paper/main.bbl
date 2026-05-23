@@ -53,9 +53,14 @@ J~Miettinen, P~Andersson, and V~Wikstr{\"o}m.
 \newblock Analysis of grease lubrication of a ball bearing using acoustic emission measurement.
 \newblock {\em Proceedings of the Institution of Mechanical Engineers, Part~J: Journal of Engineering Tribology}, 215(6):535--544, 2001.
 
-\bibitem{hjorth_eeg_1970}
-Bo~Hjorth.
-\newblock {EEG} analysis based on time domain properties.
-\newblock {\em Electroencephalography and Clinical Neurophysiology}, 29(3):306--310, 1970.
+\bibitem{nadeau_inference_2003}
+Claude Nadeau and Yoshua Bengio.
+\newblock Inference for the generalization error.
+\newblock {\em Machine Learning}, 52(3):239--281, 2003.
+
+\bibitem{harvey_testing_1997}
+David Harvey, Stephen Leybourne, and Paul Newbold.
+\newblock Testing the equality of prediction mean squared errors.
+\newblock {\em International Journal of Forecasting}, 13(2):281--291, 1997.
 
 \end{thebibliography}

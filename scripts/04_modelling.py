@@ -36,6 +36,9 @@ Usage
 import argparse
 import json
 import math
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -240,6 +243,7 @@ print(f"  Test  kappa: [{meta_test['kappa'].min():.2f}, {meta_test['kappa'].max(
 
 sensor_train: dict[str, tuple[pd.DataFrame, np.ndarray, np.ndarray]] = {}
 sensor_test: dict[str, tuple[pd.DataFrame, np.ndarray, np.ndarray]] = {}
+sensor_test_sweep_ids: dict[str, pd.DataFrame] = {}
 
 for sensor_name, sel_info in feature_selection.items():
     if sensor_name in FEATURE_OVERRIDE:
@@ -264,13 +268,16 @@ for sensor_name, sel_info in feature_selection.items():
     X_te = df_test.loc[te_mask, retained].reset_index(drop=True)
     y_te = meta_test.loc[te_mask, "kappa"].reset_index(drop=True)
     rpm_te_all = meta_test.loc[te_mask, "rpm"].reset_index(drop=True)
+    sweep_ids_te = df_test.loc[te_mask, ["file", "sweep"]].reset_index(drop=True)
     valid_te = X_te.notna().all(axis=1)
     X_te = X_te[valid_te].reset_index(drop=True)
     y_te = y_te[valid_te].values
     rpm_te = rpm_te_all[valid_te].values
+    sweep_ids_te = sweep_ids_te[valid_te].reset_index(drop=True)
 
     sensor_train[sensor_name] = (X_tr, y_tr, rpm_tr)
     sensor_test[sensor_name] = (X_te, y_te, rpm_te)
+    sensor_test_sweep_ids[sensor_name] = sweep_ids_te
 
     print(f"  Features: {retained}")
     print(f"  Train: {X_tr.shape}  |  Test: {X_te.shape}")
@@ -280,6 +287,9 @@ for sensor_name, sel_info in feature_selection.items():
 # Build combined feature matrices — merge on (file, sweep) so row alignment
 # is guaranteed even if different NaN rows were dropped per sensor
 # =============================================================================
+
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+
 
 def _build_keyed(df_src, meta_src, sensor_name, retained):
     """Return feature DataFrame indexed by (file, sweep) with kappa and rpm columns."""
@@ -291,24 +301,32 @@ def _build_keyed(df_src, meta_src, sensor_name, retained):
     X["rpm"] = km["rpm"].values
     valid = X[retained].notna().all(axis=1)
     X = X[valid].set_index(["file", "sweep"])
-    return X.rename(columns=lambda c: f"{sensor_name}__{c}" if c not in ("kappa", "rpm") else c)
+    label = _SENSOR_LABEL.get(sensor_name, sensor_name)
+    return X.rename(columns=lambda c: c if (c in ("kappa", "rpm") or c.startswith(f"{label}_")) else f"{label}__{c}")
 
 
 def _merge_sensors(df_src, meta_src, retained_map):
     parts = []
     for sname, ret in retained_map.items():
         parts.append(_build_keyed(df_src, meta_src, sname, ret))
+    n_before = len(parts[0])
     merged = parts[0]
     for part in parts[1:]:
         # inner join: only sweeps present for all sensors
         feat_cols = [c for c in part.columns if c not in ("kappa", "rpm")]
         merged = merged.join(part[feat_cols], how="inner")
+    n_after = len(merged)
+    if n_after < n_before:
+        print(f"  Inner join: {n_before} → {n_after} sweeps "
+              f"({n_before - n_after} dropped — at least one sensor missing)")
     feat_cols = [c for c in merged.columns if c not in ("kappa", "rpm")]
+    sweep_ids = merged.index.to_frame(index=False)
     return (
         merged[feat_cols].values,
         merged["kappa"].values,
         feat_cols,
         merged["rpm"].values,
+        sweep_ids,
     )
 
 
@@ -321,11 +339,13 @@ retained_map = {
 rpm_combined_train: np.ndarray | None = None
 rpm_combined_test: np.ndarray | None = None
 
+combined_test_sweep_ids: pd.DataFrame | None = None
+
 try:
-    X_combined_train, y_combined_train, combined_feature_names, rpm_combined_train = _merge_sensors(
+    X_combined_train, y_combined_train, combined_feature_names, rpm_combined_train, _ = _merge_sensors(
         df_train, meta_train, retained_map
     )
-    X_combined_test, y_combined_test, _, rpm_combined_test = _merge_sensors(
+    X_combined_test, y_combined_test, _, rpm_combined_test, combined_test_sweep_ids = _merge_sensors(
         df_test, meta_test, retained_map
     )
     X_combined_train = pd.DataFrame(X_combined_train, columns=combined_feature_names)
@@ -416,7 +436,7 @@ for sensor_name in feature_selection:
         l1_ratios=ENET_L1_RATIOS,
         max_iter=ENET_MAX_ITER,
         random_state=RANDOM_STATE,
-        name=f"ElasticNet_{sensor_name}",
+        name=f"ElasticNet_{_SENSOR_LABEL.get(sensor_name, sensor_name)}",
         sensor=sensor_name,
     )
     results.append(result)
@@ -459,7 +479,7 @@ for sensor_name in feature_selection:
         n_splits=CV_N_SPLITS,
         alphas=POLY_ALPHAS,
         random_state=RANDOM_STATE,
-        name=f"Polynomial_{sensor_name}",
+        name=f"Polynomial_{_SENSOR_LABEL.get(sensor_name, sensor_name)}",
         sensor=sensor_name,
     )
     results.append(result)
@@ -511,7 +531,7 @@ for sensor_name in feature_selection:
         param_grid=LGB_PARAM_GRID,
         n_trials=LGB_N_TRIALS,
         random_state=RANDOM_STATE,
-        name=f"LightGBM_{sensor_name}",
+        name=f"LightGBM_{_SENSOR_LABEL.get(sensor_name, sensor_name)}",
         sensor=sensor_name,
     )
     results.append(result)
@@ -727,13 +747,28 @@ for result in results:
     pd.DataFrame(result.fold_metrics).to_csv(fold_path, index=False)
     print(f"Saved: {fold_path.name}")
 
-    # Save hold-out predictions
+    # Save CV out-of-fold predictions (used by 06_plots.py to regenerate CV scatter)
+    _rpm_cv = _cv_rpm.get(result.sensor, np.array([]))
+    cv_df = pd.DataFrame({"y_true": result.y_true, "y_pred": result.y_pred})
+    if len(_rpm_cv) == len(result.y_true):
+        cv_df["rpm"] = _rpm_cv
+    cv_df.to_csv(PREDICTIONS_DIR / f"model_cv_{tag}.csv", index=False)
+    print(f"Saved: model_cv_{tag}.csv")
+
+    # Save hold-out predictions (with sweep identifiers for cross-model alignment)
     if result.holdout_y_true is not None:
+        if result.sensor == "combined":
+            _sweep_ids = combined_test_sweep_ids
+        else:
+            _sweep_ids = sensor_test_sweep_ids.get(result.sensor)
         ho_df = pd.DataFrame({
             "y_true": result.holdout_y_true,
             "y_pred": result.holdout_y_pred,
             "residual": result.holdout_y_true - result.holdout_y_pred,
         })
+        if _sweep_ids is not None and len(_sweep_ids) == len(ho_df):
+            ho_df.insert(0, "sweep", _sweep_ids["sweep"].values)
+            ho_df.insert(0, "file", _sweep_ids["file"].values)
         ho_path = PREDICTIONS_DIR / f"model_holdout_{tag}.csv"
         ho_df.to_csv(ho_path, index=False)
         print(f"Saved: {ho_path.name}")
@@ -755,11 +790,12 @@ for result in _combined_results:
     shap_df_combined = pd.read_csv(shap_csv, index_col=0)
     shap_imp_combined = shap_df_combined.abs().mean(axis=0)
 
-    # Group by sensor prefix
+    # Group by sensor prefix (use display label to match renamed combined-model columns)
     group_imp: dict[str, float] = {}
     for prefix in _sensor_prefixes:
-        cols = [c for c in shap_imp_combined.index if c.startswith(f"{prefix}__")]
-        group_imp[prefix] = float(shap_imp_combined[cols].sum()) if cols else 0.0
+        display = _SENSOR_LABEL.get(prefix, prefix)
+        cols = [c for c in shap_imp_combined.index if c.startswith(f"{display}__")]
+        group_imp[display] = float(shap_imp_combined[cols].sum()) if cols else 0.0
 
     group_df = pd.DataFrame(
         {"sensor": list(group_imp.keys()), "total_mean_abs_shap": list(group_imp.values())}
@@ -857,4 +893,4 @@ print(f"\nAll outputs saved to: {OUTPUT_DIR}")
 # =============================================================================
 
 if __name__ == "__main__":
-    print("\n03_modelling complete.")
+    print("\n04_modelling complete.")

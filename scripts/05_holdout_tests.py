@@ -32,8 +32,12 @@ Usage
 
 import argparse
 import json
+import sys
 import warnings
 from itertools import combinations
+from typing import NamedTuple
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 import numpy as np
 import pandas as pd
@@ -45,6 +49,7 @@ from ceramicspeed.evaluation import (
     wilcoxon_test,
     diebold_mariano_test,
     bootstrap_rmse_diff_ci,
+    bootstrap_metric_ci,
     cross_model_agreement,
     pairwise_tests_dataframe,
 )
@@ -85,6 +90,7 @@ for _d in [SCRIPT_DIR, TABLES_DIR, SHAP_DIR]:
 
 model_cfg = cfg.get("modelling", {})
 CV_N_SPLITS: int = model_cfg.get("cv_n_splits", 5)
+SHAP_TOP_K: int = cfg.get("evaluation", {}).get("shap_top_k", 10)
 
 _dbg = cfg.get("debug", {})
 ALPHA: float = 0.05
@@ -108,6 +114,10 @@ with open(feat_sel_path) as fh:
 
 sensor_names = list(feature_selection.keys())
 
+# Map internal sensor keys to display labels (UL→US)
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+display_sensor_names = [_SENSOR_LABEL.get(s, s) for s in sensor_names]
+
 # %%
 # =============================================================================
 # Load repeated CV scores from 03_evaluation.py
@@ -123,7 +133,7 @@ cv_scores_df = pd.read_csv(cv_scores_path)
 cv_scores: dict[str, np.ndarray] = {col: cv_scores_df[col].values for col in cv_scores_df.columns}
 
 has_combined = any("_Combined" in n for n in cv_scores)
-feature_sets = sensor_names + (["Combined"] if has_combined else [])
+feature_sets = display_sensor_names + (["Combined"] if has_combined else [])
 model_types = ["ElasticNet", "Polynomial", "LightGBM"]
 
 print(f"Loaded CV scores for {len(cv_scores)} models "
@@ -137,6 +147,7 @@ print(f"Loaded CV scores for {len(cv_scores)} models "
 holdout_y_true: dict[str, np.ndarray] = {}
 holdout_y_pred: dict[str, np.ndarray] = {}
 holdout_residuals: dict[str, np.ndarray] = {}
+holdout_sweeps: dict[str, pd.DataFrame] = {}  # (file, sweep) identifiers per model
 
 for model_name in cv_scores:
     ho_path = MODEL_PREDICTIONS_DIR / f"model_holdout_{model_name.lower()}.csv"
@@ -147,6 +158,8 @@ for model_name in cv_scores:
     holdout_y_true[model_name] = ho_df["y_true"].values
     holdout_y_pred[model_name] = ho_df["y_pred"].values
     holdout_residuals[model_name] = ho_df["residual"].values
+    if "file" in ho_df.columns and "sweep" in ho_df.columns:
+        holdout_sweeps[model_name] = ho_df[["file", "sweep"]].reset_index(drop=True)
 
 print(f"Loaded holdout predictions for {len(holdout_y_true)} / {len(cv_scores)} models")
 
@@ -207,11 +220,62 @@ print(f"\nSaved: {within_results_path.name}")
 # =============================================================================
 
 
-def _shared_true(model_a: str, model_b: str) -> np.ndarray | None:
+class _AlignedPreds(NamedTuple):
+    y_true: np.ndarray
+    e_a: np.ndarray
+    e_b: np.ndarray
+    y_pred_a: np.ndarray
+    y_pred_b: np.ndarray
+    n_common: int
+
+
+def _align_predictions(model_a: str, model_b: str) -> _AlignedPreds | None:
+    """Return predictions aligned on the common sweep subset.
+
+    When both models have sweep identifiers (file, sweep columns in their
+    holdout CSVs), aligns on the intersection so models trained on different
+    sample sizes (e.g. single-sensor vs combined) can still be compared.
+    Falls back to the old length-match check for backwards compatibility.
+    """
     ya = holdout_y_true.get(model_a)
     yb = holdout_y_true.get(model_b)
-    if ya is not None and yb is not None and len(ya) == len(yb) and np.allclose(ya, yb):
-        return ya
+    if ya is None or yb is None:
+        return None
+
+    sa = holdout_sweeps.get(model_a)
+    sb = holdout_sweeps.get(model_b)
+
+    if sa is not None and sb is not None:
+        df_a = sa.copy()
+        df_a["y_true_a"] = ya
+        df_a["y_pred_a"] = holdout_y_pred[model_a]
+        df_b = sb.copy()
+        df_b["y_true_b"] = yb
+        df_b["y_pred_b"] = holdout_y_pred[model_b]
+        merged = df_a.merge(df_b, on=["file", "sweep"], how="inner")
+        if len(merged) == 0:
+            return None
+        assert np.allclose(merged["y_true_a"].values, merged["y_true_b"].values), \
+            f"y_true mismatch between {model_a} and {model_b} on common sweeps"
+        return _AlignedPreds(
+            y_true=merged["y_true_a"].values,
+            e_a=merged["y_true_a"].values - merged["y_pred_a"].values,
+            e_b=merged["y_true_b"].values - merged["y_pred_b"].values,
+            y_pred_a=merged["y_pred_a"].values,
+            y_pred_b=merged["y_pred_b"].values,
+            n_common=len(merged),
+        )
+
+    # Fallback: old alignment check (same length + identical y_true)
+    if len(ya) == len(yb) and np.allclose(ya, yb):
+        return _AlignedPreds(
+            y_true=ya,
+            e_a=holdout_residuals[model_a],
+            e_b=holdout_residuals[model_b],
+            y_pred_a=holdout_y_pred[model_a],
+            y_pred_b=holdout_y_pred[model_b],
+            n_common=len(ya),
+        )
     return None
 
 
@@ -229,14 +293,13 @@ for model_a, model_b in cross_pairs:
         row["cv_t_stat"] = t_stat
         row["cv_p_value"] = p_cv
 
-    shared_true = _shared_true(model_a, model_b)
-    if shared_true is not None:
-        e_a = holdout_residuals[model_a]
-        e_b = holdout_residuals[model_b]
-        w_stat, p_wilcox = wilcoxon_test(e_a, e_b)
-        dm_stat, p_dm = diebold_mariano_test(e_a, e_b)
+    aligned = _align_predictions(model_a, model_b)
+    if aligned is not None:
+        row["n_common_sweeps"] = aligned.n_common
+        w_stat, p_wilcox = wilcoxon_test(aligned.e_a, aligned.e_b)
+        dm_stat, p_dm = diebold_mariano_test(aligned.e_a, aligned.e_b)
         mean_diff, ci_lo, ci_hi = bootstrap_rmse_diff_ci(
-            shared_true, holdout_y_pred[model_a], holdout_y_pred[model_b], n_boot=N_BOOT
+            aligned.y_true, aligned.y_pred_a, aligned.y_pred_b, n_boot=N_BOOT
         )
         row.update({
             "wilcoxon_stat": w_stat,
@@ -274,12 +337,41 @@ print(f"Saved: {all_path.name}")
 
 # %%
 # =============================================================================
+# Per-model holdout metrics with bootstrap CIs
+# =============================================================================
+
+metric_rows = []
+for model_name in sorted(holdout_y_true.keys()):
+    cis = bootstrap_metric_ci(
+        holdout_y_true[model_name],
+        holdout_y_pred[model_name],
+        n_boot=N_BOOT,
+        alpha=ALPHA,
+        random_state=42,
+    )
+    ci_label = f"ci_{int((1 - ALPHA) * 100)}"
+    row: dict = {"model": model_name}
+    for metric, (point, lo, hi) in cis.items():
+        row[metric] = point
+        row[f"{metric}_{ci_label}_lo"] = lo
+        row[f"{metric}_{ci_label}_hi"] = hi
+    metric_rows.append(row)
+
+holdout_metrics_df = pd.DataFrame(metric_rows)
+holdout_metrics_path = TABLES_DIR / "holdout_metrics_with_ci.csv"
+holdout_metrics_df.to_csv(holdout_metrics_path, index=False)
+print(f"\nSaved: {holdout_metrics_path.name}")
+
+# %%
+# =============================================================================
 # Cross-model feature agreement (SHAP-based)
 # =============================================================================
 
 for fs in feature_sets:
     imp_map: dict[str, pd.Series] = {}
     for mt in model_types:
+        if mt == "Polynomial":
+            continue  # Polynomial SHAP is on expanded features — not comparable to original-feature SHAP
         tag = f"{mt}_{fs}".lower()
         imp_path = MODEL_SHAP_DIR / f"shap_importance_{tag}.csv"
         if imp_path.exists():
@@ -287,7 +379,7 @@ for fs in feature_sets:
             imp_map[mt] = imp_series
     if len(imp_map) < 2:
         continue
-    top_k = min(10, min(len(s) for s in imp_map.values()))
+    top_k = min(SHAP_TOP_K, min(len(s) for s in imp_map.values()))
     agree_df = cross_model_agreement(imp_map, top_k=top_k)
     agree_path = SHAP_DIR / f"shap_agreement_{fs.lower()}.csv"
     agree_df.to_csv(agree_path, index=False)
@@ -307,6 +399,13 @@ for _, row in within_results.iterrows():
     flag = "*" if row.get("cv_reject_holm", False) else " "
     p = row.get("cv_p_value", float("nan"))
     print(f"  {flag} {row['model_a']:30s} vs {row['model_b']:30s}  p={p:.4f}")
+
+ci_label = f"ci_{int((1 - ALPHA) * 100)}"
+print(f"\n--- Holdout metrics with {int((1 - ALPHA) * 100)}% bootstrap CI ---")
+for _, row in holdout_metrics_df.iterrows():
+    print(f"  {row['model']:35s}  "
+          f"R²={row['r2']:.4f} [{row[f'r2_{ci_label}_lo']:.4f}, {row[f'r2_{ci_label}_hi']:.4f}]  "
+          f"RMSE={row['rmse']:.4f} [{row[f'rmse_{ci_label}_lo']:.4f}, {row[f'rmse_{ci_label}_hi']:.4f}]")
 
 print("\n--- Cross-feature-set significance ---")
 for _, row in cross_results.iterrows():

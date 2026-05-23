@@ -644,39 +644,49 @@ def train_polynomial_cv(
             return X[:, self.indices]
 
     y_train = np.asarray(y_train, dtype=float)
+    X_vals_full = X_train.values  # keep for per-fold feature selection
+    _alphas = alphas or np.logspace(-3, 4, 15)
 
-    # Determine which columns to use (all, or top-k by |Pearson r|)
+    # Global top-k for the final model only (fit on all training data — legitimate).
     if top_k is not None and top_k < X_train.shape[1]:
-        corr = np.abs(
-            np.array([np.corrcoef(X_train.iloc[:, j], y_train)[0, 1]
-                      for j in range(X_train.shape[1])])
+        global_corr = np.abs(
+            np.array([np.corrcoef(X_vals_full[:, j], y_train)[0, 1]
+                      for j in range(X_vals_full.shape[1])])
         )
-        top_idx = np.argsort(corr)[::-1][:top_k].tolist()
+        top_idx = np.argsort(global_corr)[::-1][:top_k].tolist()
     else:
         top_idx = list(range(X_train.shape[1]))
 
     col_names = [X_train.columns[i] for i in top_idx]
-    X_sel = X_train.iloc[:, top_idx]
-    _alphas = alphas or np.logspace(-3, 4, 15)
 
-    # Nested CV: alpha selection is local to each outer fold's training split.
-    # RidgeCV with cv=None uses GCV (efficient leave-one-out) as the inner CV.
+    # Nested CV: both feature selection and alpha selection are computed from
+    # each fold's training rows only, so no validation data leaks into HP search.
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     y_pred_oof = np.empty_like(y_train)
     fold_metrics: list[dict[str, float]] = []
 
-    for fold_idx, (tr_idx, val_idx) in enumerate(cv.split(X_sel.values)):
+    for fold_idx, (tr_idx, val_idx) in enumerate(cv.split(X_vals_full)):
+        # Per-fold top-k: correlation computed on this fold's training rows only.
+        if top_k is not None and top_k < X_vals_full.shape[1]:
+            fold_corr = np.abs(
+                np.array([np.corrcoef(X_vals_full[tr_idx, j], y_train[tr_idx])[0, 1]
+                          for j in range(X_vals_full.shape[1])])
+            )
+            fold_top_idx = np.argsort(fold_corr)[::-1][:top_k]
+        else:
+            fold_top_idx = np.arange(X_vals_full.shape[1])
+
         fold_scaler = StandardScaler()
         fold_poly = PolynomialFeatures(degree=degree, include_bias=False)
 
         X_tr_poly = fold_poly.fit_transform(
-            fold_scaler.fit_transform(X_sel.values[tr_idx])
+            fold_scaler.fit_transform(X_vals_full[np.ix_(tr_idx, fold_top_idx)])
         )
         X_val_poly = fold_poly.transform(
-            fold_scaler.transform(X_sel.values[val_idx])
+            fold_scaler.transform(X_vals_full[np.ix_(val_idx, fold_top_idx)])
         )
 
-        # Inner HP selection on this fold's training data only (GCV)
+        # Inner HP selection on this fold's training data only (GCV).
         inner_ridge_cv = RidgeCV(alphas=_alphas)
         inner_ridge_cv.fit(X_tr_poly, y_train[tr_idx])
         fold_alpha = float(inner_ridge_cv.alpha_)
@@ -696,7 +706,7 @@ def train_polynomial_cv(
     # Select alpha on the full training set for the final model only
     scaler_ref = StandardScaler()
     poly_ref = PolynomialFeatures(degree=degree, include_bias=False)
-    X_poly_ref = poly_ref.fit_transform(scaler_ref.fit_transform(X_sel.values))
+    X_poly_ref = poly_ref.fit_transform(scaler_ref.fit_transform(X_vals_full[:, top_idx]))
     best_alpha = float(RidgeCV(alphas=_alphas).fit(X_poly_ref, y_train).alpha_)
 
     # Final model: Pipeline refit on full training set.

@@ -45,7 +45,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.linear_model import ElasticNet, ElasticNetCV, Ridge, RidgeCV
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from tqdm import tqdm
 
@@ -215,6 +215,9 @@ for sensor_name, sel_info in feature_selection.items():
     print(f"  {sensor_name}: {X_tr.shape[0]} samples, {X_tr.shape[1]} features")
 
 
+_SENSOR_LABEL: dict[str, str] = {"UL": "US"}
+
+
 def _build_keyed(df_src, meta_src, sensor_name, retained):
     mask = df_src["sensor"] == sensor_name
     X = df_src.loc[mask, ["file", "sweep"] + retained].copy()
@@ -223,7 +226,8 @@ def _build_keyed(df_src, meta_src, sensor_name, retained):
     X["kappa"] = km["kappa"].values
     valid = X[retained].notna().all(axis=1)
     X = X[valid].set_index(["file", "sweep"])
-    return X.rename(columns=lambda c: f"{sensor_name}__{c}" if c != "kappa" else c)
+    label = _SENSOR_LABEL.get(sensor_name, sensor_name)
+    return X.rename(columns=lambda c: c if (c == "kappa" or c.startswith(f"{label}_")) else f"{label}__{c}")
 
 
 retained_map = {
@@ -236,10 +240,15 @@ y_combined_train: np.ndarray | None = None
 
 try:
     parts = [_build_keyed(df_train, meta_train, sname, ret) for sname, ret in retained_map.items()]
+    n_before = len(parts[0])
     merged = parts[0]
     for part in parts[1:]:
         feat_cols = [c for c in part.columns if c != "kappa"]
         merged = merged.join(part[feat_cols], how="inner")
+    n_after = len(merged)
+    if n_after < n_before:
+        print(f"  Inner join: {n_before} → {n_after} sweeps "
+              f"({n_before - n_after} dropped — at least one sensor missing)")
     feat_cols = [c for c in merged.columns if c != "kappa"]
     X_combined_train = pd.DataFrame(merged[feat_cols].values, columns=feat_cols)
     y_combined_train = merged["kappa"].values
@@ -368,10 +377,15 @@ def repeated_nested_cv(
     desc: str = "",
 ) -> np.ndarray:
     """Run R×k repeated nested CV; return array of shape (R*k,) RMSE scores."""
+    # Bin κ into 5 quantile-based strata so rare high/low values are spread
+    # evenly across folds rather than potentially concentrating in one fold.
+    y_bins = pd.qcut(np.asarray(y), q=5, labels=False, duplicates="drop").astype(int)
     fold_splits = [
         (tr, val)
         for r in range(n_repeats)
-        for tr, val in KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r).split(X)
+        for tr, val in StratifiedKFold(
+            n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r
+        ).split(X, y_bins)
     ]
     scores = []
     with tqdm(total=len(fold_splits), desc=desc or "folds", leave=False) as pbar:
@@ -397,7 +411,7 @@ sensor_names = list(feature_selection.keys())
 # --- Elastic Net ---
 for sensor_name in sensor_names:
     X_tr, y_tr = sensor_train[sensor_name]
-    model_name = f"ElasticNet_{sensor_name}"
+    model_name = f"ElasticNet_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _enet_fold_score, desc=model_name)
 
@@ -410,7 +424,7 @@ if X_combined_train is not None:
 # --- Polynomial ---
 for sensor_name in sensor_names:
     X_tr, y_tr = sensor_train[sensor_name]
-    model_name = f"Polynomial_{sensor_name}"
+    model_name = f"Polynomial_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _poly_fold_score, desc=model_name)
 
@@ -423,7 +437,7 @@ if X_combined_train is not None:
 # --- LightGBM (nested Optuna HP search per outer fold) ---
 for sensor_name in sensor_names:
     X_tr, y_tr = sensor_train[sensor_name]
-    model_name = f"LightGBM_{sensor_name}"
+    model_name = f"LightGBM_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _lgb_fold_score, desc=model_name)
 
