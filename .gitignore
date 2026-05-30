@@ -7,3 +7,17 @@ __pycache__/
 .venv/
 dev/.venv/
 *.pyc
+
+# LaTeX build artifacts
+paper/build/
+paper/*.aux
+paper/*.log
+paper/*.toc
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/*.lof
+paper/*.lot

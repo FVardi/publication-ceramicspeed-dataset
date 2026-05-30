@@ -1,0 +1,101 @@
+%% ============================================================================
+\section{Signal Processing Pipeline}
+\label{sec:pipeline}
+%% ============================================================================
+
+In this section the signal processing pipeline applied to each sweep--sensor pair, comprising signal cleaning, and feature extraction.
+
+\begin{itemize}
+\item Goal of the pipeline
+\item Elements included in the pipeline
+\item Practical implementation (Python version, libraries used, etc.)
+\end{itemize}
+
+\subsection{Signal cleaning}
+\label{subsec:cleaning}
+
+\subsection{Filter bands}
+\label{subsec:filter_bands}
+
+\subsection{Feature extraction}
+\label{subsec:features_extract}
+
+Twenty-six features are computed from the cleaned voltage signal for each
+sweep--sensor pair, comprising 12 time-domain and 14 frequency-domain statistics,
+as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}.
+
+\begin{table}[htbp]
+\caption{Time-domain features. Notation: $N$ signal length; $\bar{x}$ sample mean;
+  $\sigma$ population standard deviation.}
+\label{tab:features}
+\centering
+{\small\setstretch{1}%
+\begin{tabular}{@{} p{2.8cm} p{6.2cm} p{6.2cm} @{}}
+\toprule
+\textbf{Name} & \textbf{Formula} & \textbf{Description} \\
+\midrule
+Peak & $(\max x - \min x)/2$ & Half the peak-to-peak range. \\[3pt]
+RMS & $\sqrt{N^{-1}\sum_{n}x_n^2}$ & Root mean square amplitude. \\[3pt]
+Std & $\sqrt{N^{-1}\sum_{n}(x_n-\bar{x})^2}$ & Population standard deviation. \\[3pt]
+Variance & $N^{-1}\sum_{n}(x_n-\bar{x})^2$ & Population variance (square of Std). \\[3pt]
+Skewness & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^3$ & Third standardised central moment; amplitude asymmetry. \\[3pt]
+Kurtosis & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^4$ & Fourth standardised central moment; tail heaviness. \\[3pt]
+Crest factor & $x_{\text{peak}}/x_{\text{RMS}}$ & Peak-to-RMS ratio; sensitive to impulsive events. \\[3pt]
+Shape factor & $x_{\text{RMS}}\,/\,(N^{-1}\sum_n|x_n|)$ & Ratio of RMS to mean absolute value. \\[3pt]
+Impulse factor & $x_{\text{peak}}\,/\,(N^{-1}\sum_n|x_n|)$ & Ratio of peak to mean absolute value. \\[3pt]
+Margin factor & $x_{\text{peak}}\,/\,(N^{-1}\sum_n\sqrt{|x_n|})^2$ & Peak divided by squared mean square-root amplitude. \\[3pt]
+Hjorth mobility & $[\operatorname{Var}(x')/\operatorname{Var}(x)]^{1/2}$ & Square root of first-derivative to signal variance ratio; proportional to mean frequency. \\[3pt]
+Hjorth complexity & $M(x')/M(x)$ & Ratio of first-derivative mobility $M$ to signal mobility; bandwidth proxy. \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[htbp]
+\caption{Frequency-domain features (companion to Table~\ref{tab:features}).
+  Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding
+  frequency; $K$ bin count; $\bar{S}=K^{-1}\sum_k S_k$;
+  $\sigma_S = \operatorname{std}(\{S_k\})$; $\Sigma S = \sum_k S_k$;
+  $f_c = (\Sigma S)^{-1}\sum_k f_k S_k$;
+  $\sigma_f = (K^{-1}\sum_k(f_k-f_c)^2)^{1/2}$.}
+\label{tab:features_freq}
+\centering
+{\small\setstretch{1}%
+\begin{tabular}{@{} p{2.8cm} p{6.2cm} p{6.2cm} @{}}
+\toprule
+\textbf{Name} & \textbf{Formula} & \textbf{Description} \\
+\midrule
+Dominant frequency & $f_{\arg\max_k S_k^2}$ & Frequency at which spectral power is maximum. \\[3pt]
+Spectral mean & $\bar{S} = K^{-1}\sum_k S_k$ & Arithmetic mean of the FFT magnitude spectrum. \\[3pt]
+Spectral std & $\sigma_S = \operatorname{std}(\{S_k\})$ & Population standard deviation of the FFT magnitude spectrum. \\[3pt]
+Spectral skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(\sigma_S^3\,\Sigma S)$ & Frequency asymmetry of the magnitude-weighted spectrum, normalised by magnitude std. \\[3pt]
+Spectral kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(\sigma_S^4\,\Sigma S)$ & Frequency tail heaviness of the magnitude-weighted spectrum, normalised by magnitude std. \\[3pt]
+Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Geometric-to-arithmetic mean ratio; 1 for white noise, 0 for a pure tone. \\[3pt]
+Centre frequency & $f_c = \sum_k f_k S_k\,/\,\Sigma S$ & Magnitude-weighted mean frequency (spectral centroid). \\[3pt]
+RMS frequency & $(\sum_k f_k^2 S_k\,/\,\Sigma S)^{1/2}$ & Magnitude-weighted root mean square frequency. \\[3pt]
+Freq.-weighted std & $\sigma_f = (K^{-1}\sum_k(f_k-f_c)^2)^{1/2}$ & RMS deviation of bin frequencies from centre frequency (unweighted by magnitude). \\[3pt]
+Peak frequency & $(\sum_k f_k^4 S_k\,/\,\sum_k f_k^2 S_k)^{1/2}$ & RMS frequency computed with $f_k^2 S_k$ weighting. \\[3pt]
+Norm.\ freq.\ std & $\sigma_f\,/\,f_c$ & Frequency standard deviation normalised by centre frequency. \\[3pt]
+Frequency skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(K\sigma_f^3)$ & Third spectral moment of frequency deviation from centroid, weighted by magnitude. \\[3pt]
+Frequency kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(K\sigma_f^4)$ & Fourth spectral moment of frequency deviation from centroid, weighted by magnitude. \\[3pt]
+Norm.\ bandwidth & $\sum_k|f_k-f_c|^{1/2} S_k\,/\,(K\sigma_f^{1/2})$ & Half-order moment of spectral spread, normalised by $\sigma_f^{1/2}$. \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+All frequency-domain features are computed from the one-sided FFT magnitude spectrum of
+the cleaned signal.
+
+\textbf{AE sub-band decomposition.}
+In addition to broadband features, three frequency sub-bands are carved from the AE
+channel using zero-phase Butterworth bandpass filters:
+(i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
+(ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
+(iii)~1--2~MHz, covering high-frequency micro-fracture events.
+The full 26-feature set is extracted independently for each sub-band, yielding
+$26 \times 4 = 104$~candidate AE features (broadband plus three sub-bands).
+
+\textbf{UL channel pre-filtering.}
+The UL channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth filter
+before broadband feature extraction, consistent with the effective bandwidth of the
+heterodyned probe.
+No frequency sub-bands are computed for the UL channel, giving 26~candidate UL features.
