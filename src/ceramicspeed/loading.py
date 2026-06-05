@@ -170,13 +170,25 @@ def load_hdf5_file(
         bearing_metadata = dict(f["metadata"]["bearing"].attrs)
 
         sweep_list: list[dict[str, Any]] = []
-        for sweep_name, sweep in sweeps_grp.items():
+        for sweep_name in sorted(sweeps_grp.keys(), key=lambda n: int(n.split("_")[1])):
+            sweep = sweeps_grp[sweep_name]
             sweep_data: dict[str, Any] = {
                 "name": sweep_name,
                 "test_parameters": _normalize_sweep_params(dict(sweep.attrs)),
             }
             for sensor_name in sensors:
-                sweep_data[sensor_name] = sweep[sensor_name]["voltage"][()]
+                if sensor_name in sweep:
+                    sweep_data[sensor_name] = sweep[sensor_name]["voltage"][()]
+                else:
+                    logger.debug("Sweep %s: channel %s absent — skipping channel.", sweep_name, sensor_name)
+            # SP = slipring electrical conductance — regression target, not a feature channel.
+            # Collapsed to per-sweep scalars here; spectral features would not be meaningful.
+            if "SP" in sweep:
+                sp_v = sweep["SP"]["voltage"][()]
+                sweep_data["sp_conductance"] = {
+                    "sp_mean_v": float(np.mean(sp_v)),
+                    "sp_std_v": float(np.std(sp_v)),
+                }
             sweep_list.append(sweep_data)
 
     return {
@@ -294,6 +306,9 @@ def load_and_process_file(
         test_parameters = sweep_data["test_parameters"]
 
         for sensor_name in sensors:
+            if sensor_name not in sweep_data:
+                continue
+
             voltage: np.ndarray = sweep_data[sensor_name]
 
             # ---- Signal-level cleaning (before features) ----
@@ -359,6 +374,8 @@ def load_and_process_file(
                 **hdf5_data["bearing_metadata"],
                 **quality_cols,
             }
+            if "sp_conductance" in sweep_data:
+                metadata_row.update(sweep_data["sp_conductance"])
 
             quality_rows.append(_sig_report_to_dict(
                 file_name, sweep_name, sensor_name, sig_report

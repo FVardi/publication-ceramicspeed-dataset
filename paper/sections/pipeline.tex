@@ -1,9 +1,7 @@
 %% ============================================================================
-\section{Signal Processing Pipeline}
+\section{Signal Cleaning and Feature Extraction}
 \label{sec:pipeline}
 %% ============================================================================
-
-In this section the signal processing pipeline applied to each sweep--sensor pair, comprising signal cleaning, and feature extraction.
 
 \begin{itemize}
 \item Goal of the pipeline
@@ -14,14 +12,42 @@ In this section the signal processing pipeline applied to each sweep--sensor pai
 \subsection{Signal cleaning}
 \label{subsec:cleaning}
 
+The raw signals are cleaned with the following procedures:
+\begin{itemize}
+  \item \todo{Write the procedures used in the data cleaning script.}
+\end{itemize}
+
 \subsection{Filter bands}
 \label{subsec:filter_bands}
+The AE and US signals are filtered with multiple low-, high- and band-pass filters, since the information on lubrication conditions contained in the signals is expected to be localised in sub-bands rather than wholly contained in the broadband signals.\todo{Reference to articles which use sub-bands of AE and US signals}
+
+The sub-bands applied prior to feature extraction are listed in Table~\ref{tab:subbands}.
+All filters are 5th-order zero-phase Butterworth filters applied with \texttt{sosfiltfilt}. \todo{Update with final filter type and order}
+
+\begin{table}[htbp]
+\caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
+\label{tab:subbands}
+\centering
+{\small\setstretch{1}%
+\begin{tabular}{@{} l l l r @{}}
+\toprule
+\textbf{Channel} & \textbf{Sub-band} & \textbf{Filter type} & \textbf{Frequency range} \\
+\midrule
+AE & Broadband  & --        & Full bandwidth   \\
+AE & Sub-band 1 & Band-pass & 20--500\,kHz     \\
+AE & Sub-band 2 & Band-pass & 500\,kHz--1\,MHz \\
+AE & Sub-band 3 & Band-pass & 1--2\,MHz        \\
+UL & Broadband  & Low-pass  & 0--20\,kHz       \\
+\bottomrule
+\end{tabular}}
+\end{table}\todo{Update table with final filters}
+
 
 \subsection{Feature extraction}
 \label{subsec:features_extract}
 
-Twenty-six features are computed from the cleaned voltage signal for each
-sweep--sensor pair, comprising 12 time-domain and 14 frequency-domain statistics,
+Features are computed from the cleaned voltage signal for each
+sweep--sensor pair for each sub-band. In total 26 features are computed, comprising 12 time-domain and 14 frequency-domain statistics,
 as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}.
 
 \begin{table}[htbp]

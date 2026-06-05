@@ -6,89 +6,32 @@
 \subsection{Test rig and bearing}
 \label{subsec:rig}
 
-The test rig is a custom-built bearing test stand at CeramicSpeed (Holstebro, Denmark).
-A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter
-$d_{pw} = \SI{38.0}{mm}$, 9 chrome steel rolling elements, dynamic load rating
-\SI{14000}{N}) is driven by a variable-frequency electric motor controlled through a
-variable-frequency drive (VFD). The bearing is loaded radially by a static weight and lubricated by a defined \todo{What is the amount?} quantity of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$) \todo{Do we need NLGI cosistency grade?}. \todo{How is temperature controlled and measured?}
+The test rig is a custom-built bearing test stand at CeramicSpeed (Holstebro, Denmark). A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 chrome steel rolling elements, dynamic load rating \SI{14000}{N}) is driven by a variable-frequency electric motor controlled through a variable-frequency drive (VFD). The bearing is loaded radially by a static weight and lubricated by a defined \todo{What is the amount?} quantity of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$) \todo{Do we need NLGI cosistency grade?}. \todo{How is temperature controlled and measured?}
 
-\textit{Note on VFD noise:} Harmonic artefacts from the VFD switching frequency are
-present at approximately \SI{5}{kHz}\todo{Check that this is correct} and its multiples in the low-frequency range of
-both sensor signals. These are partially filtered out \todo{Explain the process and expected outcome.}
+\textit{Note on VFD noise:} Harmonic artefacts from the VFD switching frequency are present at approximately \SI{5}{kHz}\todo{Check that this is correct} and its multiples in the low-frequency range of both sensor signals. These are partially filtered out \todo{Explain the process and expected outcome.}
+
+\subsection{Operating conditions}
+\label{subsec:ops}
+
+The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step\todo{How is RPM controlled}. This, therefore, results in This is repeated for each of 13 temperature blocks (40–100°C in 5°C increments) where temperature is controlled with \todo{With what?}. Sweeps of rpm are separated with a 2-minute standstill (RPM = 0) at the start of each block for thermal stabilisation.
+
+The lubrication conditions in the bearing are not expected to change during the experiment in other ways than what is entailed by rpm and temperature and the effect of these upon the lubricant. It is not expected or assumed that any degradation, starvation or contamination of the lubricant happens.
 
 \subsection{Sensor configuration and data acquisition}
 \label{subsec:sensors}
 
-Two sensors simultaneously acquired signals from the bearing housing through a shared oscilloscope-based data acquisition (DAQ) system:
+Two sensors simultaneously acquire signals from the bearing housing through a shared oscilloscope which samples at a shared sample rate of \SI{1.6}{MHz}:
 
 \begin{description}
-  \item[AE sensor.] A wideband piezoelectric AE sensor is bonded to the bearing housing.
-    Sampling rate: \SI{1.6}{MHz} (nominally; effective bandwidth verified to
-    \SI{800}{kHz} by the DAQ). Signal recorded to a digital oscilloscope with voltage
-    range adapted to the signal level (\SI{500}{mV}--\SI{1}{V} per division depending
-    on RPM; see Table~\ref{tab:ops}).
-  \item[Passive UL sensor.] A heterodyned passive ultrasound probe is clamped to the bearing housing. The heterodyning process frequency-shifts the raw acoustic signal into the audible range ($<$\SI{10}{kHz}); the recorded signal therefore reflects low-frequency acoustic emissions rather than true wideband ultrasound. Voltage range: \SI{50}{mV} per division. Sampling rate: \SI{1.6}{MHz} (recorded at the same rate as the AE channel; effective content below \SI{10}{kHz}).
+  \item[Acoustic emission sensor:] A wideband piezoelectric AE sensor is bonded to the bearing housing. \todo{Need help from CeramicSpeed to write this}
+  \item[Ultrasound sensor:] A heterodyned passive US probe is bonded to the bearing housing. \todo{Need help from CeramicSpeed to write this}
+  \item[Temperature sensor:] \todo{Need help from CeramicSpeed to write this}
+  \item[RPM sensor:] \todo{Need help from CeramicSpeed to write this}
 \end{description}
-The oscilloscope samples at a shared rate of \SI{1.6}{MHz} across both channels, ensuring co-temporal acquisition of AE and passive UL signals. Data are acquired in individual time-series sweeps triggered at each operating condition.
-Each sweep comprises a fixed number of samples from both channels recorded
-simultaneously\todo{How many? How long is sampled?}.
+The shared sample rate ensures that AE and US signals share timestamps.
 
-\subsection{Operating conditions and $\kappa$ derivation}
-\label{subsec:ops}
-
-The experiment follows a protocol which varies the opreating conditions through rotational speed (rpm) and housing temperature (\si{\celsius}).
-
-The test profile runs a staircase sweep from 100 to 3000 RPM and back down to 100 RPM, in steps of 100 RPM with a 60-second hold at each step. This is repeated for each of the 13 temperature blocks (40–100°C in 5°C increments), with a 2-minute standstill (RPM = 0) at the start of each block for thermal stabilisation.
-
-Table~\ref{tab:ops_summary} summarises the operating envelope and resulting $\kappa$
-distribution.
-
-\begin{table}[H]
-\centering
-\caption{Operating envelope and $\kappa$ distribution for the retained dataset
-(8\,783 sweeps per sensor). Regime boundaries follow ISO~281: $\kappa < 0.5$
-(boundary), $0.5 \leq \kappa < 1.0$ (mixed), $\kappa \geq 1.0$ (full film).}
-\label{tab:ops_summary}
-\small
-\begin{tabular}{lrr}
-\toprule
-\textbf{Quantity} & \textbf{Min} & \textbf{Max} \\
-\midrule
-Shaft speed [rpm]            &    1 & 5\,985 \\
-Bearing temperature [\si{\celsius}] & 33 & 100 \\
-Viscosity ratio $\kappa$     & 0.003 & 1.644 \\
-\midrule
-\textbf{Regime} & \textbf{Sweeps} & \textbf{\%} \\
-\midrule
-Boundary ($\kappa < 0.5$)          & 5\,281 & 60\% \\
-Mixed ($0.5 \leq \kappa < 1.0$)    & 2\,552 & 29\% \\
-Full film ($\kappa \geq 1.0$)      &   950  & 11\% \\
-\midrule
-$\bar{\kappa}$ & \multicolumn{2}{c}{0.508} \\
-$\sigma_\kappa$ & \multicolumn{2}{c}{0.353} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The $\kappa$ value for each sweep is computed according to
-Equations~\eqref{eq:kappa}--\eqref{eq:nu1} using the per-sweep measured RPM and
-temperature, with $\nuop$ evaluated via the ASTM~D341 Walther viscosity--temperature
-equation.
-No separate reference measurement of film thickness is available; $\kappa$ is therefore
-a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework
-and Walther's equation.
-
-\textbf{Note on regime coverage.} The boundary lubrication regime ($\kappa < 0.5$)
-dominates the dataset (60\%) because the bearing spends the largest fraction of the
-speed ramp at lower speeds where the required viscosity $\nureq$ is high.
-Full-film conditions ($\kappa \geq 1.0$) are reached only at higher shaft speeds and
-account for 11\% of sweeps.
-Model performance in the full-film regime is therefore evaluated on a smaller absolute
-number of sweeps, which is a limitation discussed in Section~\ref{sec:discussion}.
+\subsection{$\kappa$ derivation}
+The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with $\nu$ evaluated via the ASTM~D341 Walther viscosity--temperature equation. No separate reference measurement of film thickness is available\todo{Change this if the slipring is used}; $\kappa$ is therefore a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework and Walther's equation.
 
 \subsection{Dataset availability}
-
-The complete dataset (HDF5 signal files, extracted features in Parquet format, and the
-analysis pipeline scripts) will be made publicly available on Zenodo upon acceptance.
-The Python analysis pipeline is configured via a single YAML file and is fully
-reproducible from the raw HDF5 files.
+\todo{Is the dataset proprietary or public?}

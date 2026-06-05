@@ -66,5 +66,4 @@ out_path = OUTPUT_DIR / "sweep_conditions.csv"
 df.to_csv(out_path, index=False)
 print(f"Saved {len(df)} rows → {out_path}")
 
-df
 
