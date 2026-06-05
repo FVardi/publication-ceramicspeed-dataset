@@ -8,8 +8,8 @@ from 01_feature_generation.
 
 Usage
 -----
-    python scripts/eda_features.py
-    python scripts/eda_features.py --config alt.yaml
+    python dev/exploration/eda_features.py
+    python dev/exploration/eda_features.py --config alt.yaml
 """
 
 # %%

@@ -1,0 +1,43 @@
+%% ============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+%% ============================================================================
+
+This paper has presented an exploratory study of simultaneous acoustic emission and
+passive ultrasound sensing regressed to the ISO~281 viscosity ratio $\kappa$ for
+non-invasive lubrication condition monitoring of a ball bearing.
+The main findings are as follows:
+
+\begin{enumerate}
+  \item \textbf{AE sub-band features are strong predictors of $\kappa$.}
+    LightGBM on 32 retained AE features achieves hold-out $R^2 = 0.951$,
+    RMSE~$= 0.078$~$\kappa$-units.
+    The 1--2~MHz complexity feature is the dominant SHAP contributor and the only
+    feature consistent across all three model types, identifying the high-frequency AE
+    sub-band as the most informative frequency range for lubrication regime prediction.
+  \item \textbf{Sensor fusion provides only a marginal, statistically unconfirmed improvement.}
+    The LightGBM combined model achieves $R^2 = 0.953$ ($\Delta R^2 = +0.002$ over AE
+    alone), but hold-out significance tests (Wilcoxon $p = 0.88$, Diebold--Mariano
+    $p = 0.28$, bootstrap 95\%~CI including zero) cannot confirm the improvement.
+    The heterodyned UL channel contributes only 6 retained features with substantially
+    weaker correlations than AE, limiting its independent contribution.
+  \item \textbf{AE strongly and significantly outperforms the UL channel.}
+    The AE--UL gap ($\Delta R^2 = 0.35$ for LightGBM) is confirmed highly significant
+    by all test statistics, reflecting the fundamental bandwidth limitation of the
+    heterodyned UL probe.
+  \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
+    Twenty-five outer RMSE scores per model provide stable, conservative performance
+    estimates; corrected significance tests confirm that LightGBM significantly
+    outperforms linear models within each sensor configuration, while the
+    Elastic Net--Polynomial difference is not significant for the combined feature set.
+  \item \textbf{The $\kappa$ regression framework is validated} as a highly effective
+    approach for passive non-invasive LCM, achieving substantially higher performance
+    than prior comparable studies, attributed to the sub-band feature set and the large
+    continuous-sweep dataset.
+\end{enumerate}
+
+Future work should address the identified limitations by: acquiring wideband passive
+ultrasound to replace the heterodyned probe; validating across multiple independent
+sessions, bearing types, and lubricants; investigating temporal autocorrelation and its
+effect on hold-out validity; and developing physically motivated sub-band ratio features
+that are explicitly designed to be robust to operating-condition variation.
