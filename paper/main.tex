@@ -94,40 +94,20 @@ gradient boosting; sensor fusion
 
 %% ============================================================================
 \begin{abstract}
-Inadequate lubrication is responsible for an estimated 30--80\% of rolling element
-bearing failures, yet reliable online, non-invasive lubrication condition monitoring
-(LCM) remains an unsolved engineering problem.
-Passive sensor-based approaches are most practical for industrial retrofit because they
-require no bearing modification, but the signal processing challenge of separating
-lubrication-relevant information from confounded operating-condition effects has not
-been systematically characterised for simultaneous acoustic emission (AE) and passive
-ultrasound (UL) sensing.
-This paper presents an exploratory study in which AE and passive UL signals are
-simultaneously acquired from a ball bearing during a continuous speed sweep
-(1--\SI{5985}{rpm}) at temperatures spanning 33--\SI{100}{\celsius}, covering the
-boundary, mixed, and full-film lubrication regimes across 8\,783 sweep--sensor pairs
-per channel.
-The ISO~281 viscosity ratio $\kappa \in [0.003,\,1.64]$ (mean 0.51) is derived
-analytically from bearing geometry, lubricant properties, and operating conditions as
-a continuous, physics-grounded regression target.
-For the AE channel, 26~time-domain and frequency-domain features are extracted from the
-broadband signal and from three frequency sub-bands (20--500~kHz, 500~kHz--1~MHz,
-1--2~MHz), yielding 104~candidate features; 26~features are extracted from the
-pre-filtered UL channel (0--20~kHz).
-A two-stage selection retains 32~AE and 6~UL features after a joint
-Spearman--Pearson correlation threshold filter and a greedy variance-inflation-factor
-and pairwise-correlation redundancy reduction.
-Three regression model families are benchmarked across three sensor configurations
-using repeated nested five-fold cross-validation ($R = 5$ repetitions, 25~outer scores
-per model); LightGBM on AE features alone achieves the best hold-out performance
+Inadequate lubrication accounts for an estimated 30--80\% of rolling element bearing
+failures, yet reliable online, non-invasive lubrication condition monitoring (LCM)
+remains unsolved.
+This paper presents an exploratory study in which acoustic emission (AE) and passive
+ultrasound (UL) signals are simultaneously acquired from a ball bearing during a
+continuous speed sweep (1--\SI{5985}{rpm}) at temperatures spanning
+33--\SI{100}{\celsius}, covering boundary, mixed, and full-film lubrication regimes
+across 8\,783 sweep--sensor pairs per channel.
+The ISO~281 viscosity ratio $\kappa \in [0.003,\,1.64]$ serves as a continuous,
+physics-grounded regression target.
+LightGBM on AE features alone achieves the best hold-out performance
 ($R^2 = 0.951$, $\text{RMSE} = 0.078$~$\kappa$-units).
-Fusing AE and UL features yields only a marginal improvement ($\Delta\text{RMSE} = 0.0011$)
-that is not confirmed by holdout significance testing (Wilcoxon $p = 0.88$,
-Diebold--Mariano $p = 0.28$, bootstrap 95\% CI includes zero).
-Significance of pairwise model differences is assessed by Nadeau--Bengio corrected
-repeated $k$-fold $t$-tests with Holm--Bonferroni correction for within-sensor
-comparisons, and by Wilcoxon signed-rank, Diebold--Mariano, and bootstrap $\Delta$RMSE
-confidence intervals for cross-sensor comparisons.
+Sensor fusion (AE+UL) provides only a marginal improvement that is not confirmed by
+hold-out significance testing.
 The dataset is made publicly available to support standardised comparison.
 \end{abstract}
 
@@ -140,74 +120,26 @@ The dataset is made publicly available to support standardised comparison.
 \label{sec:intro}
 %% ============================================================================
 
-Rolling element bearings are among the most prevalent mechanical components in industrial
-machinery, and their reliable operation depends critically on adequate lubrication.
-Lubrication failure---whether caused by starvation, viscosity degradation, or
-contamination---increases metal-to-metal asperity contact, accelerates surface fatigue and
-wear, raises operating temperature, and ultimately leads to premature bearing failure.
-Improper lubrication is estimated to account for between 30\% and 80\% of all rolling
-element bearing failures~\cite{jakobsen_detecting_2023,dai_situ_2024,nassef_impact_2022}.
+Inadequate lubrication is estimated to account for between 30\% and 80\% of all rolling element bearing failures~\cite{jakobsen_detecting_2023,dai_situ_2024,nassef_impact_2022}. Despite this, lubrication condition monitoring (LCM) has received substantially less research attention than vibration-based fault detection. Accurate, online LCM would enable condition-based relubrication rather than fixed-schedule approaches that produce both under- and over-lubrication~\cite{wakiru_review_2019}.
 
-Despite this, lubrication condition monitoring (LCM) has received substantially less
-research attention than vibration-based fault detection and remaining useful life
-estimation, which are now mature technologies deployed widely in industry.
-The principal reason is that lubrication-related signal changes are subtler and more
-entangled with operating conditions than the impulse signatures of surface spalling or
-raceway cracks.\todo{Find reference for this} Accurate, online LCM would enable condition-based relubrication: applying lubricant at
-the right time in the right quantity rather than following time-based schedules that
-systematically produce both under- and over-lubrication~\cite{wakiru_review_2019}.
+Passive, non-invasive sensing methods---acoustic emission (AE), vibration, and passive ultrasound (US)---are attractive for industrial LCM because they require no bearing modification and can be retrofitted. AE and passive ultrasound at 38--40~kHz are both in practical use\todo{Find reference for this}, but have not been
+studied simultaneously in a unified regression framework with a physics-based lubrication reference variable.
 
-Passive, non-invasive sensing methods -- acoustic emission (AE), vibration, and passive
-ultrasound (US) -- are practically attractive for industrial LCM because they require
-no bearing modification and can be retrofitted to bearings in service.
-Among these, AE is sensitive to the broadband stress waves emitted by asperity contact
-events and micro-crack propagation across a wide frequency range (typically
-50~kHz--\SI{4}{MHz})\todo{Find reference for this}, while passive ultrasound at 38--40~kHz is already industrially
-deployed for threshold-based lubrication assessment~\cite{lineham_ultrasonic_2008}.
-Despite both being in practical use, they have not been studied simultaneously in a unified
-regression framework with a physics-based lubrication reference variable.
-
-The ISO~281 viscosity ratio $\kappa$ has been used as a
-continuous regression target~\cite{jakobsen_detecting_2023,jakobsen_low_2024} to develop models, which are sensitive to lubrication changes.
-Since $\kappa$ encodes the ratio of actual lubricant viscosity to the minimum required for
-full elastohydrodynamic lubrication (EHL) at the current operating conditions, a
-model trained to predict $\kappa$ implicitly learns the operating-condition dependence
-and provides a physically interpretable, standardised output.
-Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} demonstrate $\kappa$
-regression from vibration and passive ultrasound features using LASSO and neural
-networks, establishing the methodological foundation that this paper builds upon.
-
-The complementarity of AE and passive US for LCM has been argued on
-physical grounds in several reviews~\cite{shang_comprehensive_2024,wang_advanced_2024},
-but has not been quantified experimentally in a unified framework.
-Whether jointly exploiting both sensor modalities improves $\kappa$ prediction over
-either alone is an open question with direct practical implications: additional sensors
-impose cost and complexity, and are only justified if they provide non-redundant information.
+The ISO~281 viscosity ratio $\kappa$ has been used as a continuous regression target~\cite{jakobsen_detecting_2023,jakobsen_low_2024}: a model trained to predict
+$\kappa$ implicitly learns the operating-condition dependence and produces a physically interpretable output. Whether jointly exploiting AE and passive US improves $\kappa$ prediction over either alone is an open question with direct practical implications.
 
 \subsection*{Contributions}
 
-This paper makes the following contributions:
 \begin{enumerate}
-  \item \textbf{Novel dual-channel experiment.} The first study to simultaneously acquire
-    AE and passive US signals from a ball bearing and regress both, individually
-    and jointly, to $\kappa$ using a common dataset and analytical ground truth.
-  \item \textbf{Sub-band feature extraction for AE.} Features are computed from the
-    broadband AE signal and from three frequency sub-bands (20--500~kHz,
-    500~kHz--1~MHz, 1--2~MHz), enabling model-driven identification of the most
-    informative AE frequency range for lubrication state prediction.
-  \item \textbf{Quantified fusion test.} The first quantitative test of AE--US
-    complementarity in a unified experimental framework, including a positive fusion result
-    that directly addresses an open question in the LCM literature.
-  \item \textbf{Rigorous statistical evaluation.} Model comparisons are grounded in
-    repeated nested cross-validation and corrected significance tests (Nadeau--Bengio,
-    Holm--Bonferroni, Wilcoxon, Diebold--Mariano, bootstrap $\Delta$RMSE) that properly
-    account for data re-use in cross-validated estimates.
+  \item \textbf{Novel dual-channel experiment.} The first study to simultaneously acquire AE and passive US signals from a ball bearing and regress both, individually and jointly, to $\kappa$ using a common dataset and analytical ground truth.
+  \item \textbf{Sub-band feature extraction for AE.} Features are computed from three frequency sub-bands (20--500~kHz, 500~kHz--1~MHz, 1--2~MHz), enabling model-driven identification of the most informative AE frequency range.
+  \item \textbf{Quantified fusion test.} The first quantitative test of AE--US complementarity in a unified experimental framework.
+  \item \textbf{Rigorous statistical evaluation.} Model comparisons use repeated nested cross-validation and corrected significance tests that properly account for data re-use.
 \end{enumerate}
 
 The remainder of the paper is organised as follows.
-Section~\ref{sec:background} reviews the theoretical background of $\kappa$ and the
-physical origins of AE and UL signals.
-Section~\ref{sec:setup} describes the experimental setup and data collection.
+Section~\ref{sec:background} reviews the theoretical background.
+Section~\ref{sec:setup} describes the experimental setup.
 Section~\ref{sec:pipeline} presents the signal processing and feature extraction pipeline.
 Section~\ref{sec:features} presents the feature analysis results.
 Section~\ref{sec:modelling} presents the regression modelling and statistical evaluation.
@@ -222,24 +154,14 @@ Section~\ref{sec:conclusion} concludes.
 \subsection{Lubrication regimes and the viscosity ratio $\kappa$}
 \label{subsec:kappa}
 
-The lubrication regime of a rolling element bearing is determined by the ratio of the
-elastohydrodynamic (EHL) film thickness $h_m$ to the composite surface roughness
-$\sigma$ of the contact surfaces, quantified by the specific film thickness
-$\Lambda = h_m / \sigma$.
-When $\Lambda \geq 3$ the contact is in the full-film EHL regime; when $0.5 \leq \Lambda < 3$
-mixed lubrication prevails with partial asperity contact; when $\Lambda < 0.5$ boundary
-lubrication dominates with predominantly metal-to-metal contact.
-
 The ISO~281 standard defines the viscosity ratio
 \begin{equation}
   \kappa = \frac{\nuop}{\nureq(n,\, d_{pw})},
   \label{eq:kappa}
 \end{equation}
-where $\nuop$ [\si{mm^2\,s^{-1}}] is the actual kinematic viscosity of the lubricant at
-operating temperature, and $\nureq$ is the minimum kinematic viscosity required for full
-EHL at the bearing's rotational speed $n$ [\si{rpm}] and mean pitch diameter $d_{pw}$
-[\si{mm}]~\cite{iso_281}.
-The reference viscosity is given by
+where $\nuop$ [\si{mm^2\,s^{-1}}] is the actual kinematic viscosity at operating
+temperature and $\nureq$ is the minimum required for full EHL at speed $n$ and pitch
+diameter $d_{pw}$~\cite{iso_281}:
 \begin{equation}
   \nureq = \begin{cases}
     45\,000\; n^{-0.83}\; d_{pw}^{-0.5} & n < \SI{1000}{rpm}, \\
@@ -247,76 +169,42 @@ The reference viscosity is given by
   \end{cases}
   \label{eq:nu1}
 \end{equation}
-The operating viscosity $\nuop$ is computed from the ASTM~D341 Walther
-viscosity--temperature equation fitted to the lubricant's \SI{40}{\celsius} and
-\SI{100}{\celsius} reference values.
 A value of $\kappa \geq 1$ indicates adequate film formation; $\kappa < 0.5$ corresponds
 to severe boundary lubrication.
-
-Since $\kappa$ encodes both $n$ and $T$ through $\nureq$ and $\nuop$, it cannot be
-varied independently of operating conditions without changing the lubricant itself.
-Using $\kappa$ as a regression target---rather than a discrete fault label---means that
-a trained model implicitly compensates for operating-condition effects: the model learns
-the full mapping from raw features to the physics-grounded EHL adequacy index.
+Using $\kappa$ as a regression target means a trained model implicitly compensates for
+operating-condition effects.
 
 \subsection{Physical origins of AE and passive ultrasound signals}
 \label{subsec:origins}
 
-Acoustic emission (AE) refers to transient elastic stress waves generated by sudden
-energy releases in a material: asperity contact and micro-fracture are the dominant
-sources in rolling bearings.
-Under boundary and mixed lubrication, intermittent metal-to-metal asperity contacts
-generate broadband stress waves that propagate through the bearing structure and are
-detected by piezoelectric AE sensors coupled to the outer housing.
-The emission rate, amplitude, and frequency content of these events are all sensitive to
-the contact severity and hence to the lubrication regime~\cite{cornel_condition_2021,
-miettinen_analysis_2001}.
-Full-film EHL suppresses asperity contact, reducing AE activity; the transition through
-the mixed regime is associated with intermittent, structurally distinct emission events.
-AE sensors typically operate in the 50~kHz--\SI{1}{MHz} range and require sampling
-rates exceeding \SI{500}{kHz} to capture the full frequency content.
+AE refers to transient elastic stress waves generated by asperity contact and
+micro-fracture in rolling bearings; emission rate, amplitude, and frequency content are
+all sensitive to the lubrication regime~\cite{cornel_condition_2021,miettinen_analysis_2001}.
+AE sensors typically operate up to \SI{1}{MHz} and require sampling rates exceeding
+\SI{500}{kHz}.
 
-Passive ultrasound sensing at 38--40~kHz provides a complementary, lower-frequency view
-of bearing acoustics.
-Commercial instruments (UE Systems, Sonotec) compare the broadband ultrasonic level
-against a reference baseline, triggering relubrication when the level rises by a
-specified number of decibels above the reference~\cite{lineham_ultrasonic_2008}.
-This threshold approach is the only passive non-invasive LCM method in routine
-industrial deployment but is confounded by speed and load changes.
-In the present experiment the passive UL channel uses a heterodyned probe, which
-frequency-shifts the signal into the audible range and effectively limits the usable
-bandwidth to approximately \SI{10}{kHz}; this constitutes a different signal from
-wideband AE and from classical ultrasonic reflectometry.
-
-The two sensor modalities are therefore sensitive to partially overlapping and partially
-distinct physical phenomena.
-AE captures high-frequency transient stress waves from individual asperity contacts,
-while the passive UL channel reflects lower-frequency bulk acoustic behaviour and
-machinery noise components.
-Whether this partial independence translates into complementary $\kappa$ information is
-the central empirical question of this study.
+Passive ultrasound sensing at 38--40~kHz provides a complementary, lower-frequency view.
+Commercial instruments compare the broadband ultrasonic level against a baseline,
+triggering relubrication when the level rises by a specified number of
+decibels~\cite{lineham_ultrasonic_2008}.
+In the present experiment the UL channel uses a heterodyned probe, limiting usable
+bandwidth to approximately \SI{10}{kHz}.
+Whether the partial independence of the two modalities translates into complementary
+$\kappa$ information is the central empirical question of this study.
 
 %% ============================================================================
 \section{Experimental Setup}
 \label{sec:setup}
 %% ============================================================================
+In this section the test rig for conducting experiments of of bearing runs with varing lubrication conditions and the sensing setup are described. A single experiment was conducted at CeramicSpeed in Herning, Denmark, during which the operating conditions were varied in terms of temperature and rotational speed, such that a wide range of $\kappa$ values were covered.
 
 \subsection{Test rig and bearing}
 \label{subsec:rig}
 
-The test rig is a custom-built bearing test stand at CeramicSpeed (Holstebro, Denmark).
-A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter
-$d_{pw} = \SI{38.0}{mm}$, 9 chrome steel rolling elements, dynamic load rating
-\SI{14000}{N}) is driven by a variable-frequency electric motor controlled through a
-variable-frequency drive (VFD). The bearing is loaded radially by a static weight and lubricated by a defined \todo{What is the amount?} quantity of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$). \todo{Do we need NLGI cosistency grade?} Temperature is monitored by a PT100 sensor on the bearing housing and controlled
-passively through the test duration and ambient conditions.
+The test rig was a custom-built bearing test stand at CeramicSpeed (Holstebro, Denmark) built for running a bearing under different operating conditions. A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 chrome steel rolling elements, dynamic load rating \SI{14000}{N}) was driven by a VFD-controlled electric motor. The bearing was lubricated by a defined \todo{What is the amount?} quantity of Keratech~22 oil ($\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$). \todo{Do we need NLGI consistency grade?}
+Temperature was monitored by a PT100 sensor on the bearing housing.
 
-\textit{Note on VFD noise:} Harmonic artefacts from the VFD switching frequency are
-present at approximately \SI{5}{kHz} and its multiples in the low-frequency range of
-both sensor signals.
-A replacement VFD with filter is planned for subsequent experiments; in the present
-analysis, low-frequency spectral features below \SI{10}{kHz} should be interpreted with
-this artefact in mind.
+\textit{Note on VFD noise:} The VFD which drives the test rig is known to introduce significant electrical noise. This was sought mitigated by a filter. \todo{Write more about the filter and its effect on the signals.}
 
 \subsection{Sensor configuration and data acquisition}
 \label{subsec:sensors}
@@ -324,91 +212,29 @@ this artefact in mind.
 Two sensors are acquired simultaneously:
 
 \begin{description}
-  \item[AE sensor.] A wideband piezoelectric AE sensor is bonded to the bearing housing.
-    Sampling rate: \SI{1.6}{MHz} (nominally; effective bandwidth verified to
-    \SI{800}{kHz} by the DAQ). Signal recorded to a digital oscilloscope with voltage
-    range adapted to the signal level (\SI{500}{mV}--\SI{1}{V} per division depending
-    on RPM; see Table~\ref{tab:ops}).
-  \item[Passive UL sensor.] A heterodyned passive ultrasound probe (commercial
-    instrument) is clamped to the bearing housing.
-    The heterodyning process frequency-shifts the raw acoustic signal into the audible
-    range ($<$\SI{10}{kHz}); the recorded signal therefore reflects low-frequency acoustic
-    emissions rather than true wideband ultrasound.
-    Voltage range: \SI{50}{mV} per division. Sampling rate: \SI{1.6}{MHz} (recorded at
-    the same rate as the AE channel; effective content below \SI{10}{kHz}).
+  \item[AE sensor.] A wideband piezoelectric AE sensor bonded to the bearing housing. \todo{How and where is it mounted?} Sampling rate: \SI{1.6}{MHz}; effective bandwidth verified to \SI{800}{kHz}.
+  \item[Passive UL sensor.] A heterodyned passive ultrasound probe clamped to the
+    bearing housing. The heterodyning process limits effective content to below
+    \SI{10}{kHz}. Sampling rate: \SI{1.6}{MHz}.
 \end{description}
 
-Data are acquired in individual time-series sweeps triggered at each operating condition.
-Each sweep comprises a fixed number of samples from both channels recorded
-simultaneously.
-The two sensors share identical acquisition timing, ensuring that feature comparisons
-and correlation analyses are conducted on co-temporal signal segments.
+Both channels share identical acquisition timing, ensuring co-temporal signal segments.
 
-\subsection{Operating conditions and $\kappa$ derivation}
+\subsection{Operating conditions and $\kappa$ values}
 \label{subsec:ops}
 
-The experiment follows a continuous speed-sweep protocol: the VFD ramps the shaft
-speed from rest up to approximately \SI{6000}{rpm} and back across a single extended
-session, with bearing temperature rising naturally from ambient (\SI{33}{\celsius}) to
-\SI{100}{\celsius} as a function of speed and run time.
-Sweeps are acquired continuously at approximately 0.6-second intervals throughout the
-ramp, yielding a dense, quasi-continuous coverage of the RPM--temperature operating
-plane rather than a grid of discrete set-points.
-After signal quality filtering, 8\,783 sweeps per sensor channel are retained from a
-single HDF5 session file.
-
+The experiment follows a continuous speed-sweep protocol: the VFD ramps the shaft from
+rest to approximately \SI{6000}{rpm}, with bearing temperature rising naturally from
+\SI{33}{\celsius} to \SI{100}{\celsius}.
+After signal quality filtering, 8\,783 sweeps per sensor channel are retained.
 Table~\ref{tab:ops_summary} summarises the operating envelope and resulting $\kappa$
 distribution.
 
-\begin{table}[H]
-\centering
-\caption{Operating envelope and $\kappa$ distribution for the retained dataset
-(8\,783 sweeps per sensor). Regime boundaries follow ISO~281: $\kappa < 0.5$
-(boundary), $0.5 \leq \kappa < 1.0$ (mixed), $\kappa \geq 1.0$ (full film).}
-\label{tab:ops_summary}
-\small
-\begin{tabular}{lrr}
-\toprule
-\textbf{Quantity} & \textbf{Min} & \textbf{Max} \\
-\midrule
-Shaft speed [rpm]            &    1 & 5\,985 \\
-Bearing temperature [\si{\celsius}] & 33 & 100 \\
-Viscosity ratio $\kappa$     & 0.003 & 1.644 \\
-\midrule
-\textbf{Regime} & \textbf{Sweeps} & \textbf{\%} \\
-\midrule
-Boundary ($\kappa < 0.5$)          & 5\,281 & 60\% \\
-Mixed ($0.5 \leq \kappa < 1.0$)    & 2\,552 & 29\% \\
-Full film ($\kappa \geq 1.0$)      &   950  & 11\% \\
-\midrule
-$\bar{\kappa}$ & \multicolumn{2}{c}{0.508} \\
-$\sigma_\kappa$ & \multicolumn{2}{c}{0.353} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The $\kappa$ value for each sweep is computed according to
-Equations~\eqref{eq:kappa}--\eqref{eq:nu1} using the per-sweep measured RPM and
-temperature, with $\nuop$ evaluated via the ASTM~D341 Walther viscosity--temperature
-equation.
-No separate reference measurement of film thickness is available; $\kappa$ is therefore
-a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework
-and Walther's equation.
-
-\textbf{Note on regime coverage.} The boundary lubrication regime ($\kappa < 0.5$)
-dominates the dataset (60\%) because the bearing spends the largest fraction of the
-speed ramp at lower speeds where the required viscosity $\nureq$ is high.
-Full-film conditions ($\kappa \geq 1.0$) are reached only at higher shaft speeds and
-account for 11\% of sweeps.
-Model performance in the full-film regime is therefore evaluated on a smaller absolute
-number of sweeps, which is a limitation discussed in Section~\ref{sec:discussion}.
-
-\subsection{Dataset availability}
-
-The complete dataset (HDF5 signal files, extracted features in Parquet format, and the
-analysis pipeline scripts) will be made publicly available on Zenodo upon acceptance.
-The Python analysis pipeline is configured via a single YAML file and is fully
-reproducible from the raw HDF5 files.
+The $\kappa$ value for each sweep is computed via Equations~\eqref{eq:kappa}--\eqref{eq:nu1}
+using measured RPM and temperature, with $\nuop$ evaluated via the ASTM~D341 Walther
+viscosity--temperature equation.
+No separate film-thickness reference measurement is available; $\kappa$ is therefore
+model-derived subject to the assumptions of the Hamrock--Dowson framework.
 
 %% ============================================================================
 \section{Signal Processing Pipeline}
@@ -418,15 +244,10 @@ reproducible from the raw HDF5 files.
 \subsection{Signal cleaning}
 \label{subsec:cleaning}
 
-The following quality checks are applied to each sweep--sensor pair before feature
-extraction:
-(i)~sweeps shorter than 64~samples, all-zero, or all-NaN are rejected;
-(ii)~isolated non-finite samples are replaced by linear interpolation;
-(iii)~if more than 1\% of samples reside at the estimated DAQ voltage rail (defined
-by the 99.9th/0.1st percentile), the sweep is flagged as clipped;
-(iv)~contiguous flat runs longer than 50~samples are flagged as saturated;
-(v)~samples exceeding six standard deviations from the mean are replaced by the local
-median within a $\pm 5$-sample window.
+Each sweep--sensor pair is subject to the following quality checks before feature
+extraction: short/zero/NaN sweeps are rejected; isolated non-finite samples are
+interpolated; clipping and saturation are flagged; outlier samples exceeding six standard
+deviations are replaced by the local median.
 After cleaning, 1598 of 1600 sweep--sensor pairs are retained.
 
 \subsection{Waveform and spectral visualisation}
@@ -437,8 +258,7 @@ After cleaning, 1598 of 1600 sweep--sensor pairs are retained.
 \subsection{Feature extraction}
 \label{subsec:features_extract}
 
-Twenty-six features are computed from the cleaned voltage signal for each
-sweep--sensor pair, comprising 12~time-domain and 14~frequency-domain statistics:
+Twenty-six features are computed from each cleaned sweep--sensor signal:
 
 \todo{Make table with features and refer to papers where they are used.}
 \textbf{Time-domain (12):} peak, RMS, standard deviation, variance, skewness, kurtosis,
@@ -451,23 +271,14 @@ centre frequency, RMS frequency, frequency-weighted standard deviation, peak fre
 normalised frequency standard deviation, frequency skewness, frequency kurtosis, and
 normalised bandwidth.
 
-All frequency-domain features are computed from the one-sided FFT magnitude spectrum of
-the cleaned signal.
-
 \textbf{AE sub-band decomposition.}
-In addition to broadband features, three frequency sub-bands are carved from the AE
-channel using zero-phase Butterworth bandpass filters:
-(i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
-(ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
-(iii)~1--2~MHz, covering high-frequency micro-fracture events.
-The full 26-feature set is extracted independently for each sub-band, yielding
-$26 \times 4 = 104$~candidate AE features (broadband plus three sub-bands).
+The full 26-feature set is extracted independently for each of three zero-phase
+Butterworth bandpass sub-bands: 20--500~kHz, 500~kHz--1~MHz, and 1--2~MHz, yielding
+$26 \times 4 = 104$~candidate AE features.
 
 \textbf{UL channel pre-filtering.}
-The UL channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth filter
-before broadband feature extraction, consistent with the effective bandwidth of the
-heterodyned probe.
-No frequency sub-bands are computed for the UL channel, giving 26~candidate UL features.
+The UL channel is pre-filtered to 0--20~kHz before broadband feature extraction,
+giving 26~candidate UL features.
 
 %% ============================================================================
 \section{Feature Analysis}
@@ -477,8 +288,14 @@ No frequency sub-bands are computed for the UL channel, giving 26~candidate UL f
 \subsection{Correlation with $\kappa$}
 \label{subsec:raw_spearman}
 
-Table~\ref{tab:raw_spearman} lists the top ten features for each sensor ranked by
-$|\rho(\text{feature},\, \kappa)|$ across all 799~sweeps per sensor.
+Table~\ref{tab:raw_spearman} lists the top ten features per sensor ranked by
+$|\rho(\text{feature},\, \kappa)|$.
+The top AE features are drawn overwhelmingly from the 1--2~MHz and 500~kHz--1~MHz
+sub-bands (peak $|\rho| = 0.891$), while UL amplitude features reach at most
+$|\rho| = 0.663$.
+A two-stage selection retains 32~AE and 6~UL features after a joint
+Spearman--Pearson threshold filter and a greedy VIF and pairwise-correlation redundancy
+reduction.
 
 \begin{table}[H]
 \centering
@@ -511,18 +328,6 @@ Feature & $|\rho|$ & $|r|$ & & Feature & $|\rho|$ \\
 \end{tabular}
 \end{table}
 
-The top AE features are drawn overwhelmingly from the 1--2~MHz and 500~kHz--1~MHz
-sub-bands, with sub-band complexity ($|\rho| = 0.891$) and mobility ($|\rho| = 0.841$)
-heading the ranking.
-Broadband AE features rank lower than their sub-band counterparts, indicating that
-the frequency-specific content of the high-frequency AE signal carries more monotonic
-information about $\kappa$ than the full-band aggregate.
-For the UL channel, amplitude features (spectral mean, peak, RMS, std) dominate at
-$|\rho| \approx 0.60$--$0.66$; the maximum UL correlation ($|\rho| = 0.663$) is
-substantially lower than the top AE correlation ($|\rho| = 0.891$).
-Figure~\ref{fig:ranking_ae} and Figure~\ref{fig:ranking_us} show the full feature
-correlation rankings for each sensor.
-
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{figures/feature_ranking_ae_barplot.png}
@@ -543,32 +348,14 @@ $\kappa$, sorted by combined rank. Retained features highlighted.}
 \subsection{Operating-condition confounding}
 \label{subsec:confound}
 
-The raw Spearman correlation between broadband signal energy (as a proxy for all amplitude
-features) and $\kappa$ is substantially driven by the shared dependence on rotational speed
-and temperature.
-Quantitatively, RPM has a Spearman correlation of $\rho = +0.62$ with $\kappa$ and
-temperature has $\rho = -0.68$.
-Higher RPM reduces the required viscosity $\nureq$ (Eq.~\eqref{eq:nu1}) and therefore
-increases $\kappa$, while simultaneously increasing signal energy through more frequent
-contact events per second.
-Higher temperature reduces the actual viscosity $\nuop$ and therefore reduces $\kappa$,
-while also affecting material damping and structural dynamics.
-
-As a consequence, amplitude-dominated features such as RMS, variance, and peak --- which
-rank among the top features by raw Spearman correlation --- are partially acting as
-indirect proxies for rotational speed rather than as direct indicators of lubrication
-film adequacy.
-This confounding is an inherent property of any single-operating-point sensor system
-without an explicit operating condition normalisation step.
-
-Spectral shape features (frequency kurtosis, normalised bandwidth, spectral flatness)
-are less directly tied to total signal power and are therefore expected to carry a
-higher proportion of genuine lubrication-regime information relative to their raw
-$|\rho|$ rank.
-The $\kappa$ regression framework partially addresses this by training models on the full
-multi-condition dataset, where speed and temperature appear as independent axes of
-variation and the model can implicitly learn to discriminate amplitude changes due to
-lubrication from those due to operating conditions.
+RPM correlates with $\kappa$ ($\rho = +0.62$) and temperature correlates with $\kappa$
+($\rho = -0.68$), since both drive $\kappa$ through $\nureq$ and $\nuop$ respectively
+while simultaneously affecting signal energy.
+Amplitude-dominated features (RMS, variance, peak) are therefore partly acting as
+indirect proxies for speed rather than direct indicators of lubrication film adequacy.
+The $\kappa$ regression framework partially addresses this: training on the full
+multi-condition dataset allows the model to implicitly discriminate amplitude changes
+due to lubrication from those due to operating conditions.
 
 \subsection{PCA and regime separability}
 \label{subsec:pca}
@@ -576,10 +363,8 @@ lubrication from those due to operating conditions.
 Figure~\ref{fig:pca} shows the first two principal components of the retained AE
 feature set, coloured by $\kappa$ regime.
 Boundary and full-film sweeps are broadly separated in the PC1--PC2 plane, while mixed
-regime sweeps overlap with both.
-This confirms that the retained feature set carries regime-relevant discriminative
-information but that the mixed lubrication regime remains the most challenging region,
-consistent with the known partial physical overlap between boundary and mixed conditions.
+regime sweeps overlap with both, confirming that the mixed lubrication regime is the
+most challenging region.
 
 \begin{figure}[H]
 \centering
@@ -598,44 +383,27 @@ full film ($\kappa \geq 1$): green.}
 \subsection{Experimental design and holdout split}
 \label{subsec:modelling_design}
 
-The dataset is divided into a training set (80\%) and a hold-out test set (20\%) by
-sweep-level random sampling, stratified to preserve the $\kappa$ regime distribution.
-The hold-out set is withheld entirely from all model development steps and used only for
-final evaluation.
-
+The dataset is divided into an 80\% training set and a 20\% hold-out test set by
+regime-stratified random sampling; the hold-out set is withheld from all model
+development steps.
 Three regression model families are evaluated for three sensor configurations
-(AE only, UL channel only, and combined AE+UL features):
+(AE only, UL only, AE+UL):
 \begin{enumerate}
-  \item \textbf{Elastic Net} (regularised linear regression with combined $\ell_1$ and
-    $\ell_2$ penalty): hyperparameters $\alpha$ and $\ell_1$ ratio selected by
-    \texttt{ElasticNetCV} with an inner cross-validation loop (9~$\alpha$ values,
-    6~$\ell_1$ ratios).
-  \item \textbf{Degree-2 Polynomial Regression} (polynomial feature expansion followed
-    by Ridge regression via \texttt{RidgeCV}): captures pairwise interactions between
-    features while remaining linear in parameters.
-  \item \textbf{LightGBM} (gradient-boosted decision trees): hyperparameters (learning
-    rate, number of leaves, tree depth, minimum child samples, $\ell_2$ regularisation)
-    tuned by Bayesian optimisation using the Optuna TPE sampler (20~trials per inner
-    fold).
+  \item \textbf{Elastic Net} with $\alpha$ and $\ell_1$ ratio selected by
+    \texttt{ElasticNetCV}.
+  \item \textbf{Degree-2 Polynomial Regression} (polynomial expansion + Ridge via
+    \texttt{RidgeCV}).
+  \item \textbf{LightGBM} with hyperparameters tuned by Bayesian optimisation
+    (Optuna TPE, 20~trials per inner fold).
 \end{enumerate}
 
 \subsection{Repeated nested cross-validation}
 \label{subsec:nested_cv}
 
-To obtain stable performance estimates that properly account for the variance introduced
-by the train/validation split, model evaluation uses a repeated nested $k$-fold
-cross-validation scheme.
-The outer loop is repeated $R = 5$ times with independently re-seeded five-fold splits,
-yielding $R \times k = 5 \times 5 = 25$~outer RMSE scores per model--sensor
-combination.
-For LightGBM, each outer fold contains its own inner Optuna optimisation loop, ensuring
-that the reported outer scores are not contaminated by hyperparameter selection on the
-outer fold data.
-For the linear models, hyperparameter selection is handled by \texttt{ElasticNetCV} and
-\texttt{RidgeCV} within each outer training partition.
-
-The 25~outer scores form the empirical sampling distribution of RMSE for each model and
-are used directly in the significance tests described below.
+Model evaluation uses repeated nested five-fold cross-validation ($R = 5$ repetitions),
+yielding $5 \times 5 = 25$~outer RMSE scores per model--sensor combination.
+Each outer fold contains its own inner optimisation loop for LightGBM, ensuring outer
+scores are not contaminated by hyperparameter selection on the outer fold.
 
 \subsection{Statistical significance testing}
 \label{subsec:sig_tests}
@@ -706,40 +474,25 @@ BR (ref.)   & UL       & ---                 & 0.536 & 0.181 & 0.239 \\
 \end{table}
 
 \textbf{Overall performance.}
-LightGBM achieves the best hold-out performance across all sensor configurations,
-with AE-only reaching $R^2 = 0.951$, RMSE~$= 0.078$~$\kappa$-units.
-On a target range of $[0.003,\, 1.64]$ with mean~0.51, this corresponds to a relative
-RMSE of approximately 15\% of the target range.
+LightGBM achieves the best hold-out performance across all sensor configurations
+(AE-only: $R^2 = 0.951$, RMSE~$= 0.078$~$\kappa$-units, $\approx$15\% of target range).
 Linear and polynomial models on AE features achieve $R^2 \approx 0.77$--$0.83$,
-confirming a non-linear feature--$\kappa$ mapping that gradient boosting exploits
-more effectively.
+confirming a non-linear feature--$\kappa$ mapping.
 
 \textbf{Sensor comparison.}
-AE features substantially outperform UL-channel features across all model families.
-The LightGBM AE--UL gap ($\Delta R^2 = 0.35$) is confirmed as highly significant
-(Nadeau--Bengio $p < 10^{-22}$; Wilcoxon $p < 10^{-166}$; $\Delta\text{RMSE} = 0.144$,
-95\%~CI [0.133, 0.157]).
-This reflects the richer frequency content and more direct physical sensitivity of
-the AE sensor to asperity contact events.
+AE features substantially outperform UL-channel features across all model families
+(LightGBM AE--UL gap: $\Delta R^2 = 0.35$, Nadeau--Bengio $p < 10^{-22}$,
+$\Delta\text{RMSE} = 0.144$, 95\%~CI [0.133, 0.157]).
 
 \textbf{Sensor fusion yields a marginal, statistically unconfirmed improvement.}
-LightGBM on the combined AE+UL feature set achieves $R^2 = 0.953$, marginally
-above the AE-only result ($0.951$).
-The within-CV corrected $t$-test rejects equality ($p = 0.024$), but hold-out
-tests do not confirm the improvement: Wilcoxon $p = 0.88$, Diebold--Mariano $p = 0.28$,
-bootstrap $\Delta\text{RMSE} = 0.0011$ with 95\%~CI $[-0.0009,\, 0.0033]$ spanning
-zero.
-For the linear models, the combined feature set is similarly on par with AE alone
-(Elastic Net: $R^2$ 0.830 vs.\ 0.826; Polynomial: 0.803 vs.\ 0.775).
-The marginal fusion gain is consistent with the UL channel contributing a small amount
-of non-redundant information at low-frequency.
+LightGBM on the combined AE+UL feature set achieves $R^2 = 0.953$ vs.\ AE-only 0.951.
+Hold-out tests do not confirm the improvement: Wilcoxon $p = 0.88$, Diebold--Mariano
+$p = 0.28$, bootstrap $\Delta\text{RMSE} = 0.0011$ with 95\%~CI
+$[-0.0009,\, 0.0033]$ spanning zero.
 
 \textbf{Model consistency.}
-The close agreement between nested CV RMSE and hold-out RMSE across all models
-indicates stable generalisation with no evidence of significant overfitting.
-The Bayesian Ridge reference results (hold-out only) align closely with Elastic Net,
-confirming that the linear model results are not sensitive to the choice of
-regularisation method.
+Close agreement between nested CV RMSE and hold-out RMSE across all models indicates
+stable generalisation with no evidence of significant overfitting.
 
 Figure~\ref{fig:pred_vs_actual} shows predicted vs.\ actual $\kappa$ for the hold-out
 set for all model families under the AE-only configuration.
@@ -754,15 +507,11 @@ Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.
 \end{figure}
 
 \textbf{SHAP-based feature importance.}
-SHAP (SHapley Additive exPlanations) values computed via TreeExplainer identify
-which AE sub-band features drive the $\kappa$ predictions.
-The dominant contributor by a large margin is \textit{1--2~MHz complexity}
+The dominant contributor to LightGBM predictions is \textit{1--2~MHz complexity}
 (mean $|\text{SHAP}| = 0.162$), followed by \textit{500~kHz--1~MHz centre frequency}
 (0.051) and \textit{1--2~MHz mobility} (0.038).
-The 1--2~MHz band complexity feature is also the only feature ranked in the top~10
-across all three model types (cross-model agreement, Table~\ref{tab:shap_agree}),
-making it the most robust single predictor of $\kappa$ in the dataset.
-Figure~\ref{fig:shap} shows the full importance ranking.
+The 1--2~MHz complexity feature is also the only feature ranked in the top~10 across
+all three model types (Table~\ref{tab:shap_agree}).
 
 \begin{table}[H]
 \centering
@@ -801,110 +550,61 @@ label (e.g., \texttt{AE\_20-500kHz\_}).}
 \subsection{Why AE outperforms the UL channel}
 \label{subsec:disc_ae}
 
-The consistently superior performance of AE over the UL channel across all model
-families reflects a fundamental hardware difference.
 The AE sensor captures genuine wideband stress-wave emissions up to \SI{800}{kHz},
-directly sensitive to individual asperity contact events.
-The UL channel is heterodyned, limiting its useful content to below approximately
-\SI{10}{kHz}, where the signal is a mixture of low-frequency machinery noise, VFD
-harmonics, and structural vibration.
-The physical information about microscale contact events is largely absent in this
-frequency range.
-Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor
-would be expected to substantially improve the UL-channel models.
+directly sensitive to asperity contact events, while the heterodyned UL channel is
+limited to below \SI{10}{kHz} where the signal is dominated by low-frequency machinery
+noise and VFD harmonics.
+Replacing the heterodyned probe with a wideband passive acoustic sensor would be expected
+to substantially improve UL-channel model performance.
 
 \subsection{Why fusion provides only marginal gain}
 \label{subsec:disc_fusion}
 
-The marginal fusion result ($\Delta R^2 = 0.002$ on the hold-out, not confirmed by
-Wilcoxon or Diebold--Mariano tests) can be understood from two complementary angles.
-First, the UL channel retains only 6 features after selection (vs.\ 32 for AE), and
-the top UL correlations ($|\rho| \leq 0.66$) are far weaker than the top AE
-correlations ($|\rho| = 0.89$).
-The UL channel therefore contributes a small amount of additional information that
-provides a marginal benefit to the combined model under CV, but the effect is too
-small to be detectable on the hold-out set (1\,757 samples).
-Second, the UL channel's effective bandwidth ($< 10$~kHz after heterodyning) means its
-information content partially overlaps with the low-frequency tail of the AE signal,
-limiting the independent contribution it can make.
-
-This result is an informative contribution to the LCM literature, where AE--ultrasound
-complementarity is widely \emph{argued} but rarely \emph{tested}.
-Whether a wideband passive ultrasound sensor (rather than a heterodyned probe) would
-provide more independent information -- and thus a more substantial fusion gain --
-remains an open question for future work.
+The UL channel retains only 6 features after selection (vs.\ 32 for AE), with peak
+correlation $|\rho| \leq 0.66$ vs.\ $|\rho| = 0.89$ for AE, and its effective bandwidth
+partially overlaps with the low-frequency tail of the AE signal.
+Together these factors limit the independent $\kappa$ information the UL channel can
+contribute.
+Whether a wideband passive ultrasound sensor would provide more substantial fusion gain
+remains an open question.
 
 \subsection{Interpreting the amplitude-confounding result}
 \label{subsec:disc_confound}
 
-The strong raw Spearman correlations of amplitude features (RMS, variance, Hjorth
-mobility) with $\kappa$ should be interpreted with caution.
-As discussed in Section~\ref{subsec:confound}, rotational speed is the dominant driver
-of both $\kappa$ (through $\nureq$ in Eq.~\eqref{eq:nu1}) and broadband signal energy
-(through the rate of contact events per revolution).
-A model trained on amplitude features therefore exploits speed as an indirect proxy for
-$\kappa$ rather than sensing lubrication-specific signal changes directly.
-
-This confounding does not invalidate the regression results: a model that uses speed-
-mediated amplitude changes to predict $\kappa$ is still predicting $\kappa$, and its
-predictions may be operationally useful.
-However, it does indicate that the model's generalisation to operating conditions outside
-its training distribution (different speed ranges, different bearing loads) may be limited.
-Future feature engineering should prioritise spectral shape and ratio features
-(frequency kurtosis, normalised bandwidth, spectral flatness) that are expected to carry
-a higher proportion of genuine lubrication-state information relative to operating
-condition proxies.
+Amplitude features exploit speed-mediated amplitude changes to predict $\kappa$, which
+is operationally useful but may limit generalisation to operating conditions outside the
+training distribution.
+Future feature engineering should prioritise spectral shape and ratio features (frequency
+kurtosis, normalised bandwidth, spectral flatness) that are expected to carry a higher
+proportion of genuine lubrication-state information.
 
 \subsection{Implications for the $\kappa$ regression framework}
 \label{subsec:disc_kappa}
 
-The $\kappa$ regression framework is validated as a methodologically sound approach for
-passive non-invasive LCM.
 A hold-out $R^2 = 0.951$ and RMSE~$= 0.078$~$\kappa$-units for a single AE sensor
-represents strong performance across a demanding continuous speed-and-temperature ramp
-spanning boundary through full-film lubrication conditions.
-This substantially exceeds the performance reported by Jakobsen
-et al.~\cite{jakobsen_detecting_2023} in a comparable passive sensing study, which
-is likely attributable both to the richer sub-band feature set and to the much
-larger training set (7\,026 vs.\ $\sim$640 sweeps) available from the continuous
-sweep protocol.
-
-The repeated nested cross-validation design provides appropriately conservative
-performance estimates: the 25~outer RMSE scores capture fold-to-fold variance without
-the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter
-search.
-The corrected significance tests confirm that performance differences between model
-families are assessed under assumptions that properly account for data re-use,
-addressing a common methodological weakness in the machine learning for condition
-monitoring literature.
+represents strong performance across a demanding speed-and-temperature ramp spanning
+boundary through full-film conditions, substantially exceeding prior comparable
+studies~\cite{jakobsen_detecting_2023}.
+The repeated nested cross-validation design provides appropriately conservative estimates,
+and corrected significance tests confirm that performance differences are assessed under
+assumptions that properly account for data re-use.
 
 \subsection{Limitations}
 \label{subsec:disc_limits}
 
 \begin{enumerate}
-  \item \textbf{Single bearing and lubricant.} All results are specific to the SYJ25
-    bearing and Keratech~22 oil. Generalisability to other bearing types, sizes, or
-    lubricants is unknown and is a priority for follow-on experiments.
-  \item \textbf{Heterodyned UL channel.} The passive UL channel is frequency-limited to
-    $\approx$\SI{10}{kHz}. It should not be equated with wideband ultrasound and results
-    should be interpreted in light of this hardware constraint.
-  \item \textbf{Data gap in the mixed lubrication regime.} With only discrete temperature
-    set-points, the mixed regime ($\kappa \approx 0.5$--$0.7$) is underrepresented
-    (24\% of sweeps). This is precisely the regime of greatest practical interest for
-    early lubrication deterioration warning.
-  \item \textbf{VFD harmonic contamination.} Switching artefacts at $\approx$\SI{5}{kHz}
-    affect low-frequency spectral features of both channels. Features computed from the
-    UL channel and from the AE band below \SI{10}{kHz} should be interpreted
-    accordingly.
-  \item \textbf{Model-derived $\kappa$ reference.} No independent film thickness
-    measurement (e.g., electrical capacitance or active ultrasonic reflectometry) is
-    available. The $\kappa$ values are model-derived and subject to the Hamrock--Dowson
-    and Walther equation assumptions.
-  \item \textbf{Single session file.} Although 8\,783 sweeps per sensor are retained,
-    all data come from a single continuous speed-ramp session of one bearing.
-    Temporal autocorrelation between adjacent sweeps may reduce the effective
-    independence of the training and hold-out sets beyond what the sweep-level split
-    guarantees. Validation across multiple independent sessions and bearings is needed.
+  \item \textbf{Single bearing and lubricant.} Generalisability to other bearing types,
+    sizes, or lubricants is unknown.
+  \item \textbf{Heterodyned UL channel.} Results should not be equated with wideband
+    ultrasound.
+  \item \textbf{Regime imbalance.} Boundary lubrication dominates the dataset (60\%);
+    full-film conditions account for only 11\%.
+  \item \textbf{VFD harmonic contamination.} Features below \SI{10}{kHz} are affected
+    by switching artefacts.
+  \item \textbf{Model-derived $\kappa$ reference.} No independent film-thickness
+    measurement is available.
+  \item \textbf{Single session file.} Temporal autocorrelation between adjacent sweeps
+    may reduce effective independence between training and hold-out sets.
 \end{enumerate}
 
 %% ============================================================================
@@ -912,44 +612,29 @@ monitoring literature.
 \label{sec:conclusion}
 %% ============================================================================
 
-This paper has presented an exploratory study of simultaneous acoustic emission and
-passive ultrasound sensing regressed to the ISO~281 viscosity ratio $\kappa$ for
-non-invasive lubrication condition monitoring of a ball bearing.
-The main findings are as follows:
+This paper has presented an exploratory study of simultaneous AE and passive ultrasound
+sensing regressed to $\kappa$ for non-invasive lubrication condition monitoring.
+The main findings are:
 
 \begin{enumerate}
   \item \textbf{AE sub-band features are strong predictors of $\kappa$.}
     LightGBM on 32 retained AE features achieves hold-out $R^2 = 0.951$,
-    RMSE~$= 0.078$~$\kappa$-units.
-    The 1--2~MHz complexity feature is the dominant SHAP contributor and the only
-    feature consistent across all three model types, identifying the high-frequency AE
-    sub-band as the most informative frequency range for lubrication regime prediction.
+    RMSE~$= 0.078$~$\kappa$-units; the 1--2~MHz complexity feature is the dominant and
+    most consistent predictor across model types.
   \item \textbf{Sensor fusion provides only a marginal, statistically unconfirmed improvement.}
-    The LightGBM combined model achieves $R^2 = 0.953$ ($\Delta R^2 = +0.002$ over AE
-    alone), but hold-out significance tests (Wilcoxon $p = 0.88$, Diebold--Mariano
-    $p = 0.28$, bootstrap 95\%~CI including zero) cannot confirm the improvement.
-    The heterodyned UL channel contributes only 6 retained features with substantially
-    weaker correlations than AE, limiting its independent contribution.
-  \item \textbf{AE strongly and significantly outperforms the UL channel.}
-    The AE--UL gap ($\Delta R^2 = 0.35$ for LightGBM) is confirmed highly significant
-    by all test statistics, reflecting the fundamental bandwidth limitation of the
-    heterodyned UL probe.
-  \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
-    Twenty-five outer RMSE scores per model provide stable, conservative performance
-    estimates; corrected significance tests confirm that LightGBM significantly
-    outperforms linear models within each sensor configuration, while the
-    Elastic Net--Polynomial difference is not significant for the combined feature set.
+    The LightGBM combined model achieves $\Delta R^2 = +0.002$ over AE alone, not
+    confirmed by hold-out significance tests.
+  \item \textbf{AE strongly and significantly outperforms the UL channel}
+    ($\Delta R^2 = 0.35$ for LightGBM), reflecting the fundamental bandwidth limitation
+    of the heterodyned UL probe.
   \item \textbf{The $\kappa$ regression framework is validated} as a highly effective
-    approach for passive non-invasive LCM, achieving substantially higher performance
-    than prior comparable studies, attributed to the sub-band feature set and the large
-    continuous-sweep dataset.
+    approach for passive non-invasive LCM.
 \end{enumerate}
 
-Future work should address the identified limitations by: acquiring wideband passive
-ultrasound to replace the heterodyned probe; validating across multiple independent
-sessions, bearing types, and lubricants; investigating temporal autocorrelation and its
-effect on hold-out validity; and developing physically motivated sub-band ratio features
-that are explicitly designed to be robust to operating-condition variation.
+Future work should address the identified limitations by acquiring wideband passive
+ultrasound, validating across multiple independent sessions and bearing types, and
+developing physically motivated sub-band ratio features robust to operating-condition
+variation.
 
 %% ============================================================================
 \section*{CRediT authorship contribution statement}

@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex main"] 1779303012.52356 "main.aux" "main.bbl" "main" 1779303028.74942 0
+["bibtex main"] 1780659722.04511 "main.aux" "main.bbl" "main" 1780659727.7929 0
   "./refs.bib" 1779128647 5446 29ca97b0b86064fe34135afc92d63d5a ""
   "c:/texlive/2025/texmf-dist/bibtex/bst/base/unsrt.bst" 1764816923 18030 1376b4b231b50c66211e47e42eda2875 ""
-  "main.aux" 1779303027 15327 27fece18412b2d1c825843b1788e8805 "pdflatex"
+  "main.aux" 1780659726 14604 dc0e91f15330f724eb2048871c6aded1 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1779303023.47796 "c:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex" "main.pdf" "main" 1779303028.74992 0
-  "c:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex" 1779303027 53583 0c1ffc42a19745f16c4c7935660a0eee ""
+["pdflatex"] 1780659722.45419 "c:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex" "main.pdf" "main" 1780659727.79333 0
+  "c:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex" 1780659712 33550 3e6f5cafa16541b6be972a6daa5abf9f ""
   "c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1764817323 2971 def0b6c1f0b107b3b936def894055589 ""
   "c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1764817323 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "c:/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1764818414 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -214,11 +214,11 @@
   "figures/model_pred_vs_actual_holdout.png" 1779128647 1395774 e8af147456e04a54c61015f6e1b959bd ""
   "figures/pca_kappa_regimes.png" 1779128647 4512558 f3f40e38c1ae4c7f4da28b0cf4b9f01f ""
   "figures/shap_beeswarm_lgb_ae.png" 1779128647 98424 b53d0987cc75450b2420c0bb95f1f05e ""
-  "main.aux" 1779303027 15327 27fece18412b2d1c825843b1788e8805 "pdflatex"
-  "main.bbl" 1779303012 3107 f73f451fea741156f33a3cd52598b7b7 "bibtex main"
-  "main.out" 1779303027 5686 977cb26c81aaeda05b7e13a4de18f36e "pdflatex"
-  "main.tex" 1779303027 53583 0c1ffc42a19745f16c4c7935660a0eee ""
-  "main.toc" 1779303027 2697 8bf4a1425bbf49fb267cdbda31797f00 "pdflatex"
+  "main.aux" 1780659726 14604 dc0e91f15330f724eb2048871c6aded1 "pdflatex"
+  "main.bbl" 1780659722 2639 4205fa4a6530e7c1b32489cccc030515 "bibtex main"
+  "main.out" 1780659726 5505 9f4e2e7d3043dca67d1eb51c664289f3 "pdflatex"
+  "main.tex" 1780659712 33550 3e6f5cafa16541b6be972a6daa5abf9f ""
+  "main.toc" 1780659726 2605 50b9cfc9a5aa74251d69d32115ab10b7 "pdflatex"
   (generated)
   "main.aux"
   "main.log"

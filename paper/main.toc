@@ -2,29 +2,28 @@
 \contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
 \contentsline {section}{\numberline {2}Background}{4}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Lubrication regimes and the viscosity ratio $\kappa $}{4}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Physical origins of AE and passive ultrasound signals}{5}{subsection.2.2}%
-\contentsline {section}{\numberline {3}Experimental Setup}{6}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Test rig and bearing}{6}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Sensor configuration and data acquisition}{6}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Operating conditions and $\kappa $ derivation}{7}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}Dataset availability}{8}{subsection.3.4}%
-\contentsline {section}{\numberline {4}Signal Processing Pipeline}{8}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Signal cleaning}{8}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Waveform and spectral visualisation}{8}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Feature extraction}{8}{subsection.4.3}%
-\contentsline {section}{\numberline {5}Feature Analysis}{9}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Correlation with $\kappa $}{9}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}Operating-condition confounding}{11}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}PCA and regime separability}{12}{subsection.5.3}%
-\contentsline {section}{\numberline {6}Regression Modelling and Statistical Evaluation}{12}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Experimental design and holdout split}{12}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Repeated nested cross-validation}{13}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Statistical significance testing}{13}{subsection.6.3}%
-\contentsline {subsection}{\numberline {6.4}Results}{14}{subsection.6.4}%
-\contentsline {section}{\numberline {7}Discussion}{17}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Why AE outperforms the UL channel}{17}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}Why fusion provides only marginal gain}{17}{subsection.7.2}%
-\contentsline {subsection}{\numberline {7.3}Interpreting the amplitude-confounding result}{17}{subsection.7.3}%
-\contentsline {subsection}{\numberline {7.4}Implications for the $\kappa $ regression framework}{18}{subsection.7.4}%
-\contentsline {subsection}{\numberline {7.5}Limitations}{18}{subsection.7.5}%
-\contentsline {section}{\numberline {8}Conclusion}{19}{section.8}%
+\contentsline {subsection}{\numberline {2.2}Physical origins of AE and passive ultrasound signals}{4}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Experimental Setup}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Test rig and bearing}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Sensor configuration and data acquisition}{5}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Operating conditions and $\kappa $ values}{5}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Signal Processing Pipeline}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Signal cleaning}{5}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Waveform and spectral visualisation}{6}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Feature extraction}{6}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Feature Analysis}{6}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Correlation with $\kappa $}{6}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Operating-condition confounding}{9}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}PCA and regime separability}{9}{subsection.5.3}%
+\contentsline {section}{\numberline {6}Regression Modelling and Statistical Evaluation}{10}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Experimental design and holdout split}{10}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Repeated nested cross-validation}{10}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Statistical significance testing}{10}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Results}{11}{subsection.6.4}%
+\contentsline {section}{\numberline {7}Discussion}{14}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Why AE outperforms the UL channel}{14}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Why fusion provides only marginal gain}{15}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Interpreting the amplitude-confounding result}{15}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Implications for the $\kappa $ regression framework}{15}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Limitations}{15}{subsection.7.5}%
+\contentsline {section}{\numberline {8}Conclusion}{16}{section.8}%
