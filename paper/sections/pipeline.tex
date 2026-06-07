@@ -3,11 +3,7 @@
 \label{sec:pipeline}
 %% ============================================================================
 
-\begin{itemize}
-\item Goal of the pipeline
-\item Elements included in the pipeline
-\item Practical implementation (Python version, libraries used, etc.)
-\end{itemize}
+The pipeline is implemented in Python using NumPy~\cite{harris_array_2020}, SciPy~\cite{virtanen_scipy_2020}, and antropy~\cite{vallat_antropy_2023} for signal processing and feature computation, and is configured via a single YAML file to allow full reproduction from the raw HDF5 files.
 
 \subsection{Signal cleaning}
 \label{subsec:cleaning}
@@ -19,7 +15,7 @@ The raw signals are cleaned with the following procedures:
 
 \subsection{Filter bands}
 \label{subsec:filter_bands}
-The AE and US signals are filtered with multiple low-, high- and band-pass filters, since the information on lubrication conditions contained in the signals is expected to be localised in sub-bands rather than wholly contained in the broadband signals.\todo{Reference to articles which use sub-bands of AE and US signals}
+The AE and US signals are filtered with multiple low-, high- and band-pass filters, since the information on lubrication conditions contained in the signals is expected to be localised in sub-bands rather than wholly contained in the broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}.
 
 The sub-bands applied prior to feature extraction are listed in Table~\ref{tab:subbands}.
 All filters are 5th-order zero-phase Butterworth filters applied with \texttt{sosfiltfilt}. \todo{Update with final filter type and order}
@@ -37,7 +33,7 @@ AE & Broadband  & --        & Full bandwidth   \\
 AE & Sub-band 1 & Band-pass & 20--500\,kHz     \\
 AE & Sub-band 2 & Band-pass & 500\,kHz--1\,MHz \\
 AE & Sub-band 3 & Band-pass & 1--2\,MHz        \\
-UL & Broadband  & Low-pass  & 0--20\,kHz       \\
+US & Broadband  & Low-pass  & 0--20\,kHz       \\
 \bottomrule
 \end{tabular}}
 \end{table}\todo{Update table with final filters}
@@ -47,8 +43,8 @@ UL & Broadband  & Low-pass  & 0--20\,kHz       \\
 \label{subsec:features_extract}
 
 Features are computed from the cleaned voltage signal for each
-sweep--sensor pair for each sub-band. In total 26 features are computed, comprising 12 time-domain and 14 frequency-domain statistics,
-as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}.
+sweep-sensor pair for each sub-band. In total 26 features are computed, comprising 12 time-domain and 14 frequency-domain statistics,
+as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. All features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
 
 \begin{table}[htbp]
 \caption{Time-domain features. Notation: $N$ signal length; $\bar{x}$ sample mean;
@@ -99,7 +95,7 @@ Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Geome
 Centre frequency & $f_c = \sum_k f_k S_k\,/\,\Sigma S$ & Magnitude-weighted mean frequency (spectral centroid). \\[3pt]
 RMS frequency & $(\sum_k f_k^2 S_k\,/\,\Sigma S)^{1/2}$ & Magnitude-weighted root mean square frequency. \\[3pt]
 Freq.-weighted std & $\sigma_f = (K^{-1}\sum_k(f_k-f_c)^2)^{1/2}$ & RMS deviation of bin frequencies from centre frequency (unweighted by magnitude). \\[3pt]
-Peak frequency & $(\sum_k f_k^4 S_k\,/\,\sum_k f_k^2 S_k)^{1/2}$ & RMS frequency computed with $f_k^2 S_k$ weighting. \\[3pt]
+$f^2$-wt.\ RMS freq. & $(\sum_k f_k^4 S_k\,/\,\sum_k f_k^2 S_k)^{1/2}$ & RMS frequency under $f_k^2 S_k$ weighting; emphasises higher frequencies relative to RMS frequency. \\[3pt]
 Norm.\ freq.\ std & $\sigma_f\,/\,f_c$ & Frequency standard deviation normalised by centre frequency. \\[3pt]
 Frequency skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(K\sigma_f^3)$ & Third spectral moment of frequency deviation from centroid, weighted by magnitude. \\[3pt]
 Frequency kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(K\sigma_f^4)$ & Fourth spectral moment of frequency deviation from centroid, weighted by magnitude. \\[3pt]
@@ -107,6 +103,8 @@ Norm.\ bandwidth & $\sum_k|f_k-f_c|^{1/2} S_k\,/\,(K\sigma_f^{1/2})$ & Half-orde
 \bottomrule
 \end{tabular}}
 \end{table}
+
+\todo{Verify distinction between spectral skewness and frequency skewness: spectral skewness normalises by $\sigma_S^3 \Sigma S$ (magnitude std); frequency skewness normalises by $K\sigma_f^3$ (frequency std). Confirm both are intentional and clarify in text.}
 
 All frequency-domain features are computed from the one-sided FFT magnitude spectrum of
 the cleaned signal.
@@ -120,8 +118,8 @@ channel using zero-phase Butterworth bandpass filters:
 The full 26-feature set is extracted independently for each sub-band, yielding
 $26 \times 4 = 104$~candidate AE features (broadband plus three sub-bands).
 
-\textbf{UL channel pre-filtering.}
-The UL channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth filter
+\textbf{US channel pre-filtering.}
+The US channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth filter
 before broadband feature extraction, consistent with the effective bandwidth of the
 heterodyned probe.
-No frequency sub-bands are computed for the UL channel, giving 26~candidate UL features.
+No frequency sub-bands are computed for the US channel, giving 26~candidate US features.

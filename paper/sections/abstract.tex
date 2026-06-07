@@ -1,13 +1,12 @@
 \begin{abstract}
 Inadequate lubrication is responsible for an estimated 30--80\% of rolling element
 bearing failures, yet reliable online, non-invasive lubrication condition monitoring
-(LCM) remains an unsolved engineering problem.
-Passive sensor-based approaches are most practical for industrial retrofit because they
+(LCM) remains an unsolved engineering problem. Passive sensor-based approaches are most practical for industrial retrofit because they
 require no bearing modification, but the signal processing challenge of separating
 lubrication-relevant information from confounded operating-condition effects has not
 been systematically characterised for simultaneous acoustic emission (AE) and passive
-ultrasound (UL) sensing.
-This paper presents an exploratory study in which AE and passive UL signals are
+ultrasound (US) sensing.
+This paper presents a controlled study in which AE and passive US signals are
 simultaneously acquired from a ball bearing during a continuous speed sweep
 (1--\SI{5985}{rpm}) at temperatures spanning 33--\SI{100}{\celsius}, covering the
 boundary, mixed, and full-film lubrication regimes across 8\,783 sweep--sensor pairs
@@ -18,20 +17,21 @@ a continuous, physics-grounded regression target.
 For the AE channel, 26~time-domain and frequency-domain features are extracted from the
 broadband signal and from three frequency sub-bands (20--500~kHz, 500~kHz--1~MHz,
 1--2~MHz), yielding 104~candidate features; 26~features are extracted from the
-pre-filtered UL channel (0--20~kHz).
-A two-stage selection retains 32~AE and 6~UL features after a joint
+pre-filtered US channel (0--20~kHz).
+A two-stage selection retains 32~AE and 6~US features after a joint
 Spearman--Pearson correlation threshold filter and a greedy variance-inflation-factor
 and pairwise-correlation redundancy reduction.
 Three regression model families are benchmarked across three sensor configurations
 using repeated nested five-fold cross-validation ($R = 5$ repetitions, 25~outer scores
 per model); LightGBM on AE features alone achieves the best hold-out performance
 ($R^2 = 0.951$, $\text{RMSE} = 0.078$~$\kappa$-units).
-Fusing AE and UL features yields only a marginal improvement ($\Delta\text{RMSE} = 0.0011$)
-that is not confirmed by holdout significance testing (Wilcoxon $p = 0.88$,
-Diebold--Mariano $p = 0.28$, bootstrap 95\% CI includes zero).
+Fusing AE and US features yields a marginal improvement that is statistically
+significant under repeated nested cross-validation (Nadeau--Bengio corrected $t$-test
+$p = 0.024$) but is not confirmed on the independent hold-out set
+($\Delta\text{RMSE} = 0.0011$; Wilcoxon $p = 0.88$, Diebold--Mariano $p = 0.28$,
+bootstrap 95\% CI includes zero).
 Significance of pairwise model differences is assessed by Nadeau--Bengio corrected
 repeated $k$-fold $t$-tests with Holm--Bonferroni correction for within-sensor
 comparisons, and by Wilcoxon signed-rank, Diebold--Mariano, and bootstrap $\Delta$RMSE
 confidence intervals for cross-sensor comparisons.
-The dataset is made publicly available to support standardised comparison.
 \end{abstract}

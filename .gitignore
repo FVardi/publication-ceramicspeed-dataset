@@ -21,3 +21,6 @@ paper/*.fdb_latexmk
 paper/*.synctex.gz
 paper/*.lof
 paper/*.lot
+
+# Articles (PDFs — not pushed to remote)
+articles/

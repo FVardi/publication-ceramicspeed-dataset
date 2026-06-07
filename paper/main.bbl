@@ -15,15 +15,30 @@ Mohamed G.~A. Nassef, Mina Soliman, Belal~Galal Nassef, Mohamed~A. Daha, and Gal
 \newblock Impact of {Graphene} {Nano}-{Additives} to {Lithium} {Grease} on the {Dynamic} and {Tribological} {Behavior} of {Rolling} {Bearings}.
 \newblock {\em Lubricants}, 10(2):29, 2022.
 
-\bibitem{wakiru_review_2019}
-James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
-\newblock A review on lubricant condition monitoring information analysis for maintenance decision support.
-\newblock {\em Mechanical Systems and Signal Processing}, 118:108--132, 2019.
+\bibitem{wang_phm_2018}
+Dong Wang, Kwok-Leung Tsui, and Qiang Miao.
+\newblock Prognostics and health management: A review of vibration based bearing and gear health indicators.
+\newblock {\em IEEE Access}, 6:665--676, 2018.
 
 \bibitem{shang_comprehensive_2024}
 Fei Shang, Bo~Sun, and Dandan Cai.
 \newblock A comprehensive review of non-destructive methods for bearing lubricating oil film thickness measurement.
 \newblock {\em Industrial Lubrication and Tribology}, 76(3):441--451, 2024.
+
+\bibitem{marticorena_cage_2022}
+Mat\'{i}as Marticorena and Oscar Garc\'{i}a~Peyrano.
+\newblock Rolling bearing condition monitoring technique based on cage rotation analysis and acoustic emission.
+\newblock {\em Journal of Dynamics, Monitoring and Diagnostics}, 1:57--65, 2022.
+
+\bibitem{zhang_coupled_2026}
+Xuanrui Zhang, Dong Zhen, Guojin Feng, Xiaoxia Liang, Hao Zhang, and Fengshou Gu.
+\newblock A coupled vibration-acoustic emission model for roller bearings incorporating lubricant traction and sliding friction.
+\newblock {\em Tribology International}, 221:112013, September 2026.
+
+\bibitem{wakiru_review_2019}
+James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
+\newblock A review on lubricant condition monitoring information analysis for maintenance decision support.
+\newblock {\em Mechanical Systems and Signal Processing}, 118:108--132, 2019.
 
 \bibitem{cornel_condition_2021}
 Daniel Cornel, Francisco Guti{\'e}rrez~Guzm{\'a}n, Georg Jacobs, and Stephan Neumann.
@@ -65,20 +80,10 @@ Philipp Renhart, Michael Maier, Christopher Strablegg, Florian Summer, Florian G
 \newblock Monitoring tribological events by acoustic emission measurements for bearing contacts.
 \newblock {\em Lubricants}, 9(11):109, 2021.
 
-\bibitem{marticorena_cage_2022}
-Mat\'{i}as Marticorena and Oscar Garc\'{i}a~Peyrano.
-\newblock Rolling bearing condition monitoring technique based on cage rotation analysis and acoustic emission.
-\newblock {\em Journal of Dynamics, Monitoring and Diagnostics}, 1:57--65, 2022.
-
 \bibitem{liu_combined_2021}
 Jing Liu, Y.~J. Xu, and Gang Pan.
 \newblock A combined acoustic and dynamic model of a defective ball bearing.
 \newblock {\em Journal of Sound and Vibration}, 501:116029, 2021.
-
-\bibitem{zhang_coupled_2026}
-Xuanrui Zhang, Dong Zhen, Guojin Feng, Xiaoxia Liang, Hao Zhang, and Fengshou Gu.
-\newblock A coupled vibration-acoustic emission model for roller bearings incorporating lubricant traction and sliding friction.
-\newblock {\em Tribology International}, 221:112013, September 2026.
 
 \bibitem{wang_advanced_2024}
 Ling Wang and Honor Powrie.
@@ -88,14 +93,34 @@ Ling Wang and Honor Powrie.
 \bibitem{iso_281}
 {ISO} 281:2007 --- rolling bearings --- dynamic load ratings and rating life, 2007.
 
+\bibitem{harris_array_2020}
+Charles~R. Harris, K.~Jarrod Millman, Stéfan~J. van~der Walt, et~al.
+\newblock Array programming with {NumPy}.
+\newblock {\em Nature}, 585:357--362, 2020.
+
+\bibitem{virtanen_scipy_2020}
+Pauli Virtanen, Ralf Gommers, Travis~E. Oliphant, et~al.
+\newblock {SciPy} 1.0: fundamental algorithms for scientific computing in {Python}.
+\newblock {\em Nature Methods}, 17:261--272, 2020.
+
+\bibitem{vallat_antropy_2023}
+Raphael Vallat.
+\newblock antropy: {Entropy} and complexity of time-series in {Python}.
+\newblock \url{https://github.com/raphaelvallat/antropy}, 2023.
+
+\bibitem{zhang_graph_2024}
+Xinzhuo Zhang, Xuhua Zhang, Linbo Zhu, Chuang Gao, Bo~Ning, and Yongsheng Zhu.
+\newblock A graph-data-based monitoring method of bearing lubrication using multi-sensor.
+\newblock {\em Lubricants}, 12(6):229, 2024.
+
+\bibitem{hjorth_eeg_1970}
+Bo~Hjorth.
+\newblock {EEG} analysis based on time domain properties.
+\newblock {\em Electroencephalography and Clinical Neurophysiology}, 29(3):306--310, 1970.
+
 \bibitem{nadeau_inference_2003}
 Claude Nadeau and Yoshua Bengio.
 \newblock Inference for the generalization error.
 \newblock {\em Machine Learning}, 52(3):239--281, 2003.
-
-\bibitem{harvey_testing_1997}
-David Harvey, Stephen Leybourne, and Paul Newbold.
-\newblock Testing the equality of prediction mean squared errors.
-\newblock {\em International Journal of Forecasting}, 13(2):281--291, 1997.
 
 \end{thebibliography}

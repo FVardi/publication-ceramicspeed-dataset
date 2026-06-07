@@ -20,7 +20,7 @@ The lubrication conditions in the bearing are not expected to change during the 
 \subsection{Sensor configuration and data acquisition}
 \label{subsec:sensors}
 
-Two sensors simultaneously acquire signals from the bearing housing through a shared oscilloscope which samples at a shared sample rate of \SI{1.6}{MHz}:
+Two sensors simultaneously acquire signals from the bearing housing through a shared oscilloscope which samples at a shared sample rate of \SI{12.5}{MHz}:
 
 \begin{description}
   \item[Acoustic emission sensor:] A wideband piezoelectric AE sensor is bonded to the bearing housing. \todo{Need help from CeramicSpeed to write this}
@@ -31,7 +31,7 @@ Two sensors simultaneously acquire signals from the bearing housing through a sh
 The shared sample rate ensures that AE and US signals share timestamps.
 
 \subsection{$\kappa$ derivation}
-The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with $\nu$ evaluated via the ASTM~D341 Walther viscosity--temperature equation. No separate reference measurement of film thickness is available\todo{Change this if the slipring is used}; $\kappa$ is therefore a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework and Walther's equation.
-
+The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther viscosity--temperature equation. No separate reference measurement of film thickness is available\todo{Change this if the slipring is used}; $\kappa$ is therefore a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework and Walther's equation.
+\todo{Include plots of the kappa values and operating conditions.}
 \subsection{Dataset availability}
 \todo{Is the dataset proprietary or public?}

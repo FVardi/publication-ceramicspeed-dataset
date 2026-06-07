@@ -3,38 +3,22 @@
 \label{sec:discussion}
 %% ============================================================================
 
-\subsection{Why AE outperforms the UL channel}
+\subsection{AE vs. US}
 \label{subsec:disc_ae}
 
-The consistently superior performance of AE over the UL channel across all model
-families reflects a fundamental hardware difference.
-The AE sensor captures genuine wideband stress-wave emissions up to \SI{800}{kHz},
-directly sensitive to individual asperity contact events.
-The UL channel is heterodyned, limiting its useful content to below approximately
-\SI{10}{kHz}, where the signal is a mixture of low-frequency machinery noise, VFD
-harmonics, and structural vibration.
-The physical information about microscale contact events is largely absent in this
-frequency range.
-Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor
-would be expected to substantially improve the UL-channel models.
+The consistently superior performance of AE over the US channel across all model
+families reflects a fundamental hardware difference. The AE sensor captures genuine wideband stress-wave emissions extending into the MHz range (analysed here up to \SI{2}{MHz}), directly sensitive to individual asperity contact events. The US channel is heterodyned, limiting its useful content to below approximately \SI{10}{kHz}, where the signal is a mixture of low-frequency machinery noise, VFD harmonics, and structural vibration. The physical information about microscale contact events is largely absent in this frequency range. Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor would be expected to substantially improve the US-channel models.
 
-\subsection{Why fusion provides only marginal gain}
+\subsection{Fusion gain}
 \label{subsec:disc_fusion}
 
 The marginal fusion result ($\Delta R^2 = 0.002$ on the hold-out, not confirmed by
 Wilcoxon or Diebold--Mariano tests) can be understood from two complementary angles.
-First, the UL channel retains only 6 features after selection (vs.\ 32 for AE), and
-the top UL correlations ($|\rho| \leq 0.66$) are far weaker than the top AE
-correlations ($|\rho| = 0.89$).
-The UL channel therefore contributes a small amount of additional information that
-provides a marginal benefit to the combined model under CV, but the effect is too
-small to be detectable on the hold-out set (1\,757 samples).
-Second, the UL channel's effective bandwidth ($< 10$~kHz after heterodyning) means its
-information content partially overlaps with the low-frequency tail of the AE signal,
-limiting the independent contribution it can make.
+First, the US channel retains only 6 features after selection (vs.\ 32 for AE), and
+the top US correlations ($|\rho| \leq 0.66$) are far weaker than the top AE
+correlations ($|\rho| = 0.89$). The US channel therefore contributes a small amount of additional information that provides a marginal benefit to the combined model under CV, but the effect is too small to be detectable on the hold-out set (1\,757 samples). Second, the US channel's effective bandwidth ($< 10$~kHz after heterodyning) means its information content partially overlaps with the low-frequency tail of the AE signal, limiting the independent contribution it can make.
 
-This result is an informative contribution to the LCM literature, where AE--ultrasound
-complementarity is widely \emph{argued} but rarely \emph{tested}.
+This result is an informative contribution to the LCM literature, where AE--ultrasound complementarity is widely \emph{argued} but rarely \emph{tested}.
 Whether a wideband passive ultrasound sensor (rather than a heterodyned probe) would
 provide more independent information -- and thus a more substantial fusion gain --
 remains an open question for future work.
@@ -43,71 +27,26 @@ remains an open question for future work.
 \label{subsec:disc_confound}
 
 The strong raw Spearman correlations of amplitude features (RMS, variance, Hjorth
-mobility) with $\kappa$ should be interpreted with caution.
-As discussed in Section~\ref{subsec:confound}, rotational speed is the dominant driver
-of both $\kappa$ (through $\nureq$ in Eq.~\eqref{eq:nu1}) and broadband signal energy
-(through the rate of contact events per revolution).
-A model trained on amplitude features therefore exploits speed as an indirect proxy for
-$\kappa$ rather than sensing lubrication-specific signal changes directly.
+mobility) with $\kappa$ should be interpreted with caution. As discussed in Section~\ref{subsec:confound}, rotational speed is a driver of both $\kappa$ (through $\nureq$ in Eq.~\eqref{eq:nu1}) and broadband signal energy (through the rate of and energy in contact events per revolution as described in~\cite{zhang_coupled_2026}). A model trained on amplitude features therefore exploits speed as an indirect proxy for $\kappa$ rather than sensing purely lubrication-specific signal changes directly.
 
-This confounding does not invalidate the regression results: a model that uses speed-
-mediated amplitude changes to predict $\kappa$ is still predicting $\kappa$, and its
-predictions may be operationally useful.
-However, it does indicate that the model's generalisation to operating conditions outside
-its training distribution (different speed ranges, different bearing loads) may be limited.
-Future feature engineering should prioritise spectral shape and ratio features
-(frequency kurtosis, normalised bandwidth, spectral flatness) that are expected to carry
+This confounding does not invalidate the regression results: a model that uses speed-mediated amplitude changes to predict $\kappa$ is still predicting $\kappa$, and its predictions may be operationally useful. However, it does indicate that the model's generalisation to operating conditions outside its training distribution (different speed ranges, different bearing loads) may be limited. Future feature engineering should prioritise spectral shape and ratio features (frequency kurtosis, normalised bandwidth, spectral flatness) that are expected to carry
 a higher proportion of genuine lubrication-state information relative to operating
 condition proxies.
 
 \subsection{Implications for the $\kappa$ regression framework}
 \label{subsec:disc_kappa}
 
-The $\kappa$ regression framework is validated as a methodologically sound approach for
-passive non-invasive LCM.
-A hold-out $R^2 = 0.951$ and RMSE~$= 0.078$~$\kappa$-units for a single AE sensor
-represents strong performance across a demanding continuous speed-and-temperature ramp
-spanning boundary through full-film lubrication conditions.
-This substantially exceeds the performance reported by Jakobsen
-et al.~\cite{jakobsen_detecting_2023} in a comparable passive sensing study, which
-is likely attributable both to the richer sub-band feature set and to the much
-larger training set (7\,026 vs.\ $\sim$640 sweeps) available from the continuous
-sweep protocol.
+The $\kappa$ regression framework is validated as a methodologically sound approach for passive non-invasive LCM, when $\kappa$ is assumed to be representable of the lubrication conditions in the bearing. A hold-out $R^2 = 0.951$ and RMSE~$= 0.078$~$\kappa$-units for a single AE sensor represents strong performance across a demanding continuous speed-and-temperature ramp spanning boundary through full-film lubrication conditions. This exceeds the performance reported by Jakobsen et al.~\cite{jakobsen_detecting_2023} in a comparable passive sensing study with US. \todo{True? And why do we see this result?}
 
 The repeated nested cross-validation design provides appropriately conservative
-performance estimates: the 25~outer RMSE scores capture fold-to-fold variance without
-the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter
-search.
-The corrected significance tests confirm that performance differences between model
-families are assessed under assumptions that properly account for data re-use,
-addressing a common methodological weakness in the machine learning for condition
-monitoring literature.
+performance estimates: the 25~outer RMSE scores capture fold-to-fold variance without the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter search. The corrected significance tests confirm that performance differences between model families are assessed under assumptions that properly account for data re-use.
 
 \subsection{Limitations}
 \label{subsec:disc_limits}
 
 \begin{enumerate}
-  \item \textbf{Single bearing and lubricant.} All results are specific to the SYJ25
-    bearing and Keratech~22 oil. Generalisability to other bearing types, sizes, or
-    lubricants is unknown and is a priority for follow-on experiments.
-  \item \textbf{Heterodyned UL channel.} The passive UL channel is frequency-limited to
-    $\approx$\SI{10}{kHz}. It should not be equated with wideband ultrasound and results
-    should be interpreted in light of this hardware constraint.
-  \item \textbf{Data gap in the mixed lubrication regime.} With only discrete temperature
-    set-points, the mixed regime ($\kappa \approx 0.5$--$0.7$) is underrepresented
-    (24\% of sweeps). This is precisely the regime of greatest practical interest for
-    early lubrication deterioration warning.
-  \item \textbf{VFD harmonic contamination.} Switching artefacts at $\approx$\SI{5}{kHz}
-    affect low-frequency spectral features of both channels. Features computed from the
-    UL channel and from the AE band below \SI{10}{kHz} should be interpreted
-    accordingly.
-  \item \textbf{Model-derived $\kappa$ reference.} No independent film thickness
-    measurement (e.g., electrical capacitance or active ultrasonic reflectometry) is
-    available. The $\kappa$ values are model-derived and subject to the Hamrock--Dowson
-    and Walther equation assumptions.
-  \item \textbf{Single session file.} Although 8\,783 sweeps per sensor are retained,
-    all data come from a single continuous speed-ramp session of one bearing.
-    Temporal autocorrelation between adjacent sweeps may reduce the effective
-    independence of the training and hold-out sets beyond what the sweep-level split
-    guarantees. Validation across multiple independent sessions and bearings is needed.
+  \item \textbf{Single bearing and lubricant.} All results are specific to the SYJ25 bearing and Keratech~22 oil. Generalisability to other bearing types, sizes, or lubricants is unknown.
+  \item \textbf{Heterodyned US channel.} The passive US channel is frequency-limited to $\approx$\SI{20}{kHz}. It should not be equated with wideband ultrasound and results should be interpreted in light of this hardware constraint.
+  \item \textbf{Data gap. \todo{Check if there is any}}
+  \item \textbf{Model-derived $\kappa$ reference. \todo{Check if this is stille the case with/without slipring}}
 \end{enumerate}

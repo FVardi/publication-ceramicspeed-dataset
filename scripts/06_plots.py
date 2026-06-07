@@ -39,7 +39,6 @@ import math
 import sys
 import warnings
 
-sys.stdout.reconfigure(encoding="utf-8")
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import matplotlib.colors as mcolors
