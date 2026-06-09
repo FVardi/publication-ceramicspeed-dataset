@@ -70,24 +70,31 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fast mode: fewer CV repeats and Optuna trials for quick sanity checks.",
     )
+    parser.add_argument(
+        "--target", type=str, default="kappa",
+        choices=["kappa", "sp_mean_v"],
+        help="Regression target column (default: kappa).",
+    )
     args, _ = parser.parse_known_args()
     return args
 
 
 args = parse_args()
 cfg = load_config(args.config)
+TARGET_COL: str = args.target
 
 DEBUG: bool = args.debug or bool(cfg.get("debug", {}).get("enabled", False))
 if DEBUG:
     print("*** DEBUG MODE — reduced parameters for fast testing ***")
+print(f"Target: {TARGET_COL}")
 
 OUTPUT_DIR = get_output_dir(cfg)
-SCRIPT_DIR = OUTPUT_DIR / "03_evaluation"
+SCRIPT_DIR = OUTPUT_DIR / "03_evaluation" / TARGET_COL
 FIGURES_DIR = SCRIPT_DIR / "figures"
 TABLES_DIR = SCRIPT_DIR / "tables"
 PREDICTIONS_DIR = SCRIPT_DIR / "predictions"
 for _d in [SCRIPT_DIR, FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR]:
-    _d.mkdir(exist_ok=True)
+    _d.mkdir(parents=True, exist_ok=True)
 
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
@@ -155,9 +162,13 @@ if not DEBUG:
 
 raw_feature_df, raw_metadata_df = load_parquet_pair(OUTPUT_DIR)
 
-feat_sel_path = OUTPUT_DIR / "feature_selection.json"
+sel_fname = "feature_selection.json" if TARGET_COL == "kappa" else f"feature_selection_{TARGET_COL}.json"
+feat_sel_path = OUTPUT_DIR / sel_fname
 if not feat_sel_path.exists():
-    raise FileNotFoundError(f"{feat_sel_path} not found. Run 02_feature_analysis.py first.")
+    raise FileNotFoundError(
+        f"{feat_sel_path} not found. "
+        f"Run 02_feature_analysis.py --target {TARGET_COL} first."
+    )
 with open(feat_sel_path) as fh:
     feature_selection: dict = json.load(fh)
 
@@ -167,16 +178,22 @@ df, metadata = filter_by_metadata(raw_feature_df, raw_metadata_df, rpm_max=RPM_M
 df = df.reset_index(drop=True)
 metadata = metadata.reset_index(drop=True)
 
-metadata["kappa"] = metadata.apply(
-    lambda row: calculate_kappa(
-        rpm=row["rpm"],
-        temp_c=row["temperature_c"],
-        d_pw=D_PW_MM,
-        nu_40=row["viscosity_40c_cst"],
-        nu_100=row["viscosity_100c_cst"],
-    ),
-    axis=1,
-)
+if TARGET_COL == "kappa":
+    metadata["kappa"] = metadata.apply(
+        lambda row: calculate_kappa(
+            rpm=row["rpm"],
+            temp_c=row["temperature_c"],
+            d_pw=D_PW_MM,
+            nu_40=row["viscosity_40c_cst"],
+            nu_100=row["viscosity_100c_cst"],
+        ),
+        axis=1,
+    )
+elif TARGET_COL not in metadata.columns:
+    raise KeyError(
+        f"Target '{TARGET_COL}' not in metadata. "
+        "Re-run 01_feature_generation.py on a file that has an SP channel."
+    )
 
 sweep_keys = df[["file", "sweep"]].drop_duplicates().reset_index(drop=True)
 train_sweep_idx, _ = train_test_split(
@@ -207,7 +224,7 @@ for sensor_name, sel_info in feature_selection.items():
     retained = FEATURE_OVERRIDE.get(sensor_name) or sel_info["retained"]
     tr_mask = df_train["sensor"] == sensor_name
     X_tr = df_train.loc[tr_mask, retained].reset_index(drop=True)
-    y_tr = meta_train.loc[tr_mask, "kappa"].reset_index(drop=True)
+    y_tr = meta_train.loc[tr_mask, TARGET_COL].reset_index(drop=True)
     valid = X_tr.notna().all(axis=1)
     X_tr = X_tr[valid].reset_index(drop=True)
     y_tr = y_tr[valid].values
@@ -221,13 +238,13 @@ _SENSOR_LABEL: dict[str, str] = {"UL": "US"}
 def _build_keyed(df_src, meta_src, sensor_name, retained):
     mask = df_src["sensor"] == sensor_name
     X = df_src.loc[mask, ["file", "sweep"] + retained].copy()
-    km = meta_src.loc[mask, ["kappa"]].reset_index(drop=True)
+    km = meta_src.loc[mask, [TARGET_COL]].reset_index(drop=True)
     X = X.reset_index(drop=True)
-    X["kappa"] = km["kappa"].values
+    X[TARGET_COL] = km[TARGET_COL].values
     valid = X[retained].notna().all(axis=1)
     X = X[valid].set_index(["file", "sweep"])
     label = _SENSOR_LABEL.get(sensor_name, sensor_name)
-    return X.rename(columns=lambda c: c if (c == "kappa" or c.startswith(f"{label}_")) else f"{label}__{c}")
+    return X.rename(columns=lambda c: c if (c == TARGET_COL or c.startswith(f"{label}_")) else f"{label}__{c}")
 
 
 retained_map = {
@@ -243,15 +260,15 @@ try:
     n_before = len(parts[0])
     merged = parts[0]
     for part in parts[1:]:
-        feat_cols = [c for c in part.columns if c != "kappa"]
+        feat_cols = [c for c in part.columns if c != TARGET_COL]
         merged = merged.join(part[feat_cols], how="inner")
     n_after = len(merged)
     if n_after < n_before:
         print(f"  Inner join: {n_before} → {n_after} sweeps "
               f"({n_before - n_after} dropped — at least one sensor missing)")
-    feat_cols = [c for c in merged.columns if c != "kappa"]
+    feat_cols = [c for c in merged.columns if c != TARGET_COL]
     X_combined_train = pd.DataFrame(merged[feat_cols].values, columns=feat_cols)
-    y_combined_train = merged["kappa"].values
+    y_combined_train = merged[TARGET_COL].values
     print(f"  Combined: {X_combined_train.shape[0]} samples, {X_combined_train.shape[1]} features")
 except Exception as exc:
     print(f"WARNING: Could not build combined training set: {exc}")

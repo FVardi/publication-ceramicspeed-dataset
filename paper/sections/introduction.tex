@@ -49,6 +49,7 @@ This study deliberately fixes the bearing, lubricant, and load, varying only rot
 This paper makes the following contributions:
 \begin{enumerate}
   \item \textbf{A dual-channel LCM dataset.} The first dataset to pair calibrated AE and passive-US signals from a single ball bearing across a continuous speed (100--\SI{3000}{rpm}) and temperature (40--\SI{100}{\celsius}) sweep spanning the boundary, mixed, and full-film regimes, with an analytically derived ISO~281 $\kappa$ ground truth.
+  \item \textbf{Slipring based film thickness measurement}\todo{Expand if novel}
   \item \textbf{Features of sub-bands of AE signals predict $\kappa$. }
   LightGBM on AE features alone reaches hold-out $R^2 = 0.951$ (RMSE~$= 0.078$~$\kappa$-units); SHAP attribution identifies the high-frequency 1--2~MHz AE sub-band as the single most informative range for $\kappa$ prediction.\todo{Update with new results}
   \item \textbf{AE substantially outperforms passive (heterodyned) US.} The AE--US gap ($\Delta R^2 = 0.35$) is large and confirmed significant across all tests, quantifying the value of wideband AE over a heterodyned passive-US channel.\todo{Update with new results}
@@ -58,3 +59,16 @@ This paper makes the following contributions:
 The remainder of the paper is organised as follows. Section~\ref{sec:background} reviews the theory of $\kappa$ and the physical origins of AE and US signals. Section~\ref{sec:setup} describes the experimental setup and data collection. Section~\ref{sec:pipeline} presents the signal-processing and feature-extraction pipeline. Section~\ref{sec:features} reports the feature analysis. Section~\ref{sec:modelling} presents the regression modelling and statistical evaluation.
 Section~\ref{sec:discussion} discusses the findings, and Section~\ref{sec:conclusion}
 concludes.
+
+The overall pipeline of the experiment, signal processing, modeling, and evaluation is seen in Figure~\ref{fig:pipeline_overview}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{pipeline_overview}
+  \caption{Overview of the experimental and modelling pipeline. AE and passive US signals
+    are acquired simultaneously from the test rig and decomposed into broadband and
+    sub-band features. Three sensor configurations (AE-only, AE+US fusion, US-only) are
+    evaluated across three regression model families under repeated nested cross-validation,
+    with the viscosity ratio $\kappa$ as the regression target.}
+  \label{fig:pipeline_overview}
+\end{figure}

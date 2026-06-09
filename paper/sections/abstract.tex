@@ -16,9 +16,9 @@ analytically from bearing geometry, lubricant properties, and operating conditio
 a continuous, physics-grounded regression target.
 For the AE channel, 26~time-domain and frequency-domain features are extracted from the
 broadband signal and from three frequency sub-bands (20--500~kHz, 500~kHz--1~MHz,
-1--2~MHz), yielding 104~candidate features; 26~features are extracted from the
-pre-filtered US channel (0--20~kHz).
-A two-stage selection retains 32~AE and 6~US features after a joint
+1--2~MHz), yielding 104~candidate features; 78~candidate features are extracted from the US channel
+(broadband 0--20~kHz and two sub-bands: 0--10~kHz and 10--20~kHz).
+A two-stage selection retains 32~AE and \todo{update}~US features after a joint
 Spearman--Pearson correlation threshold filter and a greedy variance-inflation-factor
 and pairwise-correlation redundancy reduction.
 Three regression model families are benchmarked across three sensor configurations

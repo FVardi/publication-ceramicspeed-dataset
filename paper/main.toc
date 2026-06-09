@@ -1,34 +1,34 @@
 \babel@toc {english}{}\relax 
 \contentsline {section}{\numberline {1}Introduction}{4}{section.1}%
-\contentsline {section}{\numberline {2}Background}{6}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Lubrication regimes and the viscosity ratio $\kappa $}{6}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Physical origins of AE and passive ultrasound signals}{7}{subsection.2.2}%
-\contentsline {section}{\numberline {3}Experimental Setup}{8}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Test rig and bearing}{8}{subsection.3.1}%
+\contentsline {section}{\numberline {2}Background}{7}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Lubrication regimes and the viscosity ratio $\kappa $}{7}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Physical origins of AE and passive ultrasound signals}{8}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Experimental Setup}{9}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Test rig and bearing}{9}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Operating conditions}{9}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Sensor configuration and data acquisition}{9}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}$\kappa $ derivation}{9}{subsection.3.4}%
-\contentsline {subsection}{\numberline {3.5}Dataset availability}{9}{subsection.3.5}%
-\contentsline {section}{\numberline {4}Signal Cleaning and Feature Extraction}{10}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Signal cleaning}{10}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Filter bands}{10}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Feature extraction}{10}{subsection.4.3}%
-\contentsline {section}{\numberline {5}Feature Analysis}{11}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Correlation with $\kappa $}{13}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}Operating-condition confounding}{15}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}PCA and regime separability}{16}{subsection.5.3}%
-\contentsline {section}{\numberline {6}Regression Modelling and Statistical Evaluation}{16}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Experimental design}{16}{subsection.6.1}%
-\contentsline {subsubsection}{\numberline {6.1.1}Data sets and splits}{16}{subsubsection.6.1.1}%
-\contentsline {subsubsection}{\numberline {6.1.2}Model families}{16}{subsubsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.2}Repeated nested cross-validation}{16}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Statistical significance testing}{17}{subsection.6.3}%
-\contentsline {subsection}{\numberline {6.4}Results}{18}{subsection.6.4}%
-\contentsline {section}{\numberline {7}Discussion}{20}{section.7}%
-\contentsline {subsection}{\numberline {7.1}AE vs. US}{20}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}Fusion gain}{21}{subsection.7.2}%
-\contentsline {subsection}{\numberline {7.3}Interpreting the amplitude-confounding result}{21}{subsection.7.3}%
-\contentsline {subsection}{\numberline {7.4}Implications for the $\kappa $ regression framework}{22}{subsection.7.4}%
-\contentsline {subsection}{\numberline {7.5}Limitations}{22}{subsection.7.5}%
-\contentsline {section}{\numberline {8}Conclusion}{22}{section.8}%
-\contentsline {section}{\numberline {A}Full Feature Correlation Rankings}{23}{appendix.A}%
+\contentsline {subsection}{\numberline {3.3}Sensor configuration and data acquisition}{10}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}$\kappa $ derivation}{10}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Dataset availability}{10}{subsection.3.5}%
+\contentsline {section}{\numberline {4}Signal Cleaning and Feature Extraction}{11}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Signal cleaning}{11}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Filter bands}{11}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Feature extraction}{11}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Feature Analysis}{12}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Correlation with $\kappa $}{14}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Operating-condition confounding}{16}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}PCA and regime separability}{17}{subsection.5.3}%
+\contentsline {section}{\numberline {6}Regression Modelling and Statistical Evaluation}{17}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Experimental design}{17}{subsection.6.1}%
+\contentsline {subsubsection}{\numberline {6.1.1}Data sets and splits}{17}{subsubsection.6.1.1}%
+\contentsline {subsubsection}{\numberline {6.1.2}Model families}{17}{subsubsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.2}Repeated nested cross-validation}{17}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Statistical significance testing}{19}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Results}{19}{subsection.6.4}%
+\contentsline {section}{\numberline {7}Discussion}{22}{section.7}%
+\contentsline {subsection}{\numberline {7.1}AE vs. US}{22}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Fusion gain}{23}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Interpreting the amplitude-confounding result}{23}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Implications for the $\kappa $ regression framework}{24}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Limitations}{24}{subsection.7.5}%
+\contentsline {section}{\numberline {8}Conclusion}{24}{section.8}%
+\contentsline {section}{\numberline {A}Full Feature Correlation Rankings}{25}{appendix.A}%

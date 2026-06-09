@@ -5,45 +5,45 @@ The style file: unsrt.bst
 Database file #1: refs.bib
 Warning--entry type for "iso_281" isn't style-file defined
 --line 305 of file refs.bib
-You've used 25 entries,
+You've used 22 entries,
             1791 wiz_defined-function locations,
-            598 strings with 8218 characters,
-and the built_in function-call counts, 5791 in all, are:
-= -- 518
-> -- 263
+            581 strings with 7746 characters,
+and the built_in function-call counts, 5142 in all, are:
+= -- 459
+> -- 231
 < -- 1
-+ -- 98
-- -- 73
-* -- 436
-:= -- 940
-add.period$ -- 74
-call.type$ -- 25
-change.case$ -- 25
++ -- 86
+- -- 64
+* -- 395
+:= -- 834
+add.period$ -- 65
+call.type$ -- 22
+change.case$ -- 22
 chr.to.int$ -- 0
-cite$ -- 25
-duplicate$ -- 230
-empty$ -- 564
-format.name$ -- 73
-if$ -- 1255
+cite$ -- 22
+duplicate$ -- 207
+empty$ -- 500
+format.name$ -- 64
+if$ -- 1114
 int.to.chr$ -- 0
-int.to.str$ -- 25
-missing$ -- 23
-newline$ -- 126
-num.names$ -- 24
-pop$ -- 42
+int.to.str$ -- 22
+missing$ -- 21
+newline$ -- 111
+num.names$ -- 21
+pop$ -- 34
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 92
+skip$ -- 83
 stack$ -- 0
-substring$ -- 462
-swap$ -- 34
+substring$ -- 412
+swap$ -- 31
 text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
 warning$ -- 0
-while$ -- 62
-width$ -- 27
-write$ -- 272
+while$ -- 55
+width$ -- 24
+write$ -- 240
 (There was 1 warning)

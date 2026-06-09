@@ -344,7 +344,14 @@ def load_and_process_file(
 
             # ---- Band-specific features (prefixed, from raw cleaned signal) ----
             if frequency_bands and sensor_name in frequency_bands:
+                nyquist = fs / 2.0
                 for f_lo, f_hi, band_label in frequency_bands[sensor_name]:
+                    if f_hi > nyquist:
+                        logger.debug(
+                            "%s / %s / %s: skipping band %s (f_hi=%.0f Hz > Nyquist=%.0f Hz)",
+                            file_name, sweep_name, sensor_name, band_label, f_hi, nyquist,
+                        )
+                        continue
                     filtered = bandpass_filter(voltage, fs, f_lo, f_hi)
                     band_features = extract_features(filtered, fs)
                     for key, val in band_features.items():
@@ -577,7 +584,9 @@ def discover_hdf5_files(
     import fnmatch
 
     input_dir = Path(input_dir)
-    all_files = sorted(input_dir.glob("*.hdf5"))
+    all_files = sorted(
+        list(input_dir.glob("*.hdf5")) + list(input_dir.glob("*.h5"))
+    )
 
     if file_patterns:
         all_files = [
@@ -587,7 +596,7 @@ def discover_hdf5_files(
 
     if not all_files:
         raise FileNotFoundError(
-            f"No .hdf5 files found in {input_dir}"
+            f"No .hdf5/.h5 files found in {input_dir}"
             + (f" matching patterns {file_patterns}" if file_patterns else "")
         )
     return all_files

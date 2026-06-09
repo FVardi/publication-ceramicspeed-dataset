@@ -3,8 +3,6 @@
 \label{sec:pipeline}
 %% ============================================================================
 
-The pipeline is implemented in Python using NumPy~\cite{harris_array_2020}, SciPy~\cite{virtanen_scipy_2020}, and antropy~\cite{vallat_antropy_2023} for signal processing and feature computation, and is configured via a single YAML file to allow full reproduction from the raw HDF5 files.
-
 \subsection{Signal cleaning}
 \label{subsec:cleaning}
 
@@ -34,6 +32,8 @@ AE & Sub-band 1 & Band-pass & 20--500\,kHz     \\
 AE & Sub-band 2 & Band-pass & 500\,kHz--1\,MHz \\
 AE & Sub-band 3 & Band-pass & 1--2\,MHz        \\
 US & Broadband  & Low-pass  & 0--20\,kHz       \\
+US & Sub-band 1 & Band-pass & 0--10\,kHz       \\
+US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
 \bottomrule
 \end{tabular}}
 \end{table}\todo{Update table with final filters}
@@ -118,8 +118,8 @@ channel using zero-phase Butterworth bandpass filters:
 The full 26-feature set is extracted independently for each sub-band, yielding
 $26 \times 4 = 104$~candidate AE features (broadband plus three sub-bands).
 
-\textbf{US channel pre-filtering.}
+\textbf{US channel pre-filtering and sub-band decomposition.}
 The US channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth filter
-before broadband feature extraction, consistent with the effective bandwidth of the
-heterodyned probe.
-No frequency sub-bands are computed for the US channel, giving 26~candidate US features.
+before feature extraction, consistent with the effective bandwidth of the heterodyned probe.
+Two sub-bands are additionally extracted: 0--10~kHz and 10--20~kHz.
+The broadband plus two sub-band sets yield $26 \times 3 = 78$~candidate US features.

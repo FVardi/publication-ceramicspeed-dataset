@@ -86,25 +86,33 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fast mode: reduced CV splits, Optuna trials, and LightGBM trees for quick sanity checks.",
     )
+    parser.add_argument(
+        "--target", type=str, default="kappa",
+        choices=["kappa", "sp_mean_v"],
+        help="Regression target column (default: kappa).",
+    )
     args, _ = parser.parse_known_args()
     return args
 
 
 args = parse_args()
 cfg = load_config(args.config)
+TARGET_COL: str = args.target
+TARGET_LABEL: str = {"kappa": "κ", "sp_mean_v": "SP voltage [V]"}.get(TARGET_COL, TARGET_COL)
 
 DEBUG: bool = args.debug or bool(cfg.get("debug", {}).get("enabled", False))
 if DEBUG:
     print("*** DEBUG MODE — reduced parameters for fast testing ***")
+print(f"Target: {TARGET_COL}  ({TARGET_LABEL})")
 
 OUTPUT_DIR = get_output_dir(cfg)
-SCRIPT_DIR = OUTPUT_DIR / "04_modelling"
+SCRIPT_DIR = OUTPUT_DIR / "04_modelling" / TARGET_COL
 FIGURES_DIR = SCRIPT_DIR / "figures"
 TABLES_DIR = SCRIPT_DIR / "tables"
 PREDICTIONS_DIR = SCRIPT_DIR / "predictions"
 SHAP_DIR = SCRIPT_DIR / "shap"
 for _d in [SCRIPT_DIR, FIGURES_DIR, TABLES_DIR, PREDICTIONS_DIR, SHAP_DIR]:
-    _d.mkdir(exist_ok=True)
+    _d.mkdir(parents=True, exist_ok=True)
 
 D_PW_MM: float = cfg["bearing"]["d_pw_mm"]
 RPM_MAX: float = cfg["filters"]["rpm_max"]
@@ -164,10 +172,12 @@ if DEBUG:
 raw_feature_df, raw_metadata_df = load_parquet_pair(OUTPUT_DIR)
 
 # Load retained feature lists from 02_feature_analysis
-feat_sel_path = OUTPUT_DIR / "feature_selection.json"
+sel_fname = "feature_selection.json" if TARGET_COL == "kappa" else f"feature_selection_{TARGET_COL}.json"
+feat_sel_path = OUTPUT_DIR / sel_fname
 if not feat_sel_path.exists():
     raise FileNotFoundError(
-        f"{feat_sel_path} not found. Run 02_feature_analysis.py first."
+        f"{feat_sel_path} not found. "
+        f"Run 02_feature_analysis.py --target {TARGET_COL} first."
     )
 with open(feat_sel_path) as fh:
     feature_selection = json.load(fh)
@@ -190,19 +200,25 @@ df, metadata = filter_by_metadata(
 df = df.reset_index(drop=True)
 metadata = metadata.reset_index(drop=True)
 
-metadata["kappa"] = metadata.apply(
-    lambda row: calculate_kappa(
-        rpm=row["rpm"],
-        temp_c=row["temperature_c"],
-        d_pw=D_PW_MM,
-        nu_40=row["viscosity_40c_cst"],
-        nu_100=row["viscosity_100c_cst"],
-    ),
-    axis=1,
-)
+if TARGET_COL == "kappa":
+    metadata["kappa"] = metadata.apply(
+        lambda row: calculate_kappa(
+            rpm=row["rpm"],
+            temp_c=row["temperature_c"],
+            d_pw=D_PW_MM,
+            nu_40=row["viscosity_40c_cst"],
+            nu_100=row["viscosity_100c_cst"],
+        ),
+        axis=1,
+    )
+elif TARGET_COL not in metadata.columns:
+    raise KeyError(
+        f"Target '{TARGET_COL}' not in metadata. "
+        "Re-run 01_feature_generation.py on a file that has an SP channel."
+    )
 
 print(f"After RPM filter (<{RPM_MAX}): {len(df)} rows")
-print(f"Kappa range: [{metadata['kappa'].min():.2f}, {metadata['kappa'].max():.2f}]")
+print(f"{TARGET_COL} range: [{metadata[TARGET_COL].min():.4f}, {metadata[TARGET_COL].max():.4f}]")
 
 # %%
 # =============================================================================
@@ -256,7 +272,7 @@ for sensor_name, sel_info in feature_selection.items():
     # Train split — drop NaN rows so models never see missing values
     tr_mask = df_train["sensor"] == sensor_name
     X_tr = df_train.loc[tr_mask, retained].reset_index(drop=True)
-    y_tr = meta_train.loc[tr_mask, "kappa"].reset_index(drop=True)
+    y_tr = meta_train.loc[tr_mask, TARGET_COL].reset_index(drop=True)
     rpm_tr_all = meta_train.loc[tr_mask, "rpm"].reset_index(drop=True)
     valid_tr = X_tr.notna().all(axis=1)
     X_tr = X_tr[valid_tr].reset_index(drop=True)
@@ -266,7 +282,7 @@ for sensor_name, sel_info in feature_selection.items():
     # Test split
     te_mask = df_test["sensor"] == sensor_name
     X_te = df_test.loc[te_mask, retained].reset_index(drop=True)
-    y_te = meta_test.loc[te_mask, "kappa"].reset_index(drop=True)
+    y_te = meta_test.loc[te_mask, TARGET_COL].reset_index(drop=True)
     rpm_te_all = meta_test.loc[te_mask, "rpm"].reset_index(drop=True)
     sweep_ids_te = df_test.loc[te_mask, ["file", "sweep"]].reset_index(drop=True)
     valid_te = X_te.notna().all(axis=1)
@@ -292,17 +308,17 @@ _SENSOR_LABEL: dict[str, str] = {"UL": "US"}
 
 
 def _build_keyed(df_src, meta_src, sensor_name, retained):
-    """Return feature DataFrame indexed by (file, sweep) with kappa and rpm columns."""
+    """Return feature DataFrame indexed by (file, sweep) with target and rpm columns."""
     mask = df_src["sensor"] == sensor_name
     X = df_src.loc[mask, ["file", "sweep"] + retained].copy()
-    km = meta_src.loc[mask, ["kappa", "rpm"]].reset_index(drop=True)
+    km = meta_src.loc[mask, [TARGET_COL, "rpm"]].reset_index(drop=True)
     X = X.reset_index(drop=True)
-    X["kappa"] = km["kappa"].values
+    X[TARGET_COL] = km[TARGET_COL].values
     X["rpm"] = km["rpm"].values
     valid = X[retained].notna().all(axis=1)
     X = X[valid].set_index(["file", "sweep"])
     label = _SENSOR_LABEL.get(sensor_name, sensor_name)
-    return X.rename(columns=lambda c: c if (c in ("kappa", "rpm") or c.startswith(f"{label}_")) else f"{label}__{c}")
+    return X.rename(columns=lambda c: c if (c in (TARGET_COL, "rpm") or c.startswith(f"{label}_")) else f"{label}__{c}")
 
 
 def _merge_sensors(df_src, meta_src, retained_map):
@@ -313,17 +329,17 @@ def _merge_sensors(df_src, meta_src, retained_map):
     merged = parts[0]
     for part in parts[1:]:
         # inner join: only sweeps present for all sensors
-        feat_cols = [c for c in part.columns if c not in ("kappa", "rpm")]
+        feat_cols = [c for c in part.columns if c not in (TARGET_COL, "rpm")]
         merged = merged.join(part[feat_cols], how="inner")
     n_after = len(merged)
     if n_after < n_before:
         print(f"  Inner join: {n_before} → {n_after} sweeps "
               f"({n_before - n_after} dropped — at least one sensor missing)")
-    feat_cols = [c for c in merged.columns if c not in ("kappa", "rpm")]
+    feat_cols = [c for c in merged.columns if c not in (TARGET_COL, "rpm")]
     sweep_ids = merged.index.to_frame(index=False)
     return (
         merged[feat_cols].values,
-        merged["kappa"].values,
+        merged[TARGET_COL].values,
         feat_cols,
         merged["rpm"].values,
         sweep_ids,
@@ -626,11 +642,11 @@ for ax, result in zip(_axes_flat, results):
     _xlims = [result.y_true.min() - _margin, result.y_true.max() + _margin]
     ax.plot(_xlims, _xlims, "k--", lw=1, alpha=0.5, label="ideal")
     ax.set_xlim(_xlims)
-    ax.set_xlabel("True κ")
-    ax.set_ylabel("Predicted κ")
+    ax.set_xlabel(f"True {TARGET_LABEL}")
+    ax.set_ylabel(f"Predicted {TARGET_LABEL}")
     ax.set_title(f"{result.name}\nR² = {result.r2:.3f}   MAE = {result.mae:.3f}   RMSE = {result.rmse:.3f}")
     ax.grid(ls=":", alpha=0.4)
-fig.suptitle("CV Out-of-Fold Predictions vs True κ (Training Set)", fontsize=13)
+fig.suptitle(f"CV Out-of-Fold Predictions vs True {TARGET_LABEL} (Training Set)", fontsize=13)
 fig.tight_layout()
 plt.savefig(FIGURES_DIR / "model_pred_vs_actual_cv.png", dpi=150)
 plt.show()
@@ -653,8 +669,8 @@ for ax, result in zip(_axes_flat, results):
         ax.set_xlim(_xlims)
         h = result.holdout_metrics
         ax.set_title(f"{result.name}\nR² = {h['r2']:.3f}   MAE = {h['mae']:.3f}   RMSE = {h['rmse']:.3f}")
-        ax.set_xlabel("True κ")
-        ax.set_ylabel("Predicted κ")
+        ax.set_xlabel(f"True {TARGET_LABEL}")
+        ax.set_ylabel(f"Predicted {TARGET_LABEL}")
         ax.grid(ls=":", alpha=0.4)
 fig.suptitle("Hold-Out Test Set: Predicted vs True κ", fontsize=13)
 fig.tight_layout()
@@ -713,7 +729,7 @@ for ax, result in zip(_axes_flat, results):
                         norm=_rpm_norm, s=12, alpha=0.6, edgecolors="none")
         plt.colorbar(sc, ax=ax, label="RPM")
         ax.axhline(0, color="k", ls="--", lw=0.8)
-        ax.set_xlabel("Predicted κ")
+        ax.set_xlabel(f"Predicted {TARGET_LABEL}")
         ax.set_ylabel("Residual (true − pred)")
         ax.set_title(f"{result.name} — Hold-Out Residuals")
         ax.grid(ls=":", alpha=0.4)
@@ -845,7 +861,7 @@ for result in results:
         p = {k: v for k, v in core.get_params().items() if k in lgb_keys}
     best_params[result.name] = p
 
-params_path = OUTPUT_DIR / "best_params.json"
+params_path = SCRIPT_DIR / "best_params.json"
 with open(params_path, "w") as fh:
     _json.dump(best_params, fh, indent=2)
 print(f"\nSaved: {params_path.name}")

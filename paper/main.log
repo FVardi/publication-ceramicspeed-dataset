@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.12.3)  7 JUN 2026 17:02
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.12.3)  9 JUN 2026 20:33
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -703,7 +703,19 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 76.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
-{c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}] (./sections/abstract.tex)
+{c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}] (./sections/abstract.tex
+Package hyperref Info: bookmark level for unknown todo defaults to 0 on input line 21.
+
+Overfull \hbox (0.83238pt too wide) in paragraph at lines 21--21
+[][][]\T1/cmr/m/n/12 update[]  
+ []
+
+
+Overfull \hbox (0.83238pt too wide) in paragraph at lines 21--21
+[][][]\T1/cmr/m/n/12 update[]  
+ []
+
+)
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
@@ -726,14 +738,18 @@ Overfull \hbox (6.79825pt too wide) in paragraph at lines 51--52
 \T1/cmr/m/n/12 passive-US sig-nals from a sin-gle ball bear-ing across a con-tin-u-ous speed (100--$\OT1/cmr/m/n/12 3000 []$\T1/cmr/m/n/12 )
  []
 
-Package hyperref Info: bookmark level for unknown todo defaults to 0 on input line 53.
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 53--53
-[][][]\T1/cmr/m/n/12 Update 
+Overfull \hbox (4.90915pt too wide) in paragraph at lines 52--52
+[][][]\T1/cmr/m/n/12 Expand 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 53--53
+Overfull \hbox (4.90915pt too wide) in paragraph at lines 52--52
+[][][]\T1/cmr/m/n/12 Expand 
+ []
+
+
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 54--54
 [][][]\T1/cmr/m/n/12 Update 
  []
 
@@ -743,7 +759,12 @@ Overfull \hbox (3.11238pt too wide) in paragraph at lines 54--54
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 54--54
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 55--55
+[][][]\T1/cmr/m/n/12 Update 
+ []
+
+
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 55--55
 [][][]\T1/cmr/m/n/12 Update 
  []
 
@@ -751,15 +772,20 @@ Overfull \hbox (3.11238pt too wide) in paragraph at lines 54--54
 LaTeX Warning: Marginpar on page 6 moved.
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 55--55
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 56--56
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 55--55
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 56--56
 [][][]\T1/cmr/m/n/12 Update 
  []
 
+<figures/pipeline_overview.pdf, id=268, 1204.5pt x 521.95pt>
+File: figures/pipeline_overview.pdf Graphic file (type pdf)
+<use figures/pipeline_overview.pdf>
+Package pdftex.def Info: figures/pipeline_overview.pdf  used on input line 67.
+(pdftex.def)             Requested size: 455.24411pt x 197.27583pt.
 ) (./sections/background.tex
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
@@ -770,9 +796,14 @@ Overfull \hbox (5.36296pt too wide) in paragraph at lines 29--35
 \T1/cmr/m/n/12 The op-er-at-ing vis-cos-ity $\OML/cmm/m/it/12 ^^W$ \T1/cmr/m/n/12 is com-puted from the ASTM D341 Walther viscosity--temperature
  []
 
-[7]) (./sections/setup.tex
-Overfull \hbox (9.64273pt too wide) in paragraph at lines 9--9
-\T1/cmr/m/n/12 amount?[]  
+[7 <./figures/pipeline_overview.pdf>] [8]) (./sections/setup.tex
+Overfull \hbox (2.78604pt too wide) in paragraph at lines 8--8
+[][][]\T1/cmr/m/n/12 Include 
+ []
+
+
+Overfull \hbox (2.78604pt too wide) in paragraph at lines 8--8
+[][][]\T1/cmr/m/n/12 Include 
  []
 
 
@@ -781,10 +812,18 @@ Overfull \hbox (9.64273pt too wide) in paragraph at lines 9--9
  []
 
 
-LaTeX Warning: Marginpar on page 8 moved.
+Overfull \hbox (9.64273pt too wide) in paragraph at lines 9--9
+\T1/cmr/m/n/12 amount?[]  
+ []
 
 
-LaTeX Warning: Marginpar on page 8 moved.
+LaTeX Warning: Marginpar on page 9 moved.
+
+
+LaTeX Warning: Marginpar on page 9 moved.
+
+
+LaTeX Warning: Marginpar on page 9 moved.
 
 
 Overfull \hbox (4.90912pt too wide) in paragraph at lines 11--11
@@ -797,10 +836,6 @@ Overfull \hbox (4.90912pt too wide) in paragraph at lines 11--11
  []
 
 
-LaTeX Warning: Marginpar on page 8 moved.
-
-[8]
-
 LaTeX Warning: Marginpar on page 9 moved.
 
 
@@ -813,84 +848,109 @@ LaTeX Warning: Marginpar on page 9 moved.
 LaTeX Warning: Marginpar on page 9 moved.
 
 
-LaTeX Warning: Marginpar on page 9 moved.
-
-
-LaTeX Warning: Marginpar on page 9 moved.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 33.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 33.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 33.
-
-
-Overfull \hbox (3.76918pt too wide) in paragraph at lines 34--34
-[][][]\T1/cmr/m/n/12 Change 
- []
-
-
-Overfull \hbox (3.18175pt too wide) in paragraph at lines 34--34
-\T1/cmr/m/n/12 slipring 
- []
-
-
-Overfull \hbox (3.76918pt too wide) in paragraph at lines 34--34
-[][][]\T1/cmr/m/n/12 Change 
- []
-
-
-Overfull \hbox (3.18175pt too wide) in paragraph at lines 34--34
-\T1/cmr/m/n/12 slipring 
- []
-
-
-Overfull \hbox (2.78604pt too wide) in paragraph at lines 35--35
-[][][]\T1/cmr/m/n/12 Include 
- []
-
-
-Overfull \hbox (2.78604pt too wide) in paragraph at lines 35--35
-[][][]\T1/cmr/m/n/12 Include 
- []
-
-
-LaTeX Warning: Marginpar on page 9 moved.
-
-
-LaTeX Warning: Marginpar on page 9 moved.
-
-
-Overfull \hbox (2.52919pt too wide) in paragraph at lines 37--37
-\T1/cmr/m/n/12 dataset 
- []
-
-
-Overfull \hbox (2.52919pt too wide) in paragraph at lines 37--37
-\T1/cmr/m/n/12 dataset 
- []
-
-
-LaTeX Warning: Marginpar on page 9 moved.
-
-) (./sections/pipeline.tex [9{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 21--21
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 20--20
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 21--21
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 20--20
 [][][]\T1/cmr/m/n/12 Update 
+ []
+
+
+LaTeX Warning: Marginpar on page 9 moved.
+
+
+LaTeX Warning: Marginpar on page 9 moved.
+
+<figures/eda_operating_conditions.png, id=319, 939.51pt x 361.35pt>
+File: figures/eda_operating_conditions.png Graphic file (type png)
+<use figures/eda_operating_conditions.png>
+Package pdftex.def Info: figures/eda_operating_conditions.png  used on input line 24.
+(pdftex.def)             Requested size: 409.71692pt x 157.58296pt.
+[9{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
+
+LaTeX Warning: Marginpar on page 10 moved.
+
+
+LaTeX Warning: Marginpar on page 10 moved.
+
+
+LaTeX Warning: Marginpar on page 10 moved.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 42.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\kappa' on input line 42.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 42.
+
+
+Overfull \hbox (3.76918pt too wide) in paragraph at lines 43--43
+[][][]\T1/cmr/m/n/12 Change 
+ []
+
+
+Overfull \hbox (3.18175pt too wide) in paragraph at lines 43--43
+\T1/cmr/m/n/12 slipring 
+ []
+
+
+Overfull \hbox (3.76918pt too wide) in paragraph at lines 43--43
+[][][]\T1/cmr/m/n/12 Change 
+ []
+
+
+Overfull \hbox (3.18175pt too wide) in paragraph at lines 43--43
+\T1/cmr/m/n/12 slipring 
+ []
+
+
+Overfull \hbox (2.78604pt too wide) in paragraph at lines 44--44
+[][][]\T1/cmr/m/n/12 Include 
+ []
+
+
+Overfull \hbox (2.78604pt too wide) in paragraph at lines 44--44
+[][][]\T1/cmr/m/n/12 Include 
  []
 
 
 LaTeX Warning: Marginpar on page 10 moved.
+
+
+LaTeX Warning: Marginpar on page 10 moved.
+
+
+Overfull \hbox (2.52919pt too wide) in paragraph at lines 46--46
+\T1/cmr/m/n/12 dataset 
+ []
+
+
+Overfull \hbox (2.52919pt too wide) in paragraph at lines 46--46
+\T1/cmr/m/n/12 dataset 
+ []
+
+
+LaTeX Warning: Marginpar on page 10 moved.
+
+) (./sections/pipeline.tex [10 <./figures/eda_operating_conditions.png>]
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 19--19
+[][][]\T1/cmr/m/n/12 Update 
+ []
+
+
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 19--19
+[][][]\T1/cmr/m/n/12 Update 
+ []
+
+
+LaTeX Warning: Marginpar on page 11 moved.
 
 
 Overfull \hbox (3.11238pt too wide) in paragraph at lines 39--39
@@ -903,7 +963,7 @@ Overfull \hbox (3.11238pt too wide) in paragraph at lines 39--39
  []
 
 
-LaTeX Warning: Marginpar on page 10 moved.
+LaTeX Warning: Marginpar on page 11 moved.
 
 
 Underfull \hbox (badness 7362) in paragraph at lines 68--68
@@ -1045,7 +1105,7 @@ Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
 \T1/cmr/m/n/12 quency 
  []
 
-[10]) (./sections/features.tex
+) (./sections/features.tex [11]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                removing `math shift' on input line 15.
@@ -1058,7 +1118,7 @@ Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                removing `math shift' on input line 15.
 
-[11] [12]
+[12] [13]
 Overfull \hbox (101.08151pt too wide) in paragraph at lines 48--48
 \T1/cmtt/m/n/12 feature_ranking_us.csv 
  []
@@ -1088,22 +1148,22 @@ Overfull \hbox (5.23547pt too wide) in paragraph at lines 48--48
 \T1/cmr/m/n/12 Rewrite 
  []
 
-<figures/feature_ranking_ae_barplot_top20.png, id=377, 578.16pt x 2659.536pt>
+<figures/feature_ranking_ae_barplot_top20.png, id=395, 578.16pt x 2659.536pt>
 File: figures/feature_ranking_ae_barplot_top20.png Graphic file (type png)
 <use figures/feature_ranking_ae_barplot_top20.png>
 Package pdftex.def Info: figures/feature_ranking_ae_barplot_top20.png  used on input line 57.
 (pdftex.def)             Requested size: 386.96027pt x 1780.01318pt.
 
-LaTeX Warning: Reference `tab:app_ae_ranking' on page 13 undefined on input line 60.
+LaTeX Warning: Reference `tab:app_ae_ranking' on page 14 undefined on input line 60.
 
 
-LaTeX Warning: Reference `tab:app_ae_ranking' on page 13 undefined on input line 60.
+LaTeX Warning: Reference `tab:app_ae_ranking' on page 14 undefined on input line 60.
 
-[13]
+[14]
 Overfull \vbox (1130.73009pt too high) has occurred while \output is active []
 
- [14 <./figures/feature_ranking_ae_barplot_top20.png>]
-<figures/feature_ranking_us_barplot.png, id=394, 578.16pt x 520.344pt>
+ [15 <./figures/feature_ranking_ae_barplot_top20.png>]
+<figures/feature_ranking_us_barplot.png, id=411, 578.16pt x 520.344pt>
 File: figures/feature_ranking_us_barplot.png Graphic file (type png)
 <use figures/feature_ranking_us_barplot.png>
 Package pdftex.def Info: figures/feature_ranking_us_barplot.png  used on input line 66.
@@ -1138,8 +1198,18 @@ Overfull \hbox (20.0846pt too wide) in paragraph at lines 81--81
 \T1/cmr/m/n/12 correlation 
  []
 
-[15 <./figures/feature_ranking_us_barplot.png>]
-<figures/pca_kappa_regimes.png, id=406, 1156.32pt x 433.62pt>
+
+Overfull \hbox (2.52919pt too wide) in paragraph at lines 86--86
+\T1/cmr/m/n/12 dataset[]  
+ []
+
+
+Overfull \hbox (2.52919pt too wide) in paragraph at lines 86--86
+\T1/cmr/m/n/12 dataset[]  
+ []
+
+[16 <./figures/feature_ranking_us_barplot.png>]
+<figures/pca_kappa_regimes.png, id=423, 1156.32pt x 433.62pt>
 File: figures/pca_kappa_regimes.png Graphic file (type png)
 <use figures/pca_kappa_regimes.png>
 Package pdftex.def Info: figures/pca_kappa_regimes.png  used on input line 90.
@@ -1179,47 +1249,52 @@ Overfull \hbox (1.15038pt too wide) in paragraph at lines 33--33
 \T1/cmr/m/n/12 NetCV 
  []
 
-[16 <./figures/pca_kappa_regimes.png>] [17]
-<figures/model_pred_vs_actual_holdout.png, id=425, 1300.86pt x 1300.86pt>
+<figures/nested_cv_splits.png, id=427, 2047.65pt x 1114.1625pt>
+File: figures/nested_cv_splits.png Graphic file (type png)
+<use figures/nested_cv_splits.png>
+Package pdftex.def Info: figures/nested_cv_splits.png  used on input line 41.
+(pdftex.def)             Requested size: 455.24411pt x 247.70062pt.
+[17 <./figures/pca_kappa_regimes.png>] [18 <./figures/nested_cv_splits.png>] [19]
+<figures/model_pred_vs_actual_holdout.png, id=455, 1300.86pt x 1300.86pt>
 File: figures/model_pred_vs_actual_holdout.png Graphic file (type png)
 <use figures/model_pred_vs_actual_holdout.png>
-Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 124.
+Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 133.
 (pdftex.def)             Requested size: 455.24411pt x 455.24828pt.
- [18]
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 128--128
+ [20]
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 137--137
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 128--128
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 137--137
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 129--129
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 138--138
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 129--129
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 138--138
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-LaTeX Warning: Marginpar on page 19 moved.
+LaTeX Warning: Marginpar on page 21 moved.
 
 
-Overfull \hbox (8.33243pt too wide) in paragraph at lines 143--156
+Overfull \hbox (8.33243pt too wide) in paragraph at lines 152--165
  [][] 
  []
 
-[19 <./figures/model_pred_vs_actual_holdout.png>]
-<figures/shap_beeswarm_lgb_ae.png, id=445, 650.43pt x 433.62pt>
+[21 <./figures/model_pred_vs_actual_holdout.png>]
+<figures/shap_beeswarm_lgb_ae.png, id=472, 650.43pt x 433.62pt>
 File: figures/shap_beeswarm_lgb_ae.png Graphic file (type png)
 <use figures/shap_beeswarm_lgb_ae.png>
-Package pdftex.def Info: figures/shap_beeswarm_lgb_ae.png  used on input line 162.
+Package pdftex.def Info: figures/shap_beeswarm_lgb_ae.png  used on input line 171.
 (pdftex.def)             Requested size: 386.96027pt x 257.97733pt.
-) (./sections/discussion.tex [20 <./figures/shap_beeswarm_lgb_ae.png>]
+) (./sections/discussion.tex [22 <./figures/shap_beeswarm_lgb_ae.png>]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                removing `math shift' on input line 36.
@@ -1232,7 +1307,7 @@ Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                removing `math shift' on input line 36.
 
-[21]
+[23]
 Overfull \hbox (33.78958pt too wide) in paragraph at lines 51--51
 \T1/cmr/m/n/12 with/without 
  []
@@ -1253,14 +1328,14 @@ Overfull \hbox (3.18175pt too wide) in paragraph at lines 51--51
  []
 
 
-LaTeX Warning: Marginpar on page 22 moved.
+LaTeX Warning: Marginpar on page 24 moved.
 
-) (./sections/conclusion.tex [22]) (./sections/appendix.tex
+) (./sections/conclusion.tex [24]) (./sections/appendix.tex
 
-LaTeX Warning: Reference `tab:app_ae_ranking' on page 23 undefined on input line 7.
+LaTeX Warning: Reference `tab:app_ae_ranking' on page 25 undefined on input line 7.
 
 
-LaTeX Warning: Reference `tab:app_ul_ranking' on page 23 undefined on input line 7.
+LaTeX Warning: Reference `tab:app_ul_ranking' on page 25 undefined on input line 7.
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 21--21
@@ -1272,9 +1347,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 28--28
 [][][]\T1/cmr/m/n/12 Run scripts/02_feature_analysis.py to gen-er-ate 
  []
 
-) (./sections/backmatter.tex [23]) [24] (./main.bbl [25
+) (./sections/backmatter.tex [25]) [26] (./main.bbl [27
 
-]) [26] (./main.aux)
+]) [28] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-11-14>
@@ -1287,18 +1362,18 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 384CEBD17391631206002CDFEEB5BD7F;5820.
  ) 
 Here is how much of TeX's memory you used:
- 25877 strings out of 467538
- 474656 string characters out of 5423725
- 926279 words of memory out of 5000000
- 54169 multiletter control sequences out of 15000+600000
+ 25954 strings out of 467538
+ 476657 string characters out of 5423725
+ 930947 words of memory out of 5000000
+ 54237 multiletter control sequences out of 15000+600000
  648106 words of font info for 96 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  99i,15n,117p,1310b,1100s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on main.pdf (27 pages, 6617299 bytes).
+Output written on main.pdf (29 pages, 6848821 bytes).
 PDF statistics:
- 640 PDF objects out of 1000 (max. 8388607)
- 546 compressed objects within 6 object streams
- 155 named destinations out of 1000 (max. 500000)
- 302 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 667 PDF objects out of 1000 (max. 8388607)
+ 564 compressed objects within 6 object streams
+ 164 named destinations out of 1000 (max. 500000)
+ 317 words of extra memory for PDF output out of 10000 (max. 10000000)
 

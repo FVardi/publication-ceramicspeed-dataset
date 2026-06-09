@@ -55,12 +55,19 @@ from ceramicspeed.config import load_config, get_output_dir
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=str, default=None)
+    parser.add_argument(
+        "--target", type=str, default="kappa",
+        choices=["kappa", "sp_mean_v"],
+        help="Regression target for correlation/selection (default: kappa).",
+    )
     args, _ = parser.parse_known_args()
     return args
 
 
 args = parse_args()
 cfg = load_config(args.config)
+TARGET_COL: str = args.target
+print(f"Target: {TARGET_COL}")
 
 OUTPUT_DIR = get_output_dir(cfg)
 SCRIPT_DIR = OUTPUT_DIR / "02_feature_analysis"
@@ -80,10 +87,10 @@ VIF_THRESHOLD: float = feat_sel_cfg.get("vif_threshold", 10.0)
 # =============================================================================
 # Load data and split by sensor before cleaning
 # =============================================================================
-# Band-specific columns (e.g. AE_20-500kHz__*) only exist for AE rows.
-# Cleaning the combined DataFrame with nan_strategy="drop" would drop all
-# UL rows because they have NaN in those columns.  Split first so each
-# sensor is cleaned against only its own feature columns.
+# Band-specific columns exist for both sensors (e.g. AE_20-500kHz__* for AE,
+# US_0-10kHz__* for UL).  Cleaning the combined DataFrame with nan_strategy="drop"
+# would drop all rows of one sensor because they have NaN in the other sensor's
+# band columns.  Split first so each sensor is cleaned against only its own columns.
 
 raw_feature_df, raw_metadata_df = load_parquet_pair(OUTPUT_DIR)
 print(f"Loaded {len(raw_feature_df)} rows from features.parquet")
@@ -117,35 +124,38 @@ us_df = us_df.set_index(["file", "sweep", "sensor"])
 # Calculate kappa
 # =============================================================================
 
-def _add_kappa(metadata):
-    metadata["kappa"] = metadata.apply(
-        lambda row: calculate_kappa(
-            rpm=row["rpm"],
-            temp_c=row["temperature_c"],
-            d_pw=D_PW_MM,
-            nu_40=row["viscosity_40c_cst"],
-            nu_100=row["viscosity_100c_cst"],
-        ),
-        axis=1,
-    )
-    return metadata
+def _resolve_target(metadata: "pd.DataFrame") -> "pd.Series":
+    if TARGET_COL == "kappa":
+        return metadata.apply(
+            lambda row: calculate_kappa(
+                rpm=row["rpm"],
+                temp_c=row["temperature_c"],
+                d_pw=D_PW_MM,
+                nu_40=row["viscosity_40c_cst"],
+                nu_100=row["viscosity_100c_cst"],
+            ),
+            axis=1,
+        )
+    if TARGET_COL not in metadata.columns:
+        raise KeyError(
+            f"Target '{TARGET_COL}' not in metadata. "
+            "Re-run 01_feature_generation.py on a file that has an SP channel."
+        )
+    return metadata[TARGET_COL].astype(float)
 
-ae_metadata = _add_kappa(ae_metadata)
-us_metadata = _add_kappa(us_metadata)
-
-ae_kappa = ae_metadata["kappa"]
-us_kappa = us_metadata["kappa"]
+ae_target = _resolve_target(ae_metadata)
+us_target = _resolve_target(us_metadata)
 
 # %%
 # =============================================================================
 # Correlation analysis: Spearman + Pearson
 # =============================================================================
 
-ae_spearman = spearman_correlation(ae_df, ae_kappa)
-us_spearman = spearman_correlation(us_df, us_kappa)
+ae_spearman = spearman_correlation(ae_df, ae_target)
+us_spearman = spearman_correlation(us_df, us_target)
 
-ae_pearson = pearson_correlation(ae_df, ae_kappa)
-us_pearson = pearson_correlation(us_df, us_kappa)
+ae_pearson = pearson_correlation(ae_df, ae_target)
+us_pearson = pearson_correlation(us_df, us_target)
 
 # %%
 # =============================================================================
@@ -205,7 +215,7 @@ for sensor_label, ranking, spearman, pearson in [
     ax_r.set_yticks(y)
     ax_r.set_yticklabels(feature_order)
     ax_r.axvline(0, color="k", lw=0.8)
-    ax_r.set_xlabel("Correlation with κ")
+    ax_r.set_xlabel(f"Correlation with {TARGET_COL}")
     ax_r.set_title(f"{sensor_label} — feature correlation ranking")
     ax_r.legend(loc="lower right")
     ax_r.grid(ls=":", axis="x", alpha=0.4)
@@ -241,7 +251,7 @@ for i, feat in enumerate(ae_top20_order):
 ax20.set_yticks(y20)
 ax20.set_yticklabels(ae_top20_order, fontsize=8)
 ax20.axvline(0, color="k", lw=0.8)
-ax20.set_xlabel("|Correlation with κ|")
+ax20.set_xlabel(f"|Correlation with {TARGET_COL}|")
 ax20.set_title(f"AE — top {TOP_N_AE} features by combined rank (retained outlined)")
 ax20.legend(
     handles=[
@@ -335,10 +345,10 @@ fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 ae_pca_coords, ae_pca, _ = pca_transform(ae_df)
 us_pca_coords, us_pca, _ = pca_transform(us_df)
 
-plot_pca_kappa(ae_pca_coords, ae_kappa, ae_pca,
-               ax=axes[0], title="AE — PCA colored by κ regime")
-plot_pca_kappa(us_pca_coords, us_kappa, us_pca,
-               ax=axes[1], title="Ultrasound — PCA colored by κ regime")
+plot_pca_kappa(ae_pca_coords, ae_target, ae_pca,
+               ax=axes[0], title=f"AE — PCA colored by {TARGET_COL}")
+plot_pca_kappa(us_pca_coords, us_target, us_pca,
+               ax=axes[1], title=f"Ultrasound — PCA colored by {TARGET_COL}")
 
 fig.tight_layout()
 plt.savefig(FIGURES_DIR / "pca_kappa_regimes.png", dpi=600)
@@ -400,8 +410,8 @@ print(us_redundancy.to_string())
 # Greedy redundancy reduction — retained feature subsets
 # =============================================================================
 
-ae_retained = reduce_redundant_features(ae_df, ae_kappa, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
-us_retained = reduce_redundant_features(us_df, us_kappa, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
+ae_retained = reduce_redundant_features(ae_df, ae_target, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
+us_retained = reduce_redundant_features(us_df, us_target, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
 
 # %%
 print(f"\nAE: {len(ae_df.columns)} → {len(ae_retained)} features retained")
@@ -424,7 +434,8 @@ feature_selection_output = {
         "all_columns": us_df.columns.tolist(),
     },
 }
-out_path = OUTPUT_DIR / "feature_selection.json"
+sel_fname = "feature_selection.json" if TARGET_COL == "kappa" else f"feature_selection_{TARGET_COL}.json"
+out_path = OUTPUT_DIR / sel_fname
 with open(out_path, "w") as fh:
     json.dump(feature_selection_output, fh, indent=2)
 print(f"Saved: {out_path.name}")

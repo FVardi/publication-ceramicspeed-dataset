@@ -5,7 +5,7 @@
 \subsection{Experimental design}
 \label{subsec:modelling_design}
 \subsubsection{Data sets and splits}
-The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by sweep-level random sampling, stratified to preserve the $\kappa$ regime distribution. The hold-out set is withheld entirely from all model development steps and used only for final evaluation.
+The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by sweep-level random sampling, stratified to preserve the $\kappa$ regime distribution. The hold-out set is withheld entirely from all model development steps and used only for final evaluation. The training set is further divided during nested cross-validation described in Section~\ref{subsec:nested_cv}.
 \subsubsection{Model families}
 Three regression model families are evaluated for three sensor configurations,
 as summarised in Table~\ref{tab:model_families}.
@@ -34,7 +34,16 @@ LightGBM &
 
 \subsection{Repeated nested cross-validation}
 \label{subsec:nested_cv}
-To obtain stable performance estimates that properly account for the variance introduced by the train/validation split, the model evaluation uses a repeated nested $k$-fold cross-validation scheme. The outer loop is repeated $R = 5$ times with independently re-seeded five-fold splits, yielding $R \times k = 5 \times 5 = 25$~outer RMSE scores per model--sensor combination. For LightGBM, each outer fold contains its own inner Optuna optimisation loop, ensuring that the reported outer scores are not contaminated by hyperparameter selection on the outer fold data.
+To obtain stable performance estimates that properly account for the variance introduced by the train/validation split, the model evaluation uses a repeated nested $k$-fold cross-validation scheme. The outer loop is repeated $R = 5$ times with independently re-seeded five-fold splits, yielding $R \times k = 5 \times 5 = 25$~outer RMSE scores per model--sensor combination. See Figure~\ref{fig:data_partition} for data partitions.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{figures/nested_cv_splits.png}
+\caption{Caption}
+\label{fig:data_partition}
+\end{figure}
+
+For LightGBM, each outer fold contains its own inner Optuna optimisation loop, ensuring that the reported outer scores are not contaminated by hyperparameter selection on the outer fold data.
 For the linear models, hyperparameter selection is handled by \texttt{ElasticNetCV} and \texttt{RidgeCV} within each outer training partition. \todo{Verify that this is correct}
 
 The 25~outer scores form the empirical sampling distribution of RMSE for each model and are used directly in the significance tests described below.
