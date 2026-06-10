@@ -165,6 +165,7 @@ for name in (
     "resTopAeFeat", "resTopAeRho", "resTopUsFeat", "resTopUsRho",
     "resDrsqLgbAeUs", "resDrsqLgbCombAe", "resRelRmsePctLgbAe",
     "resRhoRpmKappa", "resRhoTempKappa",
+    "resNrepeats", "resNouterScores", "resNfoldsCv",
     "resNsweepsRaw", "resNsweepsRemoved", "resWindowMs", "resWindowIntervalS",
     "resSweepsPerHold", "resRpmMinMeas", "resRpmMaxMeas",
     "resTempMinMeas", "resTempMaxMeas",
@@ -247,6 +248,20 @@ if mc is not None:
     table_models_body = "\n".join(lines)
 else:
     warn(f"{mc_path} missing -- model metrics unavailable")
+
+# ---------------------------------------------------------------------------
+# 1b. CV design parameters
+# ---------------------------------------------------------------------------
+
+_cv_design = _read_csv(cv_path)
+if _cv_design is not None and "n_scores" in _cv_design.columns:
+    n_scores = int(_cv_design["n_scores"].iloc[0])
+    n_folds = int((cfg.get("modelling") or {}).get("cv_n_splits", 5))
+    macros["resNouterScores"] = str(n_scores)
+    macros["resNfoldsCv"] = str(n_folds)
+    macros["resNrepeats"] = str(n_scores // n_folds)
+else:
+    warn("performance_table_cv.csv missing n_scores -- CV design macros unavailable")
 
 # ---------------------------------------------------------------------------
 # 2. Cross-feature-set significance tests

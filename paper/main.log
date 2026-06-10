@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  10 JUN 2026 16:18
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  10 JUN 2026 16:34
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -855,37 +855,37 @@ File: figures/eda_spectrogram.png Graphic file (type png)
 Package pdftex.def Info: figures/eda_spectrogram.png  used on input line 14.
 (pdftex.def)             Requested size: 409.71692pt x 349.59908pt.
  [11] [12 <./figures/eda_spectrogram.png>]
-Underfull \hbox (badness 7362) in paragraph at lines 84--84
+Underfull \hbox (badness 7362) in paragraph at lines 83--83
 []|\T1/cmr/m/n/10.95 Peak di-vided by squared mean
  []
 
 
-Overfull \hbox (1.23769pt too wide) in paragraph at lines 75--89
+Overfull \hbox (1.23769pt too wide) in paragraph at lines 74--88
  [][] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 104--104
+Underfull \hbox (badness 10000) in paragraph at lines 103--103
 []|\T1/cmr/m/n/10.95 Dominant fre-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 105--105
+Underfull \hbox (badness 10000) in paragraph at lines 104--104
 []|\T1/cmr/m/n/10.95 Centre fre-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 106--106
+Underfull \hbox (badness 10000) in paragraph at lines 105--105
 []|\T1/cmr/m/n/10.95 Spectral band-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 107--107
+Underfull \hbox (badness 10000) in paragraph at lines 106--106
 []|\T1/cmr/m/n/10.95 Spectral skew-
  []
 
 
-Overfull \hbox (1.23769pt too wide) in paragraph at lines 100--112
+Overfull \hbox (1.23769pt too wide) in paragraph at lines 99--111
  [][] 
  []
 
@@ -914,7 +914,7 @@ Overfull \hbox (7.75014pt too wide) in paragraph at lines 72--72
 \T1/cmr/m/n/12 strength 
  []
 
-<figures/feature_ranking_ae_barplot_top20.png, id=403, 578.16pt x 2659.536pt>
+<figures/feature_ranking_ae_barplot_top20.png, id=404, 578.16pt x 2659.536pt>
 File: figures/feature_ranking_ae_barplot_top20.png Graphic file (type png)
 <use figures/feature_ranking_ae_barplot_top20.png>
 Package pdftex.def Info: figures/feature_ranking_ae_barplot_top20.png  used on input line 80.
@@ -923,30 +923,14 @@ Package pdftex.def Info: figures/feature_ranking_ae_barplot_top20.png  used on i
 Overfull \vbox (1130.73009pt too high) has occurred while \output is active []
 
  [16 <./figures/feature_ranking_ae_barplot_top20.png>]
-<figures/feature_ranking_us_barplot.png, id=423, 578.16pt x 520.344pt>
+<figures/feature_ranking_us_barplot.png, id=424, 578.16pt x 520.344pt>
 File: figures/feature_ranking_us_barplot.png Graphic file (type png)
 <use figures/feature_ranking_us_barplot.png>
 Package pdftex.def Info: figures/feature_ranking_us_barplot.png  used on input line 90.
 (pdftex.def)             Requested size: 386.96027pt x 348.26343pt.
 
-Overfull \hbox (6.37961pt too wide) in paragraph at lines 104--104
-\T1/cmr/m/n/12 (within- 
- []
 
-
-Overfull \hbox (20.41092pt too wide) in paragraph at lines 104--104
-\T1/cmr/m/n/12 frequency-- 
- []
-
-
-Overfull \hbox (20.08461pt too wide) in paragraph at lines 104--104
-\T1/cmr/m/n/12 bandwidth 
- []
-
-
-Overfull \hbox (3.11609pt too wide) in paragraph at lines 104--104
-\T1/cmr/m/n/12 tion [][]4[][]), 
- []
+LaTeX Warning: Marginpar on page 17 moved.
 
 
 Overfull \hbox (6.37961pt too wide) in paragraph at lines 104--104
@@ -968,12 +952,35 @@ Overfull \hbox (3.11609pt too wide) in paragraph at lines 104--104
 \T1/cmr/m/n/12 tion [][]4[][]), 
  []
 
-<../outputs/02_feature_analysis/figures/inter_feature_correlation.png, id=428, 1300.86pt x 578.16pt>
+
+Overfull \hbox (6.37961pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 (within- 
+ []
+
+
+Overfull \hbox (20.41092pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 frequency-- 
+ []
+
+
+Overfull \hbox (20.08461pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 bandwidth 
+ []
+
+
+Overfull \hbox (3.11609pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 tion [][]4[][]), 
+ []
+
+
+LaTeX Warning: Marginpar on page 17 moved.
+
+<../outputs/02_feature_analysis/figures/inter_feature_correlation.png, id=429, 1300.86pt x 578.16pt>
 File: ../outputs/02_feature_analysis/figures/inter_feature_correlation.png Graphic file (type png)
 <use ../outputs/02_feature_analysis/figures/inter_feature_correlation.png>
 Package pdftex.def Info: ../outputs/02_feature_analysis/figures/inter_feature_correlation.png  used on input line 108.
 (pdftex.def)             Requested size: 364.19667pt x 161.86604pt.
-<../outputs/02_feature_analysis/figures/vif_barplot.png, id=429, 1156.32pt x 433.62pt>
+<../outputs/02_feature_analysis/figures/vif_barplot.png, id=430, 1156.32pt x 433.62pt>
 File: ../outputs/02_feature_analysis/figures/vif_barplot.png Graphic file (type png)
 <use ../outputs/02_feature_analysis/figures/vif_barplot.png>
 Package pdftex.def Info: ../outputs/02_feature_analysis/figures/vif_barplot.png  used on input line 115.
@@ -1051,7 +1058,7 @@ Overfull \hbox (0.57132pt too wide) in paragraph at lines 155--155
 
 LaTeX Warning: Marginpar on page 18 moved.
 
-<figures/pca_kappa_regimes.png, id=445, 1156.32pt x 433.62pt>
+<figures/pca_kappa_regimes.png, id=448, 1156.32pt x 433.62pt>
 File: figures/pca_kappa_regimes.png Graphic file (type png)
 <use figures/pca_kappa_regimes.png>
 Package pdftex.def Info: figures/pca_kappa_regimes.png  used on input line 159.
@@ -1091,7 +1098,7 @@ Overfull \hbox (1.15038pt too wide) in paragraph at lines 33--33
 \T1/cmr/m/n/12 NetCV 
  []
 
-<figures/nested_cv_splits.png, id=459, 2047.65pt x 1114.1625pt>
+<figures/nested_cv_splits.png, id=462, 2047.65pt x 1114.1625pt>
 File: figures/nested_cv_splits.png Graphic file (type png)
 <use figures/nested_cv_splits.png>
 Package pdftex.def Info: figures/nested_cv_splits.png  used on input line 41.
@@ -1116,7 +1123,7 @@ Overfull \hbox (1.87654pt too wide) in paragraph at lines 119--119
 \T1/cmr/m/n/12 against 
  []
 
-<figures/model_pred_vs_actual_holdout.png, id=484, 1300.86pt x 1300.86pt>
+<figures/model_pred_vs_actual_holdout.png, id=487, 1300.86pt x 1300.86pt>
 File: figures/model_pred_vs_actual_holdout.png Graphic file (type png)
 <use figures/model_pred_vs_actual_holdout.png>
 Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 130.
@@ -1150,7 +1157,7 @@ Overfull \hbox (8.33243pt too wide) in paragraph at lines 149--162
  []
 
 [23 <./figures/model_pred_vs_actual_holdout.png>]
-<figures/shap_beeswarm_lgb_ae.png, id=502, 650.43pt x 433.62pt>
+<figures/shap_beeswarm_lgb_ae.png, id=505, 650.43pt x 433.62pt>
 File: figures/shap_beeswarm_lgb_ae.png Graphic file (type png)
 <use figures/shap_beeswarm_lgb_ae.png>
 Package pdftex.def Info: figures/shap_beeswarm_lgb_ae.png  used on input line 168.
@@ -1236,18 +1243,18 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: A1F8C79D4C8EADC34A5D4694A2E3B557;6328.
  ) 
 Here is how much of TeX's memory you used:
- 26077 strings out of 467538
- 479897 string characters out of 5423724
- 923237 words of memory out of 5000000
- 54337 multiletter control sequences out of 15000+600000
- 649663 words of font info for 98 fonts, out of 8000000 for 9000
+ 26103 strings out of 467538
+ 480504 string characters out of 5423724
+ 924718 words of memory out of 5000000
+ 54362 multiletter control sequences out of 15000+600000
+ 648106 words of font info for 96 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  99i,16n,117p,1308b,1100s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on main.pdf (33 pages, 9157318 bytes).
+Output written on main.pdf (33 pages, 9158084 bytes).
 PDF statistics:
- 715 PDF objects out of 1000 (max. 8388607)
- 596 compressed objects within 6 object streams
- 168 named destinations out of 1000 (max. 500000)
+ 719 PDF objects out of 1000 (max. 8388607)
+ 600 compressed objects within 6 object streams
+ 171 named destinations out of 1000 (max. 500000)
  345 words of extra memory for PDF output out of 10000 (max. 10000000)
 

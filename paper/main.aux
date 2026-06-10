@@ -128,14 +128,18 @@
 \newlabel{fig:spectrograms}{{4}{12}{Spectrograms of the raw AE and US signals across the operating conditions. Each column corresponds to a sweep, sorted by increasing $\kappa $ value from left to right. The colour indicates the magnitude of the signal in dB, with warmer colours indicating higher magnitudes}{figure.caption.22}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Sub-band decomposition}{12}{subsection.4.2}\protected@file@percent }
 \newlabel{subsec:filter_bands}{{4.2}{12}{Sub-band decomposition}{subsection.4.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Frequency sub-bands used for signal pre-filtering before feature extraction.}}{13}{table.caption.23}\protected@file@percent }
-\newlabel{tab:subbands}{{1}{13}{Frequency sub-bands used for signal pre-filtering before feature extraction}{table.caption.23}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ These interpretations of bands need to be justified by the literature or by our own analysis.}{12}{section*.23}\protected@file@percent }
+\pgfsyspdfmark {pgfid81}{18455657}{12278504}
+\pgfsyspdfmark {pgfid84}{36577345}{12295430}
+\pgfsyspdfmark {pgfid85}{38002753}{12024614}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Frequency sub-bands used for signal pre-filtering before feature extraction.}}{13}{table.caption.24}\protected@file@percent }
+\newlabel{tab:subbands}{{1}{13}{Frequency sub-bands used for signal pre-filtering before feature extraction}{table.caption.24}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Feature extraction}{13}{subsection.4.3}\protected@file@percent }
 \newlabel{subsec:features_extract}{{4.3}{13}{Feature extraction}{subsection.4.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Time-domain features. Notation: $N$ signal length; $\bar  {x}$ sample mean; $\sigma $ population standard deviation; $x_{\text  {peak}} = (\max x - \min x)/2$ half the peak-to-peak range.}}{13}{table.caption.24}\protected@file@percent }
-\newlabel{tab:features}{{2}{13}{Time-domain features. Notation: $N$ signal length; $\bar {x}$ sample mean; $\sigma $ population standard deviation; $x_{\text {peak}} = (\max x - \min x)/2$ half the peak-to-peak range}{table.caption.24}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Frequency-domain features (companion to Table~\ref {tab:features}). Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding frequency; $\bar  {S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \DOTSB \sum@ \slimits@ _k S_k$; $f_c = (\Sigma S)^{-1}\DOTSB \sum@ \slimits@ _k f_k S_k$; $\sigma _w = \big  ((\Sigma S)^{-1}\DOTSB \sum@ \slimits@ _k(f_k-f_c)^2 S_k\big  )^{1/2}$.}}{14}{table.caption.25}\protected@file@percent }
-\newlabel{tab:features_freq}{{3}{14}{Frequency-domain features (companion to Table~\ref {tab:features}). Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding frequency; $\bar {S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \sum _k S_k$; $f_c = (\Sigma S)^{-1}\sum _k f_k S_k$; $\sigma _w = \big ((\Sigma S)^{-1}\sum _k(f_k-f_c)^2 S_k\big )^{1/2}$}{table.caption.25}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Time-domain features. Notation: $N$ signal length; $\bar  {x}$ sample mean; $\sigma $ population standard deviation; $x_{\text  {peak}} = (\max x - \min x)/2$ half the peak-to-peak range.}}{13}{table.caption.25}\protected@file@percent }
+\newlabel{tab:features}{{2}{13}{Time-domain features. Notation: $N$ signal length; $\bar {x}$ sample mean; $\sigma $ population standard deviation; $x_{\text {peak}} = (\max x - \min x)/2$ half the peak-to-peak range}{table.caption.25}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Frequency-domain features (companion to Table~\ref {tab:features}). Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding frequency; $\bar  {S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \DOTSB \sum@ \slimits@ _k S_k$; $f_c = (\Sigma S)^{-1}\DOTSB \sum@ \slimits@ _k f_k S_k$; $\sigma _w = \big  ((\Sigma S)^{-1}\DOTSB \sum@ \slimits@ _k(f_k-f_c)^2 S_k\big  )^{1/2}$.}}{14}{table.caption.26}\protected@file@percent }
+\newlabel{tab:features_freq}{{3}{14}{Frequency-domain features (companion to Table~\ref {tab:features}). Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding frequency; $\bar {S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \sum _k S_k$; $f_c = (\Sigma S)^{-1}\sum _k f_k S_k$; $\sigma _w = \big ((\Sigma S)^{-1}\sum _k(f_k-f_c)^2 S_k\big )^{1/2}$}{table.caption.26}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Candidate feature sets}{14}{subsection.4.4}\protected@file@percent }
 \newlabel{subsec:candidates}{{4.4}{14}{Candidate feature sets}{subsection.4.4}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Feature Analysis}{14}{section.5}\protected@file@percent }
@@ -143,90 +147,98 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Two-stage feature selection}{14}{subsection.5.1}\protected@file@percent }
 \newlabel{subsec:selection}{{5.1}{14}{Two-stage feature selection}{subsection.5.1}{}}
 \citation{renhart_ae_2021,zhang_coupled_2026}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Feature selection funnel: candidate features, survivors of the Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy reduction.}}{15}{table.caption.26}\protected@file@percent }
-\newlabel{tab:selection_funnel}{{4}{15}{Feature selection funnel: candidate features, survivors of the Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy reduction}{table.caption.26}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Feature selection funnel: candidate features, survivors of the Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy reduction.}}{15}{table.caption.27}\protected@file@percent }
+\newlabel{tab:selection_funnel}{{4}{15}{Feature selection funnel: candidate features, survivors of the Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy reduction}{table.caption.27}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Correlation with $\kappa $}{15}{subsection.5.2}\protected@file@percent }
 \newlabel{subsec:raw_spearman}{{5.2}{15}{Correlation with \texorpdfstring {$\kappa $}{kappa}}{subsection.5.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Top 10 features by combined Spearman--Pearson rank score with $\kappa $, for the AE and the US signals.}}{15}{table.caption.27}\protected@file@percent }
-\newlabel{tab:raw_spearman}{{5}{15}{Top 10 features by combined Spearman--Pearson rank score with $\kappa $, for the AE and the US signals}{table.caption.27}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Interpret the final ranking: which sub-bands dominate for each channel; amplitude (RMS) vs.\ shape (complexity, bandwidth, skewness) features; AE vs.\ US correlation strength gap.}{15}{section*.28}\protected@file@percent }
-\pgfsyspdfmark {pgfid81}{20619234}{10329980}
-\pgfsyspdfmark {pgfid84}{36577345}{10346906}
-\pgfsyspdfmark {pgfid85}{38002753}{10076090}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Spearman $|\rho |$ and Pearson $|r|$ between the top 20 AE features and $\kappa $, sorted by combined rank. Retained features (after Stage~2) are outlined in black. The full ranking of all 56~AE features is given in Table~\ref {tab:app_ae_ranking} (Appendix~\ref {app:feature_rankings}).}}{16}{figure.caption.29}\protected@file@percent }
-\newlabel{fig:ranking_ae}{{5}{16}{Spearman $|\rho |$ and Pearson $|r|$ between the top 20 AE features and $\kappa $, sorted by combined rank. Retained features (after Stage~2) are outlined in black. The full ranking of all \resNcandAe ~AE features is given in Table~\ref {tab:app_ae_ranking} (Appendix~\ref {app:feature_rankings})}{figure.caption.29}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Spearman $|\rho |$ and Pearson $|r|$ between each US-channel feature and $\kappa $, sorted by combined rank. Retained features highlighted.}}{17}{figure.caption.30}\protected@file@percent }
-\newlabel{fig:ranking_us}{{6}{17}{Spearman $|\rho |$ and Pearson $|r|$ between each US-channel feature and $\kappa $, sorted by combined rank. Retained features highlighted}{figure.caption.30}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Top 10 features by combined Spearman--Pearson rank score with $\kappa $, for the AE and the US signals.}}{15}{table.caption.28}\protected@file@percent }
+\newlabel{tab:raw_spearman}{{5}{15}{Top 10 features by combined Spearman--Pearson rank score with $\kappa $, for the AE and the US signals}{table.caption.28}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Interpret the final ranking: which sub-bands dominate for each channel; amplitude (RMS) vs.\ shape (complexity, bandwidth, skewness) features; AE vs.\ US correlation strength gap.}{15}{section*.29}\protected@file@percent }
+\pgfsyspdfmark {pgfid86}{20619234}{10329980}
+\pgfsyspdfmark {pgfid89}{36577345}{10346906}
+\pgfsyspdfmark {pgfid90}{38002753}{10076090}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Spearman $|\rho |$ and Pearson $|r|$ between the top 20 AE features and $\kappa $, sorted by combined rank. Retained features (after Stage~2) are outlined in black. The full ranking of all 56~AE features is given in Table~\ref {tab:app_ae_ranking} (Appendix~\ref {app:feature_rankings}).}}{16}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:ranking_ae}{{5}{16}{Spearman $|\rho |$ and Pearson $|r|$ between the top 20 AE features and $\kappa $, sorted by combined rank. Retained features (after Stage~2) are outlined in black. The full ranking of all \resNcandAe ~AE features is given in Table~\ref {tab:app_ae_ranking} (Appendix~\ref {app:feature_rankings})}{figure.caption.30}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Spearman $|\rho |$ and Pearson $|r|$ between each US-channel feature and $\kappa $, sorted by combined rank. Retained features highlighted.}}{17}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:ranking_us}{{6}{17}{Spearman $|\rho |$ and Pearson $|r|$ between each US-channel feature and $\kappa $, sorted by combined rank. Retained features highlighted}{figure.caption.31}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ I think these figures are redundant and too large.}{17}{section*.32}\protected@file@percent }
+\pgfsyspdfmark {pgfid91}{4661699}{24675982}
+\pgfsyspdfmark {pgfid94}{36577345}{24692908}
+\pgfsyspdfmark {pgfid95}{38002753}{24422092}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Redundancy structure}{17}{subsection.5.3}\protected@file@percent }
 \newlabel{subsec:redundancy}{{5.3}{17}{Redundancy structure}{subsection.5.3}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ One short paragraph: where the redundancy concentrates (within-band amplitude clusters; centre-frequency--bandwidth pairs), and note that because the candidate set is canonical (Section~\ref {sec:pipeline}), remaining correlations reflect genuine signal structure rather than definitional identities.}{17}{section*.31}\protected@file@percent }
-\pgfsyspdfmark {pgfid86}{16431996}{20163006}
-\pgfsyspdfmark {pgfid89}{36577345}{20179932}
-\pgfsyspdfmark {pgfid90}{38002753}{19909116}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Inter-feature Spearman correlation matrix of the Stage~1 survivors.}}{17}{figure.caption.32}\protected@file@percent }
-\newlabel{fig:corr_matrix}{{7}{17}{Inter-feature Spearman correlation matrix of the Stage~1 survivors}{figure.caption.32}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Maybe use only one plot. Use log axis for VIF.}{17}{section*.33}\protected@file@percent }
+\pgfsyspdfmark {pgfid96}{4661699}{21604072}
+\pgfsyspdfmark {pgfid99}{36577345}{12351678}
+\pgfsyspdfmark {pgfid100}{38002753}{12080862}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ One short paragraph: where the redundancy concentrates (within-band amplitude clusters; centre-frequency--bandwidth pairs), and note that because the candidate set is canonical (Section~\ref {sec:pipeline}), remaining correlations reflect genuine signal structure rather than definitional identities.}{17}{section*.34}\protected@file@percent }
+\pgfsyspdfmark {pgfid101}{17377211}{19245502}
+\pgfsyspdfmark {pgfid104}{36577345}{163328}
+\pgfsyspdfmark {pgfid105}{38002753}{-107488}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Inter-feature Spearman correlation matrix of the Stage~1 survivors.}}{17}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:corr_matrix}{{7}{17}{Inter-feature Spearman correlation matrix of the Stage~1 survivors}{figure.caption.35}{}}
 \citation{hou_insitu_2025,zhang_coupled_2026,miettinen_analysis_2001}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Variance inflation factors of the Stage~1 survivors; the dashed line marks the $\text  {VIF} = 10$ removal threshold.}}{18}{figure.caption.33}\protected@file@percent }
-\newlabel{fig:vif}{{8}{18}{Variance inflation factors of the Stage~1 survivors; the dashed line marks the $\text {VIF} = 10$ removal threshold}{figure.caption.33}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Variance inflation factors of the Stage~1 survivors; the dashed line marks the $\text  {VIF} = 10$ removal threshold.}}{18}{figure.caption.36}\protected@file@percent }
+\newlabel{fig:vif}{{8}{18}{Variance inflation factors of the Stage~1 survivors; the dashed line marks the $\text {VIF} = 10$ removal threshold}{figure.caption.36}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Operating-condition dependence}{18}{subsection.5.4}\protected@file@percent }
 \newlabel{subsec:confound}{{5.4}{18}{Operating-condition dependence}{subsection.5.4}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Add the diagnostic: regress each top feature (and each retained set) against RPM and against temperature; report $R^2$. This quantifies how much of the feature information is an operating-condition proxy.}{18}{section*.34}\protected@file@percent }
-\pgfsyspdfmark {pgfid91}{29635094}{21064335}
-\pgfsyspdfmark {pgfid94}{36577345}{21081261}
-\pgfsyspdfmark {pgfid95}{38002753}{20810445}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Add the diagnostic: regress each top feature (and each retained set) against RPM and against temperature; report $R^2$. This quantifies how much of the feature information is an operating-condition proxy.}{18}{section*.37}\protected@file@percent }
+\pgfsyspdfmark {pgfid106}{29635094}{19885050}
+\pgfsyspdfmark {pgfid109}{36577345}{19901976}
+\pgfsyspdfmark {pgfid110}{38002753}{19631160}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Low-dimensional structure and regime separability}{18}{subsection.5.5}\protected@file@percent }
 \newlabel{subsec:pca}{{5.5}{18}{Low-dimensional structure and regime separability}{subsection.5.5}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Regenerate the figure from the final run and describe the gradient/regime structure observed.}{18}{section*.35}\protected@file@percent }
-\pgfsyspdfmark {pgfid96}{9131160}{13275285}
-\pgfsyspdfmark {pgfid99}{36577345}{-24279949}
-\pgfsyspdfmark {pgfid100}{38002753}{-24550765}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces PCA projection of the retained AE and US feature sets, coloured by lubrication $\kappa $ value.}}{19}{figure.caption.36}\protected@file@percent }
-\newlabel{fig:pca}{{9}{19}{PCA projection of the retained AE and US feature sets, coloured by lubrication $\kappa $ value}{figure.caption.36}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Regenerate the figure from the final run and describe the gradient/regime structure observed.}{18}{section*.38}\protected@file@percent }
+\pgfsyspdfmark {pgfid111}{9131160}{12096000}
+\pgfsyspdfmark {pgfid114}{36577345}{-25459234}
+\pgfsyspdfmark {pgfid115}{38002753}{-25730050}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces PCA projection of the retained AE and US feature sets, coloured by lubrication $\kappa $ value.}}{19}{figure.caption.39}\protected@file@percent }
+\newlabel{fig:pca}{{9}{19}{PCA projection of the retained AE and US feature sets, coloured by lubrication $\kappa $ value}{figure.caption.39}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {6}Regression Modelling and Statistical Evaluation}{19}{section.6}\protected@file@percent }
 \newlabel{sec:modelling}{{6}{19}{Regression Modelling and Statistical Evaluation}{section.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Experimental design}{19}{subsection.6.1}\protected@file@percent }
 \newlabel{subsec:modelling_design}{{6.1}{19}{Experimental design}{subsection.6.1}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.1}Data sets and splits}{19}{subsubsection.6.1.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.2}Model families}{19}{subsubsection.6.1.2}\protected@file@percent }
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Add ElasticNetCV search grid values (number of $\alpha $ candidates and $\ell _1$ ratios tried).}{19}{section*.38}\protected@file@percent }
-\pgfsyspdfmark {pgfid101}{11487787}{19773405}
-\pgfsyspdfmark {pgfid104}{36577345}{19790331}
-\pgfsyspdfmark {pgfid105}{38002753}{19519515}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Add ElasticNetCV search grid values (number of $\alpha $ candidates and $\ell _1$ ratios tried).}{19}{section*.41}\protected@file@percent }
+\pgfsyspdfmark {pgfid116}{11487787}{19773405}
+\pgfsyspdfmark {pgfid119}{36577345}{19790331}
+\pgfsyspdfmark {pgfid120}{38002753}{19519515}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Repeated nested cross-validation}{19}{subsection.6.2}\protected@file@percent }
 \newlabel{subsec:nested_cv}{{6.2}{19}{Repeated nested cross-validation}{subsection.6.2}{}}
 \citation{nadeau_inference_2003}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Regression model families: rationale and hyperparameter tuning strategy.}}{20}{table.caption.37}\protected@file@percent }
-\newlabel{tab:model_families}{{6}{20}{Regression model families: rationale and hyperparameter tuning strategy}{table.caption.37}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Caption}}{20}{figure.caption.39}\protected@file@percent }
-\newlabel{fig:data_partition}{{10}{20}{Caption}{figure.caption.39}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Verify that this is correct}{20}{section*.40}\protected@file@percent }
-\pgfsyspdfmark {pgfid106}{26912011}{12123926}
-\pgfsyspdfmark {pgfid109}{36577345}{12140852}
-\pgfsyspdfmark {pgfid110}{38002753}{11870036}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Regression model families: rationale and hyperparameter tuning strategy.}}{20}{table.caption.40}\protected@file@percent }
+\newlabel{tab:model_families}{{6}{20}{Regression model families: rationale and hyperparameter tuning strategy}{table.caption.40}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Caption}}{20}{figure.caption.42}\protected@file@percent }
+\newlabel{fig:data_partition}{{10}{20}{Caption}{figure.caption.42}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Verify that this is correct}{20}{section*.43}\protected@file@percent }
+\pgfsyspdfmark {pgfid121}{26912011}{12123926}
+\pgfsyspdfmark {pgfid124}{36577345}{12140852}
+\pgfsyspdfmark {pgfid125}{38002753}{11870036}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Statistical significance testing}{20}{subsection.6.3}\protected@file@percent }
 \newlabel{subsec:sig_tests}{{6.3}{20}{Statistical significance testing}{subsection.6.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Results}{21}{subsection.6.4}\protected@file@percent }
 \newlabel{subsec:modelling_results}{{6.4}{21}{Results}{subsection.6.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Regression model performance. CV RMSE: mean $\pm $ std of outer RMSE across 25 repeated nested CV folds (training set $n = 6\,747$). HO: hold-out test set ($n = 1\,757$). Best hold-out $R^2$ in bold.}}{21}{table.caption.41}\protected@file@percent }
-\newlabel{tab:models}{{7}{21}{Regression model performance. CV RMSE: mean $\pm $ std of outer RMSE across 25 repeated nested CV folds (training set $n = \resNtrain $). HO: hold-out test set ($n = \resNholdout $). Best hold-out $R^2$ in bold}{table.caption.41}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Interpret the fusion result against the final frozen numbers: with the current outputs the hold-out tests \emph  {confirm} a small fusion gain, reversing the earlier ``unconfirmed on hold-out'' narrative.}{22}{section*.42}\protected@file@percent }
-\pgfsyspdfmark {pgfid111}{20206300}{38393899}
-\pgfsyspdfmark {pgfid114}{36577345}{38410825}
-\pgfsyspdfmark {pgfid115}{38002753}{38140009}
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Predicted vs.\ actual $\kappa $ on the hold-out test set for all model families and sensor configurations, colored according to RPM. The dashed diagonal indicates perfect prediction. Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.0$). }}{23}{figure.caption.43}\protected@file@percent }
-\newlabel{fig:pred_vs_actual}{{11}{23}{Predicted vs.\ actual $\kappa $ on the hold-out test set for all model families and sensor configurations, colored according to RPM. The dashed diagonal indicates perfect prediction. Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.0$)}{figure.caption.43}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update visual interpretation of the figure after new results.}{23}{section*.44}\protected@file@percent }
-\pgfsyspdfmark {pgfid116}{4661699}{16714351}
-\pgfsyspdfmark {pgfid119}{36577345}{16731277}
-\pgfsyspdfmark {pgfid120}{38002753}{16460461}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update sections after new results}{23}{section*.45}\protected@file@percent }
-\pgfsyspdfmark {pgfid121}{18896037}{15535066}
-\pgfsyspdfmark {pgfid124}{36577345}{3363641}
-\pgfsyspdfmark {pgfid125}{38002753}{3092825}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Cross-model SHAP agreement for AE features: features appearing in the top~10 by mean $|\text  {SHAP}|$ for more than one model type.}}{24}{table.caption.46}\protected@file@percent }
-\newlabel{tab:shap_agree}{{8}{24}{Cross-model SHAP agreement for AE features: features appearing in the top~10 by mean $|\text {SHAP}|$ for more than one model type}{table.caption.46}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces SHAP feature importance (mean $|\text  {SHAP value}|$) for the LightGBM model trained on AE features. Features from frequency sub-bands are prefixed with the band label (e.g., \texttt  {AE\_20-500kHz\_}).}}{24}{figure.caption.47}\protected@file@percent }
-\newlabel{fig:shap}{{12}{24}{SHAP feature importance (mean $|\text {SHAP value}|$) for the LightGBM model trained on AE features. Features from frequency sub-bands are prefixed with the band label (e.g., \texttt {AE\_20-500kHz\_})}{figure.caption.47}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Regression model performance. CV RMSE: mean $\pm $ std of outer RMSE across 25{} repeated nested CV folds (training set $n = 6\,747$). HO: hold-out test set ($n = 1\,757$). Best hold-out $R^2$ in bold.}}{21}{table.caption.44}\protected@file@percent }
+\newlabel{tab:models}{{7}{21}{Regression model performance. CV RMSE: mean $\pm $ std of outer RMSE across \resNouterScores {} repeated nested CV folds (training set $n = \resNtrain $). HO: hold-out test set ($n = \resNholdout $). Best hold-out $R^2$ in bold}{table.caption.44}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Interpret the fusion result against the final frozen numbers: with the current outputs the hold-out tests \emph  {confirm} a small fusion gain, reversing the earlier ``unconfirmed on hold-out'' narrative.}{22}{section*.45}\protected@file@percent }
+\pgfsyspdfmark {pgfid126}{20206300}{38393899}
+\pgfsyspdfmark {pgfid129}{36577345}{38410825}
+\pgfsyspdfmark {pgfid130}{38002753}{38140009}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Predicted vs.\ actual $\kappa $ on the hold-out test set for all model families and sensor configurations, colored according to RPM. The dashed diagonal indicates perfect prediction. Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.0$). }}{23}{figure.caption.46}\protected@file@percent }
+\newlabel{fig:pred_vs_actual}{{11}{23}{Predicted vs.\ actual $\kappa $ on the hold-out test set for all model families and sensor configurations, colored according to RPM. The dashed diagonal indicates perfect prediction. Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.0$)}{figure.caption.46}{}}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update visual interpretation of the figure after new results.}{23}{section*.47}\protected@file@percent }
+\pgfsyspdfmark {pgfid131}{4661699}{16714351}
+\pgfsyspdfmark {pgfid134}{36577345}{16731277}
+\pgfsyspdfmark {pgfid135}{38002753}{16460461}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update sections after new results}{23}{section*.48}\protected@file@percent }
+\pgfsyspdfmark {pgfid136}{18896037}{15535066}
+\pgfsyspdfmark {pgfid139}{36577345}{3363641}
+\pgfsyspdfmark {pgfid140}{38002753}{3092825}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Cross-model SHAP agreement for AE features: features appearing in the top~10 by mean $|\text  {SHAP}|$ for more than one model type.}}{24}{table.caption.49}\protected@file@percent }
+\newlabel{tab:shap_agree}{{8}{24}{Cross-model SHAP agreement for AE features: features appearing in the top~10 by mean $|\text {SHAP}|$ for more than one model type}{table.caption.49}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces SHAP feature importance (mean $|\text  {SHAP value}|$) for the LightGBM model trained on AE features. Features from frequency sub-bands are prefixed with the band label (e.g., \texttt  {AE\_20-500kHz\_}).}}{24}{figure.caption.50}\protected@file@percent }
+\newlabel{fig:shap}{{12}{24}{SHAP feature importance (mean $|\text {SHAP value}|$) for the LightGBM model trained on AE features. Features from frequency sub-bands are prefixed with the band label (e.g., \texttt {AE\_20-500kHz\_})}{figure.caption.50}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {7}Discussion}{24}{section.7}\protected@file@percent }
 \newlabel{sec:discussion}{{7}{24}{Discussion}{section.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.1}AE vs. US}{24}{subsection.7.1}\protected@file@percent }
@@ -235,38 +247,38 @@
 \citation{jakobsen_detecting_2023}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Fusion gain}{25}{subsection.7.2}\protected@file@percent }
 \newlabel{subsec:disc_fusion}{{7.2}{25}{Fusion gain}{subsection.7.2}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Reword this paragraph once results are frozen: with current outputs the gain \emph  {is} confirmed on hold-out.}{25}{section*.48}\protected@file@percent }
-\pgfsyspdfmark {pgfid126}{10059839}{43576984}
-\pgfsyspdfmark {pgfid129}{36577345}{43593910}
-\pgfsyspdfmark {pgfid130}{38002753}{43323094}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Reword this paragraph once results are frozen: with current outputs the gain \emph  {is} confirmed on hold-out.}{25}{section*.51}\protected@file@percent }
+\pgfsyspdfmark {pgfid141}{10059839}{43576984}
+\pgfsyspdfmark {pgfid144}{36577345}{43593910}
+\pgfsyspdfmark {pgfid145}{38002753}{43323094}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Interpreting the amplitude-confounding result}{25}{subsection.7.3}\protected@file@percent }
 \newlabel{subsec:disc_confound}{{7.3}{25}{Interpreting the amplitude-confounding result}{subsection.7.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Implications for the $\kappa $ regression framework}{25}{subsection.7.4}\protected@file@percent }
 \newlabel{subsec:disc_kappa}{{7.4}{25}{Implications for the $\kappa $ regression framework}{subsection.7.4}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ True? And why do we see this result?}{26}{section*.49}\protected@file@percent }
-\pgfsyspdfmark {pgfid131}{4661699}{45469609}
-\pgfsyspdfmark {pgfid134}{36577345}{45486535}
-\pgfsyspdfmark {pgfid135}{38002753}{45215719}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ True? And why do we see this result?}{26}{section*.52}\protected@file@percent }
+\pgfsyspdfmark {pgfid146}{4661699}{45469609}
+\pgfsyspdfmark {pgfid149}{36577345}{45486535}
+\pgfsyspdfmark {pgfid150}{38002753}{45215719}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Limitations}{26}{subsection.7.5}\protected@file@percent }
 \newlabel{subsec:disc_limits}{{7.5}{26}{Limitations}{subsection.7.5}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check if there is any}{26}{section*.50}\protected@file@percent }
-\pgfsyspdfmark {pgfid136}{10765973}{27056686}
-\pgfsyspdfmark {pgfid139}{36577345}{27065422}
-\pgfsyspdfmark {pgfid140}{38002753}{26794606}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check if this is stille the case with/without slipring}{26}{section*.51}\protected@file@percent }
-\pgfsyspdfmark {pgfid141}{17330807}{25266919}
-\pgfsyspdfmark {pgfid144}{36577345}{21844780}
-\pgfsyspdfmark {pgfid145}{38002753}{21573964}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check if there is any}{26}{section*.53}\protected@file@percent }
+\pgfsyspdfmark {pgfid151}{10765973}{27056686}
+\pgfsyspdfmark {pgfid154}{36577345}{27065422}
+\pgfsyspdfmark {pgfid155}{38002753}{26794606}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check if this is stille the case with/without slipring}{26}{section*.54}\protected@file@percent }
+\pgfsyspdfmark {pgfid156}{17330807}{25266919}
+\pgfsyspdfmark {pgfid159}{36577345}{21844780}
+\pgfsyspdfmark {pgfid160}{38002753}{21573964}
 \@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{26}{section.8}\protected@file@percent }
 \newlabel{sec:conclusion}{{8}{26}{Conclusion}{section.8}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update SHAP claim with new results}{26}{section*.52}\protected@file@percent }
-\pgfsyspdfmark {pgfid146}{30606423}{11422496}
-\pgfsyspdfmark {pgfid149}{36577345}{11439422}
-\pgfsyspdfmark {pgfid150}{38002753}{11168606}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Reword verdict once results are frozen}{26}{section*.53}\protected@file@percent }
-\pgfsyspdfmark {pgfid151}{12061389}{9632729}
-\pgfsyspdfmark {pgfid154}{36577345}{4013090}
-\pgfsyspdfmark {pgfid155}{38002753}{3742274}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update SHAP claim with new results}{26}{section*.55}\protected@file@percent }
+\pgfsyspdfmark {pgfid161}{30606423}{11422496}
+\pgfsyspdfmark {pgfid164}{36577345}{11439422}
+\pgfsyspdfmark {pgfid165}{38002753}{11168606}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Reword verdict once results are frozen}{26}{section*.56}\protected@file@percent }
+\pgfsyspdfmark {pgfid166}{12061389}{9632729}
+\pgfsyspdfmark {pgfid169}{36577345}{4013090}
+\pgfsyspdfmark {pgfid170}{38002753}{3742274}
 \gdef \LT@i {\LT@entry 
     {1}{33.24472pt}\LT@entry 
     {4}{85.08908pt}\LT@entry 
@@ -287,10 +299,10 @@
     {1}{27.69748pt}}
 \@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Full US feature correlation ranking with $\kappa $. $|\rho |$: absolute Spearman correlation; $|r|$: absolute Pearson correlation. Retained: selected after Stage~2 redundancy reduction.}}{29}{table.10}\protected@file@percent }
 \newlabel{tab:app_us_ranking}{{10}{29}{Full US feature correlation ranking with $\kappa $. $|\rho |$: absolute Spearman correlation; $|r|$: absolute Pearson correlation. Retained: selected after Stage~2 redundancy reduction}{table.10}{}}
-\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{30}{section*.57}\protected@file@percent }
-\pgfsyspdfmark {pgfid156}{17009391}{34827088}
-\pgfsyspdfmark {pgfid159}{36577345}{34844014}
-\pgfsyspdfmark {pgfid160}{38002753}{34573198}
+\@writefile{tdo}{\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{30}{section*.60}\protected@file@percent }
+\pgfsyspdfmark {pgfid171}{17009391}{34827088}
+\pgfsyspdfmark {pgfid174}{36577345}{34844014}
+\pgfsyspdfmark {pgfid175}{38002753}{34573198}
 \bibstyle{unsrt}
 \bibdata{refs}
 \bibcite{jakobsen_detecting_2023}{{1}{}{{}}{{}}}

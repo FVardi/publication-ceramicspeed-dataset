@@ -17,7 +17,7 @@ The main findings are as follows:
   \item \textbf{AE strongly and significantly outperforms the US channel.}
     The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$ for LightGBM) is confirmed highly significant by all test statistics, reflecting the fundamental bandwidth limitation of the heterodyned US probe.
   \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
-    Twenty-five outer RMSE scores per model provide stable, conservative performance
+    The \resNouterScores{} outer RMSE scores per model provide stable, conservative performance
     estimates; corrected significance tests confirm that LightGBM significantly outperforms linear models within each sensor configuration, while the Elastic Net--Polynomial difference is not significant for the combined feature set.
   \item \textbf{The $\kappa$ regression framework is validated} as a highly effective approach for passive non-invasive LCM, achieving substantially higher performance than prior comparable studies, attributed to the sub-band feature set and the large continuous-sweep dataset.
 \end{enumerate}
