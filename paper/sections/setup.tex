@@ -13,17 +13,24 @@ The test rig is a custom-built bearing test stand at AU (Herning, Denmark). A si
 \subsection{Operating conditions}
 \label{subsec:ops}
 
-The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step\todo{How is RPM controlled}. This, therefore, results in This is repeated for each of 13 temperature blocks (40–100°C in 5°C increments) where temperature is controlled with \todo{With what?}. Sweeps of rpm are separated with a 2-minute standstill (RPM = 0) at the start of each block for thermal stabilisation.
+The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step\todo{How is RPM controlled}. This staircase is repeated for each of 13 temperature blocks (40--100~\si{\celsius} in 5~\si{\celsius} increments) where temperature is controlled with \todo{With what?}. Staircases are separated by a 2-minute standstill (RPM = 0) at the start of each block for thermal stabilisation. The applied radial load is constant at 2 N throughout the experiment. The total duration of the experiment is approximately 14 hours. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded blocks because the staircase begins before each block reaches its set-point.\todo{Verify this explanation of the 33--40~\si{\celsius} readings.}
 
 The lubrication conditions in the bearing are not expected to change during the experiment in other ways than what is entailed by rpm and temperature and the effect of these upon the lubricant. It is not expected or assumed that any degradation, starvation or contamination of the lubricant happens.
 
-The operating conditions are controlled through \todo{How?} and the resulting measured operating conditions over time can be seen in Figure~\ref{fig:op_conditions}.\todo{Update figure with new op conds}
+The operating conditions are controlled through \todo{How?}. The measured operating conditions space, distribution and time variation are seen in Figures~\ref{fig:op_conditions_distribution} and \ref{fig:op_conditions_timeseries}. The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther viscosity--temperature equation.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/eda_operating_conditions.png}
-\caption{Caption}
-\label{fig:op_conditions}
+\caption{Left: space of the measured operating conditions (RPM and temperature) during the experiment. Each point corresponds to a 20ms window of sampling at a given RPM and temperature. The colour of each point corresponds to the derived $\kappa$ value for that sweep, with warmer colours indicating higher $\kappa$ values. Right: distribution fo the derived $\kappa$ values.}
+\label{fig:op_conditions_distribution}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/eda_conditions_timeseries.png}
+\caption{Measured operating conditions (RPM and temperature) for each sweep during the experiment. Each point corresponds to a 20ms window of sampling at a given RPM and temperature. The colour of each point corresponds to the derived $\kappa$ value for that sweep, with warmer colours indicating higher $\kappa$ values.}
+\label{fig:op_conditions_timeseries}
 \end{figure}
 
 \subsection{Sensor configuration and data acquisition}
@@ -32,15 +39,24 @@ The operating conditions are controlled through \todo{How?} and the resulting me
 Two sensors simultaneously acquire signals from the bearing housing through a shared oscilloscope which samples at a shared sample rate of \SI{12.5}{MHz}:
 
 \begin{description}
-  \item[Acoustic emission sensor:] A wideband piezoelectric AE sensor is bonded to the bearing housing. \todo{Need help from CeramicSpeed to write this}
-  \item[Ultrasound sensor:] A heterodyned passive US probe is bonded to the bearing housing. \todo{Need help from CeramicSpeed to write this}
-  \item[Temperature sensor:] \todo{Need help from CeramicSpeed to write this}
-  \item[RPM sensor:] \todo{Need help from CeramicSpeed to write this}
-\end{description}
+  \item[Acoustic emission sensor:] A wideband piezoelectric AE sensor is bonded to the bearing housing.
+  \item[Ultrasound sensor:] A heterodyned passive US probe is bonded to the bearing housing.
+  \item[Temperature sensor:]
+  \item[RPM sensor:]
+  \item[Load sensor:]
+\end{description}\todo{Need help to write these bullet points.}
 The shared sample rate ensures that AE and US signals share timestamps.
 
-\subsection{$\kappa$ derivation}
-The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther viscosity--temperature equation. No separate reference measurement of film thickness is available\todo{Change this if the slipring is used}; $\kappa$ is therefore a model-derived quantity subject to the assumptions of the Hamrock--Dowson framework and Walther's equation.
-\todo{Include plots of the kappa values and operating conditions.}
-\subsection{Dataset availability}
-\todo{Is the dataset proprietary or public?}
+\textbf{Acquisition windows (sweeps).}
+Data are acquired as short windows rather than continuously: every
+$\sim$\resWindowIntervalS~s the oscilloscope captures a \resWindowMs~ms window
+($N \approx 2.5 \times 10^{5}$ samples per channel) containing time-synchronous AE
+and US waveforms, together with the mean RPM and housing temperature over the window.
+Throughout this paper, one such window is referred to as a \emph{sweep}, and a sweep
+is the unit of observation for all feature extraction, model training, and
+evaluation. The protocol yields \resNsweepsRaw{} raw sweeps, of which
+\resNsweepsRemoved{} with measured RPM above the \SI{3000}{rpm} protocol maximum are
+discarded, leaving \resNsweeps{} sweeps per channel (median \resSweepsPerHold{}
+sweeps per staircase hold). The resulting $\kappa$ distribution spans
+$[\resKappaMin,\, \resKappaMax]$ with mean \resKappaMean{}
+(Figure~\ref{fig:op_conditions_distribution}).

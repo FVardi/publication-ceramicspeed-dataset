@@ -12,11 +12,10 @@ families reflects a fundamental hardware difference. The AE sensor captures genu
 \subsection{Fusion gain}
 \label{subsec:disc_fusion}
 
-The marginal fusion result ($\Delta R^2 = 0.002$ on the hold-out, not confirmed by
-Wilcoxon or Diebold--Mariano tests) can be understood from two complementary angles.
-First, the US channel retains only 6 features after selection (vs.\ 32 for AE), and
-the top US correlations ($|\rho| \leq 0.66$) are far weaker than the top AE
-correlations ($|\rho| = 0.89$). The US channel therefore contributes a small amount of additional information that provides a marginal benefit to the combined model under CV, but the effect is too small to be detectable on the hold-out set (1\,757 samples). Second, the US channel's effective bandwidth ($< 10$~kHz after heterodyning) means its information content partially overlaps with the low-frequency tail of the AE signal, limiting the independent contribution it can make.
+The fusion result ($\Delta R^2 = \resDrsqLgbCombAe$ on the hold-out) can be understood from two complementary angles.\todo{Reword this paragraph once results are frozen: with current outputs the gain \emph{is} confirmed on hold-out.}
+First, the US channel retains only \resNretUs{} features after selection (vs.\ \resNretAe{} for AE), and
+the top US correlations ($|\rho| \leq \resTopUsRho$) are weaker than the top AE
+correlations ($|\rho| = \resTopAeRho$). The US channel therefore contributes a limited amount of additional information to the combined model (hold-out set: \resNholdout~samples). Second, the US channel's effective bandwidth ($< 10$~kHz after heterodyning) means its information content partially overlaps with the low-frequency tail of the AE signal, limiting the independent contribution it can make.
 
 This result is an informative contribution to the LCM literature, where AE--ultrasound complementarity is widely \emph{argued} but rarely \emph{tested}.
 Whether a wideband passive ultrasound sensor (rather than a heterodyned probe) would
@@ -36,7 +35,7 @@ condition proxies.
 \subsection{Implications for the $\kappa$ regression framework}
 \label{subsec:disc_kappa}
 
-The $\kappa$ regression framework is validated as a methodologically sound approach for passive non-invasive LCM, when $\kappa$ is assumed to be representable of the lubrication conditions in the bearing. A hold-out $R^2 = 0.951$ and RMSE~$= 0.078$~$\kappa$-units for a single AE sensor represents strong performance across a demanding continuous speed-and-temperature ramp spanning boundary through full-film lubrication conditions. This exceeds the performance reported by Jakobsen et al.~\cite{jakobsen_detecting_2023} in a comparable passive sensing study with US. \todo{True? And why do we see this result?}
+The $\kappa$ regression framework is validated as a methodologically sound approach for passive non-invasive LCM, when $\kappa$ is assumed to be representative of the lubrication conditions in the bearing. A hold-out $R^2 = \resHOrsqLgbAe$ and RMSE~$= \resHOrmseLgbAe$~$\kappa$-units for a single AE sensor represents strong performance across a demanding continuous speed-and-temperature ramp spanning boundary through full-film lubrication conditions. This exceeds the performance reported by Jakobsen et al.~\cite{jakobsen_detecting_2023} in a comparable passive sensing study with US. \todo{True? And why do we see this result?}
 
 The repeated nested cross-validation design provides appropriately conservative
 performance estimates: the 25~outer RMSE scores capture fold-to-fold variance without the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter search. The corrected significance tests confirm that performance differences between model families are assessed under assumptions that properly account for data re-use.

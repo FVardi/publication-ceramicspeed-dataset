@@ -1,22 +1,40 @@
 %% ============================================================================
-\section{Signal Cleaning and Feature Extraction}
+\section{Signal Processing and Feature Extraction}
 \label{sec:pipeline}
 %% ============================================================================
 
-\subsection{Signal cleaning}
-\label{subsec:cleaning}
+\subsection{Waveforms and spectrograms}
 
-The raw signals are cleaned with the following procedures:
-\begin{itemize}
-  \item \todo{Write the procedures used in the data cleaning script.}
-\end{itemize}
 
-\subsection{Filter bands}
+
+Spectrograms of the raw signals across the operating conditions sorted accordig to $\kappa$ values are shown in Figure~\ref{fig:spectrograms} to illustrate energy of the frequency content and its variation with operating conditions.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/eda_spectrogram.png}
+\caption{Spectrograms of the raw AE and US signals across the operating conditions. Each column corresponds to a sweep, sorted by increasing $\kappa$ value from left to right. The colour indicates the magnitude of the signal in dB, with warmer colours indicating higher magnitudes.}
+\label{fig:spectrograms}
+\end{figure}
+
+
+\subsection{Sub-band decomposition}
 \label{subsec:filter_bands}
-The AE and US signals are filtered with multiple low-, high- and band-pass filters, since the information on lubrication conditions contained in the signals is expected to be localised in sub-bands rather than wholly contained in the broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}.
 
-The sub-bands applied prior to feature extraction are listed in Table~\ref{tab:subbands}.
-All filters are 5th-order zero-phase Butterworth filters applied with \texttt{sosfiltfilt}. \todo{Update with final filter type and order}
+The AE and US signals are decomposed into frequency sub-bands prior to feature
+extraction, since the information on lubrication conditions contained in the signals
+is expected to be localised in sub-bands rather than wholly contained in the broadband
+signals~\cite{renhart_ae_2021, zhang_coupled_2026}.
+For the AE channel, three sub-bands are extracted in addition to the broadband signal:
+(i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
+(ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
+(iii)~1--2~MHz, covering high-frequency micro-fracture events.
+The US channel is first restricted to 0--20~kHz, consistent with the heterodyned
+baseband of the probe (Section~\ref{subsec:origins}), and two sub-bands
+(0--10~kHz and 10--20~kHz) are extracted in addition.
+The sub-bands are summarised in Table~\ref{tab:subbands}.
+All decompositions use 5th-order Butterworth filters applied forward--backward
+(\texttt{sosfiltfilt}), giving zero phase distortion and a 10th-order effective
+magnitude response.
 
 \begin{table}[htbp]
 \caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
@@ -36,19 +54,21 @@ US & Sub-band 1 & Band-pass & 0--10\,kHz       \\
 US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
 \bottomrule
 \end{tabular}}
-\end{table}\todo{Update table with final filters}
+\end{table}
 
 
 \subsection{Feature extraction}
 \label{subsec:features_extract}
 
-Features are computed from the cleaned voltage signal for each
-sweep-sensor pair for each sub-band. In total 26 features are computed, comprising 12 time-domain and 14 frequency-domain statistics,
-as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. All features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
+Features are computed from the voltage signal of each sweep--sensor pair, for the
+broadband signal and for each sub-band. In total 14 features are computed, comprising
+8 time-domain and 6 frequency-domain statistics,
+as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately canonical: commonly used companions such as standard deviation, variance, peak, impulse factor, and RMS frequency are exact transforms or products of the retained features (e.g.\ $\mathrm{std}=\mathrm{RMS}$ for zero-mean band-filtered signals; $\mathrm{peak}=\mathrm{crest}\times\mathrm{RMS}$; $\mathrm{impulse}=\mathrm{crest}\times\mathrm{shape}$; $f_{\mathrm{RMS}}^2 = f_c^2 + \sigma_w^2$) and are therefore omitted, so that no candidate feature is a deterministic function of another. All retained features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
 
 \begin{table}[htbp]
 \caption{Time-domain features. Notation: $N$ signal length; $\bar{x}$ sample mean;
-  $\sigma$ population standard deviation.}
+  $\sigma$ population standard deviation; $x_{\text{peak}} = (\max x - \min x)/2$
+  half the peak-to-peak range.}
 \label{tab:features}
 \centering
 {\small\setstretch{1}%
@@ -56,15 +76,11 @@ as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. All features
 \toprule
 \textbf{Name} & \textbf{Formula} & \textbf{Description} \\
 \midrule
-Peak & $(\max x - \min x)/2$ & Half the peak-to-peak range. \\[3pt]
 RMS & $\sqrt{N^{-1}\sum_{n}x_n^2}$ & Root mean square amplitude. \\[3pt]
-Std & $\sqrt{N^{-1}\sum_{n}(x_n-\bar{x})^2}$ & Population standard deviation. \\[3pt]
-Variance & $N^{-1}\sum_{n}(x_n-\bar{x})^2$ & Population variance (square of Std). \\[3pt]
 Skewness & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^3$ & Third standardised central moment; amplitude asymmetry. \\[3pt]
 Kurtosis & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^4$ & Fourth standardised central moment; tail heaviness. \\[3pt]
 Crest factor & $x_{\text{peak}}/x_{\text{RMS}}$ & Peak-to-RMS ratio; sensitive to impulsive events. \\[3pt]
 Shape factor & $x_{\text{RMS}}\,/\,(N^{-1}\sum_n|x_n|)$ & Ratio of RMS to mean absolute value. \\[3pt]
-Impulse factor & $x_{\text{peak}}\,/\,(N^{-1}\sum_n|x_n|)$ & Ratio of peak to mean absolute value. \\[3pt]
 Margin factor & $x_{\text{peak}}\,/\,(N^{-1}\sum_n\sqrt{|x_n|})^2$ & Peak divided by squared mean square-root amplitude. \\[3pt]
 Hjorth mobility & $[\operatorname{Var}(x')/\operatorname{Var}(x)]^{1/2}$ & Square root of first-derivative to signal variance ratio; proportional to mean frequency. \\[3pt]
 Hjorth complexity & $M(x')/M(x)$ & Ratio of first-derivative mobility $M$ to signal mobility; bandwidth proxy. \\
@@ -75,10 +91,9 @@ Hjorth complexity & $M(x')/M(x)$ & Ratio of first-derivative mobility $M$ to sig
 \begin{table}[htbp]
 \caption{Frequency-domain features (companion to Table~\ref{tab:features}).
   Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding
-  frequency; $K$ bin count; $\bar{S}=K^{-1}\sum_k S_k$;
-  $\sigma_S = \operatorname{std}(\{S_k\})$; $\Sigma S = \sum_k S_k$;
+  frequency; $\bar{S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \sum_k S_k$;
   $f_c = (\Sigma S)^{-1}\sum_k f_k S_k$;
-  $\sigma_f = (K^{-1}\sum_k(f_k-f_c)^2)^{1/2}$.}
+  $\sigma_w = \big((\Sigma S)^{-1}\sum_k(f_k-f_c)^2 S_k\big)^{1/2}$.}
 \label{tab:features_freq}
 \centering
 {\small\setstretch{1}%
@@ -87,39 +102,27 @@ Hjorth complexity & $M(x')/M(x)$ & Ratio of first-derivative mobility $M$ to sig
 \textbf{Name} & \textbf{Formula} & \textbf{Description} \\
 \midrule
 Dominant frequency & $f_{\arg\max_k S_k^2}$ & Frequency at which spectral power is maximum. \\[3pt]
-Spectral mean & $\bar{S} = K^{-1}\sum_k S_k$ & Arithmetic mean of the FFT magnitude spectrum. \\[3pt]
-Spectral std & $\sigma_S = \operatorname{std}(\{S_k\})$ & Population standard deviation of the FFT magnitude spectrum. \\[3pt]
-Spectral skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(\sigma_S^3\,\Sigma S)$ & Frequency asymmetry of the magnitude-weighted spectrum, normalised by magnitude std. \\[3pt]
-Spectral kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(\sigma_S^4\,\Sigma S)$ & Frequency tail heaviness of the magnitude-weighted spectrum, normalised by magnitude std. \\[3pt]
-Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Geometric-to-arithmetic mean ratio; 1 for white noise, 0 for a pure tone. \\[3pt]
 Centre frequency & $f_c = \sum_k f_k S_k\,/\,\Sigma S$ & Magnitude-weighted mean frequency (spectral centroid). \\[3pt]
-RMS frequency & $(\sum_k f_k^2 S_k\,/\,\Sigma S)^{1/2}$ & Magnitude-weighted root mean square frequency. \\[3pt]
-Freq.-weighted std & $\sigma_f = (K^{-1}\sum_k(f_k-f_c)^2)^{1/2}$ & RMS deviation of bin frequencies from centre frequency (unweighted by magnitude). \\[3pt]
-$f^2$-wt.\ RMS freq. & $(\sum_k f_k^4 S_k\,/\,\sum_k f_k^2 S_k)^{1/2}$ & RMS frequency under $f_k^2 S_k$ weighting; emphasises higher frequencies relative to RMS frequency. \\[3pt]
-Norm.\ freq.\ std & $\sigma_f\,/\,f_c$ & Frequency standard deviation normalised by centre frequency. \\[3pt]
-Frequency skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(K\sigma_f^3)$ & Third spectral moment of frequency deviation from centroid, weighted by magnitude. \\[3pt]
-Frequency kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(K\sigma_f^4)$ & Fourth spectral moment of frequency deviation from centroid, weighted by magnitude. \\[3pt]
-Norm.\ bandwidth & $\sum_k|f_k-f_c|^{1/2} S_k\,/\,(K\sigma_f^{1/2})$ & Half-order moment of spectral spread, normalised by $\sigma_f^{1/2}$. \\
+Spectral bandwidth & $\sigma_w = \big(\sum_k(f_k-f_c)^2 S_k\,/\,\Sigma S\big)^{1/2}$ & Magnitude-weighted spectral spread about the centroid. \\[3pt]
+Spectral skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(\sigma_w^3\,\Sigma S)$ & Standardised third weighted spectral moment; asymmetry of the spectral distribution. \\[3pt]
+Spectral kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(\sigma_w^4\,\Sigma S)$ & Standardised fourth weighted spectral moment; peakedness/tail weight of the spectral distribution. \\[3pt]
+Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Geometric-to-arithmetic mean ratio; 1 for white noise, 0 for a pure tone. \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-\todo{Verify distinction between spectral skewness and frequency skewness: spectral skewness normalises by $\sigma_S^3 \Sigma S$ (magnitude std); frequency skewness normalises by $K\sigma_f^3$ (frequency std). Confirm both are intentional and clarify in text.}
+All frequency-domain features are computed from the one-sided FFT magnitude spectrum
+of the sweep. The spectral skewness and kurtosis are standardised by
+$\sigma_w^p\,\Sigma S$ and are therefore dimensionless and invariant to overall signal
+amplitude, so that spectral-shape information is separated from the amplitude
+information carried by RMS.
 
-All frequency-domain features are computed from the one-sided FFT magnitude spectrum of
-the cleaned signal.
+\subsection{Candidate feature sets}
+\label{subsec:candidates}
 
-\textbf{AE sub-band decomposition.}
-In addition to broadband features, three frequency sub-bands are carved from the AE
-channel using zero-phase Butterworth bandpass filters:
-(i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
-(ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
-(iii)~1--2~MHz, covering high-frequency micro-fracture events.
-The full 26-feature set is extracted independently for each sub-band, yielding
-$26 \times 4 = 104$~candidate AE features (broadband plus three sub-bands).
-
-\textbf{US channel pre-filtering and sub-band decomposition.}
-The US channel is pre-filtered to 0--20~kHz by a zero-phase low-pass Butterworth filter
-before feature extraction, consistent with the effective bandwidth of the heterodyned probe.
-Two sub-bands are additionally extracted: 0--10~kHz and 10--20~kHz.
-The broadband plus two sub-band sets yield $26 \times 3 = 78$~candidate US features.
+Extracting the 14-feature set independently for the broadband signal and each
+sub-band yields $14 \times 4 = \resNcandAe$~candidate AE features and
+$14 \times 3 = \resNcandUs$~candidate US features per sweep. Features are named by
+band and statistic (e.g.\ \texttt{AE\_1000-2000kHz\_\_complexity}); broadband
+features carry no band prefix. Section~\ref{sec:features} reduces these candidate
+sets to compact, non-redundant subsets for modelling.

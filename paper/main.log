@@ -1,12 +1,12 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.12.3)  9 JUN 2026 20:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  10 JUN 2026 16:18
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**c:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex
-(c:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex
+**c:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/paper/main
+(c:/Users/au808956/Documents/Repos/publication-ceramicspeed-dataset/paper/main.tex
 LaTeX2e <2025-11-01>
-L3 programming layer <2025-11-14>
+L3 programming layer <2025-11-06>
 (c:/texlive/2025/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
 (c:/texlive/2025/texmf-dist/tex/latex/base/size12.clo
@@ -48,7 +48,7 @@ Package: iftex 2024/12/12 v1.0g TeX engine tests
 ) (c:/texlive/2025/texmf-dist/tex/latex/base/fontenc.sty
 Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
 ) (c:/texlive/2025/texmf-dist/tex/generic/babel/babel.sty
-Package: babel 2025/11/23 v25.16 The multilingual framework for LuaLaTeX, pdfLaTeX and XeLaTeX
+Package: babel 2025/11/09 v25.15 The multilingual framework for LuaLaTeX, pdfLaTeX and XeLaTeX
 \babel@savecnt=\count286
 LaTeX Encoding Info:    Redeclaring text command \ij (encoding OT1) on input line 2050.
 LaTeX Encoding Info:    Redeclaring text command \IJ (encoding OT1) on input line 2052.
@@ -606,30 +606,30 @@ LaTeX Info: Redefining \cite on input line 694.
 Package: textcomp 2024/04/24 v2.1b Standard LaTeX package
 )
 Package hyperref Info: Option `colorlinks' set `true' on input line 61.
- (c:/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+ (./tables/results_macros.tex) (c:/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count363
 ) (./main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 69.
-LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -685,42 +685,42 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
 
-Package todonotes Warning: The length marginparwidth is less than 2cm and will most likely cause issues with the appearance of inserted todonotes. The issue can be solved by adding a line like \setlength {\marginparwidth }{2cm} prior to loading the todonotes package. on input line 69.
+Package todonotes Warning: The length marginparwidth is less than 2cm and will most likely cause issues with the appearance of inserted todonotes. The issue can be solved by adding a line like \setlength {\marginparwidth }{2cm} prior to loading the todonotes package. on input line 78.
 
-Package hyperref Info: Link coloring ON on input line 69.
+Package hyperref Info: Link coloring ON on input line 78.
 (./main.out) (./main.out)
 \@outlinefile=\write4
 \openout4 = `main.out'.
 
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 76.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 85.
  (c:/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 76.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 85.
  (c:/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
 {c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}] (./sections/abstract.tex
-Package hyperref Info: bookmark level for unknown todo defaults to 0 on input line 21.
+Package hyperref Info: bookmark level for unknown todo defaults to 0 on input line 34.
 
-Overfull \hbox (0.83238pt too wide) in paragraph at lines 21--21
-[][][]\T1/cmr/m/n/12 update[]  
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 34--34
+[][][]\T1/cmr/m/n/12 Reword 
  []
 
 
-Overfull \hbox (0.83238pt too wide) in paragraph at lines 21--21
-[][][]\T1/cmr/m/n/12 update[]  
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 34--34
+[][][]\T1/cmr/m/n/12 Reword 
  []
 
 )
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.98 \clearpage
-                [1] (./main.toc)
+l.107 \clearpage
+                 [1] (./main.toc)
 \tf@toc=\write5
 \openout5 = `main.toc'.
 
@@ -759,29 +759,16 @@ Overfull \hbox (3.11238pt too wide) in paragraph at lines 54--54
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 55--55
-[][][]\T1/cmr/m/n/12 Update 
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 56--56
+[][][]\T1/cmr/m/n/12 Reword 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 55--55
-[][][]\T1/cmr/m/n/12 Update 
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 56--56
+[][][]\T1/cmr/m/n/12 Reword 
  []
 
-
-LaTeX Warning: Marginpar on page 6 moved.
-
-
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 56--56
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 56--56
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-<figures/pipeline_overview.pdf, id=268, 1204.5pt x 521.95pt>
+<figures/pipeline_overview.pdf, id=273, 1204.5pt x 521.95pt>
 File: figures/pipeline_overview.pdf Graphic file (type pdf)
 <use figures/pipeline_overview.pdf>
 Package pdftex.def Info: figures/pipeline_overview.pdf  used on input line 67.
@@ -848,373 +835,228 @@ LaTeX Warning: Marginpar on page 9 moved.
 LaTeX Warning: Marginpar on page 9 moved.
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 20--20
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 20--20
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
 LaTeX Warning: Marginpar on page 9 moved.
 
-
-LaTeX Warning: Marginpar on page 9 moved.
-
-<figures/eda_operating_conditions.png, id=319, 939.51pt x 361.35pt>
+[9]
+<figures/eda_operating_conditions.png, id=341, 939.51pt x 361.35pt>
 File: figures/eda_operating_conditions.png Graphic file (type png)
 <use figures/eda_operating_conditions.png>
 Package pdftex.def Info: figures/eda_operating_conditions.png  used on input line 24.
 (pdftex.def)             Requested size: 409.71692pt x 157.58296pt.
-[9{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
-
-LaTeX Warning: Marginpar on page 10 moved.
-
-
-LaTeX Warning: Marginpar on page 10 moved.
-
-
-LaTeX Warning: Marginpar on page 10 moved.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 42.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 42.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 42.
-
-
-Overfull \hbox (3.76918pt too wide) in paragraph at lines 43--43
-[][][]\T1/cmr/m/n/12 Change 
- []
-
-
-Overfull \hbox (3.18175pt too wide) in paragraph at lines 43--43
-\T1/cmr/m/n/12 slipring 
- []
-
-
-Overfull \hbox (3.76918pt too wide) in paragraph at lines 43--43
-[][][]\T1/cmr/m/n/12 Change 
- []
-
-
-Overfull \hbox (3.18175pt too wide) in paragraph at lines 43--43
-\T1/cmr/m/n/12 slipring 
- []
-
-
-Overfull \hbox (2.78604pt too wide) in paragraph at lines 44--44
-[][][]\T1/cmr/m/n/12 Include 
- []
-
-
-Overfull \hbox (2.78604pt too wide) in paragraph at lines 44--44
-[][][]\T1/cmr/m/n/12 Include 
- []
-
-
-LaTeX Warning: Marginpar on page 10 moved.
-
-
-LaTeX Warning: Marginpar on page 10 moved.
-
-
-Overfull \hbox (2.52919pt too wide) in paragraph at lines 46--46
-\T1/cmr/m/n/12 dataset 
- []
-
-
-Overfull \hbox (2.52919pt too wide) in paragraph at lines 46--46
-\T1/cmr/m/n/12 dataset 
- []
-
-
-LaTeX Warning: Marginpar on page 10 moved.
-
-) (./sections/pipeline.tex [10 <./figures/eda_operating_conditions.png>]
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 19--19
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 19--19
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
-LaTeX Warning: Marginpar on page 11 moved.
-
-
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 39--39
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 39--39
-[][][]\T1/cmr/m/n/12 Update 
- []
-
-
-LaTeX Warning: Marginpar on page 11 moved.
-
-
-Underfull \hbox (badness 7362) in paragraph at lines 68--68
+<figures/eda_conditions_timeseries.png, id=343, 1011.78pt x 505.89pt>
+File: figures/eda_conditions_timeseries.png Graphic file (type png)
+<use figures/eda_conditions_timeseries.png>
+Package pdftex.def Info: figures/eda_conditions_timeseries.png  used on input line 31.
+(pdftex.def)             Requested size: 409.71692pt x 204.86116pt.
+ [10 <./figures/eda_operating_conditions.png> <./figures/eda_conditions_timeseries.png>]) (./sections/pipeline.tex
+<figures/eda_spectrogram.png, id=355, 870.1308pt x 742.4538pt>
+File: figures/eda_spectrogram.png Graphic file (type png)
+<use figures/eda_spectrogram.png>
+Package pdftex.def Info: figures/eda_spectrogram.png  used on input line 14.
+(pdftex.def)             Requested size: 409.71692pt x 349.59908pt.
+ [11] [12 <./figures/eda_spectrogram.png>]
+Underfull \hbox (badness 7362) in paragraph at lines 84--84
 []|\T1/cmr/m/n/10.95 Peak di-vided by squared mean
  []
 
 
-Overfull \hbox (1.23769pt too wide) in paragraph at lines 55--73
+Overfull \hbox (1.23769pt too wide) in paragraph at lines 75--89
  [][] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 89--89
+Underfull \hbox (badness 10000) in paragraph at lines 104--104
 []|\T1/cmr/m/n/10.95 Dominant fre-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 92--92
-[]|\T1/cmr/m/n/10.95 Spectral skew-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 92--92
-[]|\T1/cmr/m/n/10.95 Frequency asym-me-try of the
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 92--92
-\T1/cmr/m/n/10.95 magnitude-weighted spec-trum,
- []
-
-
-Underfull \hbox (badness 6675) in paragraph at lines 93--93
-[]|\T1/cmr/m/n/10.95 Frequency tail heav-i-ness of the
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 95--95
+Underfull \hbox (badness 10000) in paragraph at lines 105--105
 []|\T1/cmr/m/n/10.95 Centre fre-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 96--96
-[]|\T1/cmr/m/n/10.95 Magnitude-weighted root mean
+Underfull \hbox (badness 10000) in paragraph at lines 106--106
+[]|\T1/cmr/m/n/10.95 Spectral band-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 97--97
-[]|\T1/cmr/m/n/10.95 Freq.-weighted
+Underfull \hbox (badness 10000) in paragraph at lines 107--107
+[]|\T1/cmr/m/n/10.95 Spectral skew-
  []
 
 
-Underfull \hbox (badness 1527) in paragraph at lines 97--97
-[]|\T1/cmr/m/n/10.95 RMS de-vi-a-tion of bin fre-quen-cies
+Overfull \hbox (1.23769pt too wide) in paragraph at lines 100--112
+ [][] 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 98--98
-[]|$\OML/cmm/m/it/10.95 f[]$\T1/cmr/m/n/10.95 -wt. RMS
- []
-
-
-Underfull \hbox (badness 1082) in paragraph at lines 98--98
-\T1/cmr/m/n/10.95 ing; em-pha-sises higher fre-quen-cies
- []
-
-
-Underfull \hbox (badness 1057) in paragraph at lines 99--99
-[]|\T1/cmr/m/n/10.95 Frequency stan-dard de-vi-a-tion nor-
- []
-
-
-Underfull \hbox (badness 8056) in paragraph at lines 101--101
-[]|\T1/cmr/m/n/10.95 Frequency kur-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 102--102
-[]|\T1/cmr/m/n/10.95 Norm. band-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 102--103
-[]|\T1/cmr/m/n/10.95 Half-order mo-ment of spec-tral
- []
-
-
-Overfull \hbox (1.23769pt too wide) in paragraph at lines 85--105
+[13]) (./sections/features.tex [14] (./tables/table_top_features_tabular.tex)
+Overfull \hbox (1.06242pt too wide) in paragraph at lines 4--66
  [][] 
  []
 
 
-Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 quency 
+Overfull \hbox (10.94382pt too wide) in paragraph at lines 72--72
+[][][]\T1/cmr/m/n/12 Interpret 
  []
 
 
-Overfull \hbox (1.94179pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 malises 
+Overfull \hbox (7.75014pt too wide) in paragraph at lines 72--72
+\T1/cmr/m/n/12 strength 
  []
 
 
-Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 quency 
+Overfull \hbox (10.94382pt too wide) in paragraph at lines 72--72
+[][][]\T1/cmr/m/n/12 Interpret 
  []
 
 
-Overfull \hbox (1.94179pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 malises 
+Overfull \hbox (7.75014pt too wide) in paragraph at lines 72--72
+\T1/cmr/m/n/12 strength 
  []
 
-
-Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 quency 
- []
-
-
-Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 quency 
- []
-
-
-Overfull \hbox (1.94179pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 malises 
- []
-
-
-Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 quency 
- []
-
-
-Overfull \hbox (1.94179pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 malises 
- []
-
-
-Overfull \hbox (1.15866pt too wide) in paragraph at lines 107--107
-\T1/cmr/m/n/12 quency 
- []
-
-) (./sections/features.tex [11]
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 15.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 15.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 15.
-
-[12] [13]
-Overfull \hbox (101.08151pt too wide) in paragraph at lines 48--48
-\T1/cmtt/m/n/12 feature_ranking_us.csv 
- []
-
-
-Overfull \hbox (12.9706pt too wide) in paragraph at lines 48--48
-\T1/cmr/m/n/12 script 02. 
- []
-
-
-Overfull \hbox (5.23547pt too wide) in paragraph at lines 48--48
-\T1/cmr/m/n/12 Rewrite 
- []
-
-
-Overfull \hbox (101.08151pt too wide) in paragraph at lines 48--48
-\T1/cmtt/m/n/12 feature_ranking_us.csv 
- []
-
-
-Overfull \hbox (12.9706pt too wide) in paragraph at lines 48--48
-\T1/cmr/m/n/12 script 02. 
- []
-
-
-Overfull \hbox (5.23547pt too wide) in paragraph at lines 48--48
-\T1/cmr/m/n/12 Rewrite 
- []
-
-<figures/feature_ranking_ae_barplot_top20.png, id=395, 578.16pt x 2659.536pt>
+<figures/feature_ranking_ae_barplot_top20.png, id=403, 578.16pt x 2659.536pt>
 File: figures/feature_ranking_ae_barplot_top20.png Graphic file (type png)
 <use figures/feature_ranking_ae_barplot_top20.png>
-Package pdftex.def Info: figures/feature_ranking_ae_barplot_top20.png  used on input line 57.
+Package pdftex.def Info: figures/feature_ranking_ae_barplot_top20.png  used on input line 80.
 (pdftex.def)             Requested size: 386.96027pt x 1780.01318pt.
-
-LaTeX Warning: Reference `tab:app_ae_ranking' on page 14 undefined on input line 60.
-
-
-LaTeX Warning: Reference `tab:app_ae_ranking' on page 14 undefined on input line 60.
-
-[14]
+[15]
 Overfull \vbox (1130.73009pt too high) has occurred while \output is active []
 
- [15 <./figures/feature_ranking_ae_barplot_top20.png>]
-<figures/feature_ranking_us_barplot.png, id=411, 578.16pt x 520.344pt>
+ [16 <./figures/feature_ranking_ae_barplot_top20.png>]
+<figures/feature_ranking_us_barplot.png, id=423, 578.16pt x 520.344pt>
 File: figures/feature_ranking_us_barplot.png Graphic file (type png)
 <use figures/feature_ranking_us_barplot.png>
-Package pdftex.def Info: figures/feature_ranking_us_barplot.png  used on input line 66.
+Package pdftex.def Info: figures/feature_ranking_us_barplot.png  used on input line 90.
 (pdftex.def)             Requested size: 386.96027pt x 348.26343pt.
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 81--81
-[][][]\T1/cmr/m/n/12 Update 
+Overfull \hbox (6.37961pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 (within- 
  []
 
 
-Overfull \hbox (3.11652pt too wide) in paragraph at lines 81--81
-\T1/cmr/m/n/12 partial- 
+Overfull \hbox (20.41092pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 frequency-- 
  []
 
 
-Overfull \hbox (20.0846pt too wide) in paragraph at lines 81--81
-\T1/cmr/m/n/12 correlation 
+Overfull \hbox (20.08461pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 bandwidth 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 81--81
-[][][]\T1/cmr/m/n/12 Update 
+Overfull \hbox (3.11609pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 tion [][]4[][]), 
  []
 
 
-Overfull \hbox (3.11652pt too wide) in paragraph at lines 81--81
-\T1/cmr/m/n/12 partial- 
+Overfull \hbox (6.37961pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 (within- 
  []
 
 
-Overfull \hbox (20.0846pt too wide) in paragraph at lines 81--81
-\T1/cmr/m/n/12 correlation 
+Overfull \hbox (20.41092pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 frequency-- 
  []
 
 
-Overfull \hbox (2.52919pt too wide) in paragraph at lines 86--86
-\T1/cmr/m/n/12 dataset[]  
+Overfull \hbox (20.08461pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 bandwidth 
  []
 
 
-Overfull \hbox (2.52919pt too wide) in paragraph at lines 86--86
-\T1/cmr/m/n/12 dataset[]  
+Overfull \hbox (3.11609pt too wide) in paragraph at lines 104--104
+\T1/cmr/m/n/12 tion [][]4[][]), 
  []
 
-[16 <./figures/feature_ranking_us_barplot.png>]
-<figures/pca_kappa_regimes.png, id=423, 1156.32pt x 433.62pt>
+<../outputs/02_feature_analysis/figures/inter_feature_correlation.png, id=428, 1300.86pt x 578.16pt>
+File: ../outputs/02_feature_analysis/figures/inter_feature_correlation.png Graphic file (type png)
+<use ../outputs/02_feature_analysis/figures/inter_feature_correlation.png>
+Package pdftex.def Info: ../outputs/02_feature_analysis/figures/inter_feature_correlation.png  used on input line 108.
+(pdftex.def)             Requested size: 364.19667pt x 161.86604pt.
+<../outputs/02_feature_analysis/figures/vif_barplot.png, id=429, 1156.32pt x 433.62pt>
+File: ../outputs/02_feature_analysis/figures/vif_barplot.png Graphic file (type png)
+<use ../outputs/02_feature_analysis/figures/vif_barplot.png>
+Package pdftex.def Info: ../outputs/02_feature_analysis/figures/vif_barplot.png  used on input line 115.
+(pdftex.def)             Requested size: 364.19667pt x 136.57117pt.
+[17 <./figures/feature_ranking_us_barplot.png> <../outputs/02_feature_analysis/figures/inter_feature_correlation.png>]
+Overfull \hbox (1.87654pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 against 
+ []
+
+
+Overfull \hbox (1.87654pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 against 
+ []
+
+
+Overfull \hbox (17.80045pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 operating- 
+ []
+
+
+Overfull \hbox (12.90578pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 condition 
+ []
+
+
+Overfull \hbox (1.87654pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 against 
+ []
+
+
+Overfull \hbox (1.87654pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 against 
+ []
+
+
+Overfull \hbox (17.80045pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 operating- 
+ []
+
+
+Overfull \hbox (12.90578pt too wide) in paragraph at lines 145--145
+\T1/cmr/m/n/12 condition 
+ []
+
+
+Overfull \hbox (22.2036pt too wide) in paragraph at lines 155--155
+[][][]\T1/cmr/m/n/12 Regenerate 
+ []
+
+
+Overfull \hbox (21.06358pt too wide) in paragraph at lines 155--155
+\T1/cmr/m/n/12 ent/regime 
+ []
+
+
+Overfull \hbox (0.57132pt too wide) in paragraph at lines 155--155
+\T1/cmr/m/n/12 served.[]  
+ []
+
+
+Overfull \hbox (22.2036pt too wide) in paragraph at lines 155--155
+[][][]\T1/cmr/m/n/12 Regenerate 
+ []
+
+
+Overfull \hbox (21.06358pt too wide) in paragraph at lines 155--155
+\T1/cmr/m/n/12 ent/regime 
+ []
+
+
+Overfull \hbox (0.57132pt too wide) in paragraph at lines 155--155
+\T1/cmr/m/n/12 served.[]  
+ []
+
+
+LaTeX Warning: Marginpar on page 18 moved.
+
+<figures/pca_kappa_regimes.png, id=445, 1156.32pt x 433.62pt>
 File: figures/pca_kappa_regimes.png Graphic file (type png)
 <use figures/pca_kappa_regimes.png>
-Package pdftex.def Info: figures/pca_kappa_regimes.png  used on input line 90.
+Package pdftex.def Info: figures/pca_kappa_regimes.png  used on input line 159.
 (pdftex.def)             Requested size: 318.66948pt x 119.5006pt.
-) (./sections/modelling.tex
+) (./sections/modelling.tex [18 <../outputs/02_feature_analysis/figures/vif_barplot.png>]
 Underfull \hbox (badness 7925) in paragraph at lines 20--20
 []|$\OML/cmm/m/it/10.95 `[]$\T1/cmr/m/n/10.95 +$\OML/cmm/m/it/10.95 `[]$ \T1/cmr/m/n/10.95 reg-u-larised lin-ear
  []
@@ -1249,131 +1091,163 @@ Overfull \hbox (1.15038pt too wide) in paragraph at lines 33--33
 \T1/cmr/m/n/12 NetCV 
  []
 
-<figures/nested_cv_splits.png, id=427, 2047.65pt x 1114.1625pt>
+<figures/nested_cv_splits.png, id=459, 2047.65pt x 1114.1625pt>
 File: figures/nested_cv_splits.png Graphic file (type png)
 <use figures/nested_cv_splits.png>
 Package pdftex.def Info: figures/nested_cv_splits.png  used on input line 41.
 (pdftex.def)             Requested size: 455.24411pt x 247.70062pt.
-[17 <./figures/pca_kappa_regimes.png>] [18 <./figures/nested_cv_splits.png>] [19]
-<figures/model_pred_vs_actual_holdout.png, id=455, 1300.86pt x 1300.86pt>
+[19 <./figures/pca_kappa_regimes.png>] [20 <./figures/nested_cv_splits.png>] (./tables/table_models_tabular.tex) [21{c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
+Overfull \hbox (10.94382pt too wide) in paragraph at lines 119--119
+[][][]\T1/cmr/m/n/12 Interpret 
+ []
+
+
+Overfull \hbox (1.87654pt too wide) in paragraph at lines 119--119
+\T1/cmr/m/n/12 against 
+ []
+
+
+Overfull \hbox (10.94382pt too wide) in paragraph at lines 119--119
+[][][]\T1/cmr/m/n/12 Interpret 
+ []
+
+
+Overfull \hbox (1.87654pt too wide) in paragraph at lines 119--119
+\T1/cmr/m/n/12 against 
+ []
+
+<figures/model_pred_vs_actual_holdout.png, id=484, 1300.86pt x 1300.86pt>
 File: figures/model_pred_vs_actual_holdout.png Graphic file (type png)
 <use figures/model_pred_vs_actual_holdout.png>
-Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 133.
+Package pdftex.def Info: figures/model_pred_vs_actual_holdout.png  used on input line 130.
 (pdftex.def)             Requested size: 455.24411pt x 455.24828pt.
- [20]
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 137--137
+[22]
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 134--134
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 137--137
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 134--134
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 138--138
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 135--135
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Overfull \hbox (3.11238pt too wide) in paragraph at lines 138--138
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 135--135
 [][][]\T1/cmr/m/n/12 Update 
  []
 
 
-LaTeX Warning: Marginpar on page 21 moved.
+LaTeX Warning: Marginpar on page 23 moved.
 
 
-Overfull \hbox (8.33243pt too wide) in paragraph at lines 152--165
+Overfull \hbox (8.33243pt too wide) in paragraph at lines 149--162
  [][] 
  []
 
-[21 <./figures/model_pred_vs_actual_holdout.png>]
-<figures/shap_beeswarm_lgb_ae.png, id=472, 650.43pt x 433.62pt>
+[23 <./figures/model_pred_vs_actual_holdout.png>]
+<figures/shap_beeswarm_lgb_ae.png, id=502, 650.43pt x 433.62pt>
 File: figures/shap_beeswarm_lgb_ae.png Graphic file (type png)
 <use figures/shap_beeswarm_lgb_ae.png>
-Package pdftex.def Info: figures/shap_beeswarm_lgb_ae.png  used on input line 171.
+Package pdftex.def Info: figures/shap_beeswarm_lgb_ae.png  used on input line 168.
 (pdftex.def)             Requested size: 386.96027pt x 257.97733pt.
-) (./sections/discussion.tex [22 <./figures/shap_beeswarm_lgb_ae.png>]
+) (./sections/discussion.tex [24 <./figures/shap_beeswarm_lgb_ae.png>]
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 15--15
+[][][]\T1/cmr/m/n/12 Reword 
+ []
+
+
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 15--15
+[][][]\T1/cmr/m/n/12 Reword 
+ []
+
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 36.
+(hyperref)                removing `math shift' on input line 35.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\kappa' on input line 36.
+(hyperref)                removing `\kappa' on input line 35.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 36.
+(hyperref)                removing `math shift' on input line 35.
 
-[23]
-Overfull \hbox (33.78958pt too wide) in paragraph at lines 51--51
+[25]
+Overfull \hbox (33.78958pt too wide) in paragraph at lines 50--50
 \T1/cmr/m/n/12 with/without 
  []
 
 
-Overfull \hbox (3.18175pt too wide) in paragraph at lines 51--51
+Overfull \hbox (3.18175pt too wide) in paragraph at lines 50--50
 \T1/cmr/m/n/12 slipring[]  
  []
 
 
-Overfull \hbox (33.78958pt too wide) in paragraph at lines 51--51
+Overfull \hbox (33.78958pt too wide) in paragraph at lines 50--50
 \T1/cmr/m/n/12 with/without 
  []
 
 
-Overfull \hbox (3.18175pt too wide) in paragraph at lines 51--51
+Overfull \hbox (3.18175pt too wide) in paragraph at lines 50--50
 \T1/cmr/m/n/12 slipring[]  
  []
 
 
-LaTeX Warning: Marginpar on page 24 moved.
+LaTeX Warning: Marginpar on page 26 moved.
 
-) (./sections/conclusion.tex [24]) (./sections/appendix.tex
-
-LaTeX Warning: Reference `tab:app_ae_ranking' on page 25 undefined on input line 7.
-
-
-LaTeX Warning: Reference `tab:app_ul_ranking' on page 25 undefined on input line 7.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 21--21
-[][][]\T1/cmr/m/n/12 Run scripts/02_feature_analysis.py to gen-er-ate 
+) (./sections/conclusion.tex
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 14--14
+[][][]\T1/cmr/m/n/12 Update 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 28--28
-[][][]\T1/cmr/m/n/12 Run scripts/02_feature_analysis.py to gen-er-ate 
+Overfull \hbox (3.11238pt too wide) in paragraph at lines 14--14
+[][][]\T1/cmr/m/n/12 Update 
  []
 
-) (./sections/backmatter.tex [25]) [26] (./main.bbl [27
 
-]) [28] (./main.aux)
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 15--15
+[][][]\T1/cmr/m/n/12 Reword 
+ []
+
+
+Overfull \hbox (4.25655pt too wide) in paragraph at lines 15--15
+[][][]\T1/cmr/m/n/12 Reword 
+ []
+
+
+LaTeX Warning: Marginpar on page 26 moved.
+
+[26]) (./sections/appendix.tex (../outputs/02_feature_analysis/tables/feature_ranking_ae_appendix.tex
+../outputs/02_feature_analysis/tables/feature_ranking_ae_appendix.tex:64: ignored error: Infinite glue shrinkage found in box being split [27]
+../outputs/02_feature_analysis/tables/feature_ranking_ae_appendix.tex:64: ignored error: Infinite glue shrinkage found in box being split [28]) (../outputs/02_feature_analysis/tables/feature_ranking_us_appendix.tex)) (./sections/backmatter.tex [29]) [30] (./main.bbl [31
+
+]) [32] (./main.aux)
  ***********
 LaTeX2e <2025-11-01>
-L3 programming layer <2025-11-14>
+L3 programming layer <2025-11-06>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 384CEBD17391631206002CDFEEB5BD7F;5820.
+(rerunfilecheck)             Checksum: A1F8C79D4C8EADC34A5D4694A2E3B557;6328.
  ) 
 Here is how much of TeX's memory you used:
- 25954 strings out of 467538
- 476657 string characters out of 5423725
- 930947 words of memory out of 5000000
- 54237 multiletter control sequences out of 15000+600000
- 648106 words of font info for 96 fonts, out of 8000000 for 9000
+ 26077 strings out of 467538
+ 479897 string characters out of 5423724
+ 923237 words of memory out of 5000000
+ 54337 multiletter control sequences out of 15000+600000
+ 649663 words of font info for 98 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 99i,15n,117p,1310b,1100s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on main.pdf (29 pages, 6848821 bytes).
+ 99i,16n,117p,1308b,1100s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
+Output written on main.pdf (33 pages, 9157318 bytes).
 PDF statistics:
- 667 PDF objects out of 1000 (max. 8388607)
- 564 compressed objects within 6 object streams
- 164 named destinations out of 1000 (max. 500000)
- 317 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 715 PDF objects out of 1000 (max. 8388607)
+ 596 compressed objects within 6 object streams
+ 168 named destinations out of 1000 (max. 500000)
+ 345 words of extra memory for PDF output out of 10000 (max. 10000000)
 

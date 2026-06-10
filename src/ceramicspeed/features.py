@@ -6,6 +6,14 @@ Signal feature extraction for CeramicSpeed bearing analysis.
 Computes time-domain and frequency-domain features from 1-D sensor signals
 (acoustic emission and ultrasound).
 
+The feature set is the canonical, de-duplicated set (14 features): every
+feature is mathematically independent of the others.  Exact transforms and
+products of retained features (std, variance, peak, impulse_factor,
+rms_frequency, frequency_weighted_std, normalized_frequency_std,
+frequency_skewness/kurtosis, spectral_mean/std, peak_frequency,
+normalized_bandwidth) were removed — see paper/feature_audit.md for the
+derivations.
+
 Functions
 ---------
 extract_features(signal_data, fs)
@@ -21,7 +29,28 @@ import numpy as np
 import antropy as ant
 from scipy.signal import butter, sosfiltfilt
 
-__all__ = ["extract_features", "bandpass_filter"]
+__all__ = ["extract_features", "bandpass_filter", "FEATURE_NAMES"]
+
+
+#: Canonical feature names, in output order.
+FEATURE_NAMES: list[str] = [
+    # Time-domain (8)
+    "rms",
+    "skewness",
+    "kurtosis",
+    "crest_factor",
+    "shape_factor",
+    "margin_factor",
+    "mobility",
+    "complexity",
+    # Frequency-domain (6)
+    "dominant_frequency",
+    "center_frequency",
+    "spectral_bandwidth",
+    "spectral_skewness",
+    "spectral_kurtosis",
+    "spectral_flatness",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -93,21 +122,50 @@ def extract_features(signal_data: np.ndarray, fs: float) -> dict[str, float]:
     Returns
     -------
     dict[str, float]
-        Dictionary of computed feature values.  Keys are grouped as:
+        Dictionary of computed feature values (see :data:`FEATURE_NAMES`).
 
-        *Time-domain*
-            ``peak``, ``rms``, ``std``, ``variance``, ``skewness``,
-            ``crest_factor``, ``kurtosis``, ``shape_factor``,
-            ``impulse_factor``, ``margin_factor``, ``mobility``,
-            ``complexity``
+        *Time-domain* (8)
+            ``rms``
+                Root mean square amplitude.
+            ``skewness``, ``kurtosis``
+                Third and fourth standardised central moments.
+            ``crest_factor``
+                Half peak-to-peak amplitude divided by RMS.
+            ``shape_factor``
+                RMS divided by mean absolute value.
+            ``margin_factor``
+                Half peak-to-peak amplitude divided by squared mean
+                square-root amplitude.
+            ``mobility``, ``complexity``
+                Hjorth parameters (power-weighted spectral spread proxies).
 
-        *Frequency-domain*
-            ``dominant_frequency``, ``spectral_mean``, ``spectral_std``,
-            ``spectral_skewness``, ``spectral_kurtosis``,
-            ``center_frequency``, ``rms_frequency``, ``spectral_flatness``,
-            ``frequency_weighted_std``, ``peak_frequency``,
-            ``normalized_frequency_std``, ``frequency_skewness``,
-            ``frequency_kurtosis``, ``normalized_bandwidth``
+        *Frequency-domain* (6) — computed from the one-sided FFT magnitude
+        spectrum :math:`S_k = |X_k|` with frequencies :math:`f_k`.
+            ``dominant_frequency``
+                Frequency of maximum spectral power.
+            ``center_frequency``
+                Magnitude-weighted mean frequency (spectral centroid),
+                :math:`f_c = \\sum_k f_k S_k / \\sum_k S_k`.
+            ``spectral_bandwidth``
+                Magnitude-weighted spectral spread,
+                :math:`\\sigma_w = (\\sum_k (f_k - f_c)^2 S_k / \\sum_k S_k)^{1/2}`.
+            ``spectral_skewness``, ``spectral_kurtosis``
+                Standardised (dimensionless) third and fourth
+                magnitude-weighted spectral moments,
+                :math:`\\sum_k (f_k - f_c)^p S_k / (\\sigma_w^p \\sum_k S_k)`.
+            ``spectral_flatness``
+                Geometric-to-arithmetic mean ratio of the magnitude spectrum.
+
+    Notes
+    -----
+    Removed (recoverable) features relative to the legacy 26-feature set:
+    ``std`` and ``variance`` equal ``rms`` (and its square) for zero-mean
+    band-filtered signals; ``peak`` = ``crest_factor`` × ``rms``;
+    ``impulse_factor`` = ``crest_factor`` × ``shape_factor``;
+    ``rms_frequency``² = ``center_frequency``² + ``spectral_bandwidth``²;
+    the legacy unweighted ``frequency_weighted_std`` and
+    ``normalized_frequency_std`` were deterministic functions of
+    ``center_frequency``.
     """
     x: np.ndarray = np.asarray(signal_data, dtype=float)
 
@@ -117,13 +175,12 @@ def extract_features(signal_data: np.ndarray, fs: float) -> dict[str, float]:
     N: int = len(x)
     mean: float = np.mean(x)
     deviation: np.ndarray = x - mean
-    abs_sum: float = float(np.sum(np.abs(x)))
+    abs_mean: float = float(np.mean(np.abs(x)))
 
     # One-sided FFT magnitude spectrum
     fft_coeffs: np.ndarray = np.fft.fft(x)[: N // 2]
     fft_mag: np.ndarray = np.abs(fft_coeffs)
-    K: int = len(fft_mag)
-    freq: np.ndarray = np.fft.fftfreq(N, d=1.0 / fs)[:K]
+    freq: np.ndarray = np.fft.fftfreq(N, d=1.0 / fs)[: len(fft_mag)]
 
     _fft_sum = float(np.sum(fft_mag))
     _fft_empty = _fft_sum < 1e-30  # band is silent (e.g. above Nyquist)
@@ -131,128 +188,90 @@ def extract_features(signal_data: np.ndarray, fs: float) -> dict[str, float]:
     # ------------------------------------------------------------------
     # Time-domain features
     # ------------------------------------------------------------------
-    peak: float = float((np.max(x) - np.min(x)) / 2.0)
-    rms: float = float(np.sqrt(np.sum(x**2) / N))
-    std: float = float(np.sqrt(np.sum(deviation**2) / N))
-    variance: float = float(np.var(x))
+    peak: float = float((np.max(x) - np.min(x)) / 2.0)  # internal only
+    rms: float = float(np.sqrt(np.mean(x**2)))
+    std: float = float(np.sqrt(np.mean(deviation**2)))  # internal only
 
     if std < 1e-30:
         skewness = 0.0
         kurtosis = 0.0
     else:
-        skewness = float(np.sum((deviation / std) ** 3) / N)
-        kurtosis = float(np.sum((deviation / std) ** 4) / N)
+        skewness = float(np.mean((deviation / std) ** 3))
+        kurtosis = float(np.mean((deviation / std) ** 4))
 
     crest_factor: float = peak / rms if rms > 0 else 0.0
-    shape_factor: float = rms / (abs_sum / N) if abs_sum > 0 else 0.0
-    impulse_factor: float = peak / (abs_sum / N) if abs_sum > 0 else 0.0
-    sqrt_sum: float = float(np.sum(np.sqrt(np.abs(x)))) / N
-    margin_factor: float = peak / sqrt_sum**2 if sqrt_sum > 0 else 0.0
+    shape_factor: float = rms / abs_mean if abs_mean > 0 else 0.0
+    sqrt_mean: float = float(np.mean(np.sqrt(np.abs(x))))
+    margin_factor: float = peak / sqrt_mean**2 if sqrt_mean > 0 else 0.0
 
-    hjorth_mobility, hjorth_complexity = ant.hjorth_params(x, axis=0)
-    mobility: float = float(hjorth_mobility)
-    complexity: float = float(hjorth_complexity)
+    if std < 1e-30:
+        mobility: float = 0.0
+        complexity: float = 0.0
+    else:
+        hjorth_mobility, hjorth_complexity = ant.hjorth_params(x, axis=0)
+        mobility = float(hjorth_mobility)
+        complexity = float(hjorth_complexity)
 
     # ------------------------------------------------------------------
     # Frequency-domain features
     # ------------------------------------------------------------------
     if _fft_empty:
-        return {
-            "peak": peak, "rms": rms, "std": std, "variance": variance,
-            "skewness": skewness, "crest_factor": crest_factor,
-            "kurtosis": kurtosis, "shape_factor": shape_factor,
-            "impulse_factor": impulse_factor, "margin_factor": margin_factor,
-            "mobility": mobility, "complexity": complexity,
-            "dominant_frequency": 0.0, "spectral_mean": 0.0,
-            "spectral_std": 0.0, "spectral_skewness": 0.0,
-            "spectral_kurtosis": 0.0, "center_frequency": 0.0,
-            "rms_frequency": 0.0, "spectral_flatness": 0.0,
-            "frequency_weighted_std": 0.0, "peak_frequency": 0.0,
-            "normalized_frequency_std": 0.0, "frequency_skewness": 0.0,
-            "frequency_kurtosis": 0.0, "normalized_bandwidth": 0.0,
-        }
-
-    dominant_frequency: float = float(freq[int(np.argmax(fft_mag ** 2))])
-    spectral_mean: float = float(np.mean(fft_mag))
-    spectral_std: float = float(np.std(fft_mag))
-    center_frequency: float = float(np.sum(freq * fft_mag) / _fft_sum)
-
-    if spectral_std < 1e-30:
+        dominant_frequency = 0.0
+        center_frequency = 0.0
+        spectral_bandwidth = 0.0
         spectral_skewness = 0.0
         spectral_kurtosis = 0.0
+        spectral_flatness = 0.0
     else:
-        spectral_skewness = float(
-            np.sum((freq - center_frequency) ** 3 * fft_mag)
-            / (spectral_std ** 3 * _fft_sum)
+        dominant_frequency = float(freq[int(np.argmax(fft_mag**2))])
+        center_frequency = float(np.sum(freq * fft_mag) / _fft_sum)
+
+        # Magnitude-weighted spectral spread (true bandwidth)
+        spectral_bandwidth = float(
+            np.sqrt(np.sum((freq - center_frequency) ** 2 * fft_mag) / _fft_sum)
         )
-        spectral_kurtosis = float(
-            np.sum((freq - center_frequency) ** 4 * fft_mag)
-            / (spectral_std ** 4 * _fft_sum)
+
+        # Standardised (dimensionless) weighted spectral shape moments
+        if spectral_bandwidth < 1e-30:
+            spectral_skewness = 0.0
+            spectral_kurtosis = 0.0
+        else:
+            spectral_skewness = float(
+                np.sum((freq - center_frequency) ** 3 * fft_mag)
+                / (spectral_bandwidth**3 * _fft_sum)
+            )
+            spectral_kurtosis = float(
+                np.sum((freq - center_frequency) ** 4 * fft_mag)
+                / (spectral_bandwidth**4 * _fft_sum)
+            )
+
+        # Geometric / arithmetic mean; guard against log(0) from silent bins
+        _pos = fft_mag[fft_mag > 0]
+        _spec_mean = float(np.mean(fft_mag))
+        spectral_flatness = (
+            float(np.exp(np.mean(np.log(_pos))) / _spec_mean)
+            if len(_pos) > 0 and _spec_mean > 0
+            else 0.0
         )
-
-    rms_frequency: float = float(
-        np.sqrt(np.sum((freq**2) * fft_mag) / _fft_sum)
-    )
-    # geometric mean / arithmetic mean; guard against log(0) from silent bins
-    _pos = fft_mag[fft_mag > 0]
-    spectral_flatness: float = float(
-        np.exp(np.mean(np.log(_pos))) / spectral_mean
-    ) if len(_pos) > 0 and spectral_mean > 0 else 0.0
-
-    frequency_weighted_std: float = float(
-        np.sqrt(np.sum((freq - center_frequency) ** 2) / K)
-    )
-    _freq2_sum = float(np.sum(freq**2 * fft_mag))
-    peak_frequency: float = float(
-        np.sqrt(np.sum(freq**4 * fft_mag) / _freq2_sum)
-    ) if _freq2_sum > 0 else 0.0
-
-    normalized_frequency_std: float = (
-        frequency_weighted_std / center_frequency if center_frequency > 0 else 0.0
-    )
-    frequency_skewness: float = float(
-        np.sum((freq - center_frequency) ** 3 * fft_mag)
-        / (K * frequency_weighted_std**3)
-    ) if frequency_weighted_std > 0 else 0.0
-    frequency_kurtosis: float = float(
-        np.sum((freq - center_frequency) ** 4 * fft_mag)
-        / (K * frequency_weighted_std**4)
-    ) if frequency_weighted_std > 0 else 0.0
-    normalized_bandwidth: float = float(
-        np.sum(np.abs(freq - center_frequency) ** 0.5 * fft_mag)
-        / (K * frequency_weighted_std**0.5)
-    ) if frequency_weighted_std > 0 else 0.0
 
     # ------------------------------------------------------------------
     # Assemble feature dictionary
     # ------------------------------------------------------------------
     return {
         # Time-domain
-        "peak": peak,
         "rms": rms,
-        "std": std,
-        "variance": variance,
         "skewness": skewness,
-        "crest_factor": crest_factor,
         "kurtosis": kurtosis,
+        "crest_factor": crest_factor,
         "shape_factor": shape_factor,
-        "impulse_factor": impulse_factor,
         "margin_factor": margin_factor,
         "mobility": mobility,
         "complexity": complexity,
         # Frequency-domain
         "dominant_frequency": dominant_frequency,
-        "spectral_mean": spectral_mean,
-        "spectral_std": spectral_std,
+        "center_frequency": center_frequency,
+        "spectral_bandwidth": spectral_bandwidth,
         "spectral_skewness": spectral_skewness,
         "spectral_kurtosis": spectral_kurtosis,
-        "center_frequency": center_frequency,
-        "rms_frequency": rms_frequency,
         "spectral_flatness": spectral_flatness,
-        "frequency_weighted_std": frequency_weighted_std,
-        "peak_frequency": peak_frequency,
-        "normalized_frequency_std": normalized_frequency_std,
-        "frequency_skewness": frequency_skewness,
-        "frequency_kurtosis": frequency_kurtosis,
-        "normalized_bandwidth": normalized_bandwidth,
     }

@@ -37,9 +37,9 @@ bearing:
 
 filters:
   rpm_min: 50              # discard sweeps below this RPM (startup transients)
-  rpm_max: 10_000
+  rpm_max: 3_000
   file_patterns:
-    - "scope_20260529_150608"
+    - "scope_20260424_115654"
 
 signal_cleaning:
   enabled: true

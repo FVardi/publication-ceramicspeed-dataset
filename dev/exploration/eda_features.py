@@ -187,10 +187,10 @@ for _key, feat_df, meta in [("AE", ae_df, ae_metadata), ("UL", ul_df, ul_metadat
 HARDCODED_AE_FEATURES = [
     "AE_1000-2000kHz__complexity",
     "AE_500-1000kHz__complexity",
-    "AE_500-1000kHz__frequency_weighted_std",
+    "AE_500-1000kHz__spectral_bandwidth",
     "AE_500-1000kHz__dominant_frequency",
-    "AE_500-1000kHz__spectral_std",
-    "frequency_skewness",
+    "AE_500-1000kHz__center_frequency",
+    "spectral_skewness",
 ]
 
 _plot_sensors = [

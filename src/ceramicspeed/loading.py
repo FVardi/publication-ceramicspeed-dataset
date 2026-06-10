@@ -181,14 +181,6 @@ def load_hdf5_file(
                     sweep_data[sensor_name] = sweep[sensor_name]["voltage"][()]
                 else:
                     logger.debug("Sweep %s: channel %s absent — skipping channel.", sweep_name, sensor_name)
-            # SP = slipring electrical conductance — regression target, not a feature channel.
-            # Collapsed to per-sweep scalars here; spectral features would not be meaningful.
-            if "SP" in sweep:
-                sp_v = sweep["SP"]["voltage"][()]
-                sweep_data["sp_conductance"] = {
-                    "sp_mean_v": float(np.mean(sp_v)),
-                    "sp_std_v": float(np.std(sp_v)),
-                }
             sweep_list.append(sweep_data)
 
     return {
@@ -246,7 +238,7 @@ def load_and_process_file(
        extraction.  This restricts spectral features to the sensor's
        effective bandwidth (e.g. <10 kHz for the heterodyned UL probe)
        so that out-of-band noise does not bias features such as
-       ``center_frequency`` or ``rms_frequency``.
+       ``center_frequency`` or ``spectral_bandwidth``.
     3. **Feature extraction** — broadband features from the (optionally
        pre-filtered) signal, plus per-band features when
        ``frequency_bands`` is supplied.
@@ -332,7 +324,7 @@ def load_and_process_file(
             # that spectral features are not biased by out-of-band noise.
             # Example: the heterodyned UL probe has content only below
             # ~10 kHz; without this filter, center_frequency and
-            # rms_frequency would be computed over 800 kHz of noise.
+            # spectral_bandwidth would be computed over 800 kHz of noise.
             if sensor_prefilter and sensor_name in sensor_prefilter:
                 f_lo_pre, f_hi_pre = sensor_prefilter[sensor_name]
                 broadband_signal = bandpass_filter(voltage, fs, f_lo_pre, f_hi_pre)
@@ -381,9 +373,6 @@ def load_and_process_file(
                 **hdf5_data["bearing_metadata"],
                 **quality_cols,
             }
-            if "sp_conductance" in sweep_data:
-                metadata_row.update(sweep_data["sp_conductance"])
-
             quality_rows.append(_sig_report_to_dict(
                 file_name, sweep_name, sensor_name, sig_report
             ))

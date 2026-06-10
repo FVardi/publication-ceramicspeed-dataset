@@ -77,49 +77,46 @@ Cross-sensor $p$-values are also corrected by Holm--Bonferroni.
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{llcccc}
-\toprule
-\textbf{Model} & \textbf{Sensors} &
-\textbf{CV RMSE} & \textbf{HO $R^2$} & \textbf{HO MAE} & \textbf{HO RMSE} \\
-\midrule
-LightGBM    & Combined & $0.0767 \pm 0.0040$ & \textbf{0.953} & 0.050 & 0.076 \\
-LightGBM    & AE       & $0.0780 \pm 0.0037$ & 0.951          & 0.051 & 0.078 \\
-LightGBM    & US       & $0.2233 \pm 0.0060$ & 0.600          & 0.155 & 0.222 \\
-\midrule
-Elastic Net & Combined & $0.1556 \pm 0.0051$ & 0.830 & 0.111 & 0.145 \\
-Elastic Net & AE       & $0.1568 \pm 0.0052$ & 0.826 & 0.113 & 0.147 \\
-Polynomial  & Combined & $0.1568 \pm 0.0048$ & 0.803 & 0.113 & 0.156 \\
-Polynomial  & AE       & $0.1646 \pm 0.0044$ & 0.775 & 0.123 & 0.167 \\
-Polynomial  & US       & $0.2577 \pm 0.0056$ & 0.477 & 0.193 & 0.254 \\
-Elastic Net & US       & $0.2783 \pm 0.0068$ & 0.396 & 0.210 & 0.273 \\
-\bottomrule
-\end{tabular}
+\IfFileExists{tables/table_models_tabular.tex}%
+  {\input{tables/table_models_tabular.tex}}%
+  {\IfFileExists{../outputs/07_paper_export/table_models_tabular.tex}%
+    {\input{../outputs/07_paper_export/table_models_tabular.tex}}%
+    {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_models\_tabular.tex.}}}
 \caption{Regression model performance. CV RMSE: mean $\pm$ std of outer RMSE across
-25 repeated nested CV folds ($n_{\text{train}} = 7\,026$ per fold).
-HO: hold-out test set ($n = 1\,757$). Best hold-out $R^2$ in bold.}
+25 repeated nested CV folds (training set $n = \resNtrain$).
+HO: hold-out test set ($n = \resNholdout$). Best hold-out $R^2$ in bold.}
 \label{tab:models}
 \end{table}
 
 \textbf{Overall performance.}
 LightGBM achieves the best hold-out performance across all sensor configurations,
-with AE-only reaching $R^2 = 0.951$, RMSE~$= 0.078$~$\kappa$-units.
-On a target range of $[0.003,\, 1.64]$ with mean~0.51, this corresponds to a relative
-RMSE of approximately 15\% of the target range.
-Linear and polynomial models on AE features achieve $R^2 \approx 0.77$--$0.83$,
+with AE-only reaching $R^2 = \resHOrsqLgbAe$, RMSE~$= \resHOrmseLgbAe$~$\kappa$-units.
+On a target range of $[\resKappaMin,\, \resKappaMax]$ with mean~\resKappaMean, this corresponds to a relative
+RMSE of approximately \resRelRmsePctLgbAe\% of the mean target value.
+Linear and polynomial models on AE features achieve $R^2 = \resHOrsqPolyAe$--$\resHOrsqEnetAe$,
 confirming a non-linear feature--$\kappa$ mapping that gradient boosting exploits
 more effectively.
 
 \textbf{Sensor comparison.}
 AE features substantially outperform US features across all model families.
-The LightGBM AE--US gap ($\Delta R^2 = 0.35$) is confirmed as highly significant
-(Nadeau--Bengio $p < 10^{-22}$; Wilcoxon $p < 10^{-166}$; $\Delta\text{RMSE} = 0.144$,
-95\%~CI [0.133, 0.157]).
+The LightGBM AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$) is confirmed as highly significant
+(Nadeau--Bengio $p = \resPcvAeUs$; Wilcoxon $p = \resPwxAeUs$; $\Delta\text{RMSE} = \resDrmseAeUs$,
+95\%~CI [\resDrmseLoAeUs, \resDrmseHiAeUs]).
 This reflects the richer frequency content and more direct physical sensitivity of
 the AE sensor to asperity contact events.
 
-\textbf{Sensor fusion yields a marginal, statistically significant.}
-LightGBM on the combined AE+US feature set achieves $R^2 = 0.953$, marginally
-above the AE-only result ($0.951$). The within-CV corrected $t$-test rejects equality ($p = 0.024$), but hold-out tests do not confirm the improvement: Wilcoxon $p = 0.88$, Diebold--Mariano $p = 0.28$, bootstrap $\Delta\text{RMSE} = 0.0011$ with 95\%~CI $[-0.0009,\, 0.0033]$ spanning zero. For the linear models, the combined feature set is similarly on par with AE alone (Elastic Net: $R^2$ 0.830 vs.\ 0.826; Polynomial: 0.803 vs.\ 0.775). The marginal fusion gain is consistent with the US channel contributing a small amount of non-redundant information at low-frequency.
+\textbf{Sensor fusion.}
+LightGBM on the combined AE+US feature set achieves $R^2 = \resHOrsqLgbComb$
+($\Delta R^2 = \resDrsqLgbCombAe$ over the AE-only result of \resHOrsqLgbAe).
+The within-CV corrected $t$-test gives $p = \resPcvAeComb$; on the hold-out set,
+Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano $p = \resPdmAeComb$, and the bootstrap
+$\Delta\text{RMSE} = \resDrmseAeComb$ with 95\%~CI $[\resDrmseLoAeComb,\, \resDrmseHiAeComb]$.
+For the linear models, the combined feature set performs similarly to AE alone
+(Elastic Net: $R^2$ \resHOrsqEnetComb{} vs.\ \resHOrsqEnetAe; Polynomial:
+\resHOrsqPolyComb{} vs.\ \resHOrsqPolyAe).
+\todo{Interpret the fusion result against the final frozen numbers: with the current
+outputs the hold-out tests \emph{confirm} a small fusion gain, reversing the earlier
+``unconfirmed on hold-out'' narrative.}
 
 \textbf{Model consistency.}
 The close agreement between nested CV RMSE and hold-out RMSE across all models

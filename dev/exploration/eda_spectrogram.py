@@ -44,6 +44,8 @@ from ceramicspeed.loading import discover_hdf5_files
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=str, default=None)
+    parser.add_argument("--recompute", action="store_true",
+                        help="Ignore cache and recompute all PSDs from HDF5")
     args, _ = parser.parse_known_args()
     return args
 
@@ -55,6 +57,8 @@ OUTPUT_DIR = get_output_dir(cfg)
 INPUT_DIR  = get_input_dir(cfg)
 EDA_DIR    = OUTPUT_DIR / "eda"
 EDA_DIR.mkdir(parents=True, exist_ok=True)
+
+CACHE_PATH = EDA_DIR / "eda_spectrogram_cache.npz"
 
 RPM_MIN = cfg["filters"].get("rpm_min", 0.0)
 RPM_MAX = cfg["filters"]["rpm_max"]
@@ -80,111 +84,126 @@ US_BAND_EDGES_KHZ = [10.0, 20.0]
 # Stream sweeps — compute PSDs inline, discard raw waveforms
 # =============================================================================
 
-files = discover_hdf5_files(
-    INPUT_DIR,
-    file_patterns=cfg.get("filters", {}).get("file_patterns"),
-)
-print(f"Found {len(files)} HDF5 file(s)")
+if not args.recompute and CACHE_PATH.exists():
+    print(f"Loading cached matrices from {CACHE_PATH.name} ...")
+    _cache = np.load(CACHE_PATH)
+    kappas_ae  = _cache["kappas_ae"]
+    f_ae       = _cache["f_ae"]
+    mat_ae_db  = _cache["mat_ae_db"]
+    kappas_us  = _cache["kappas_us"]
+    f_us       = _cache["f_us"]
+    mat_us_db  = _cache["mat_us_db"]
+    print(f"AE matrix : {mat_ae_db.shape}  freq range {f_ae[0]/1e6:.3f}–{f_ae[-1]/1e6:.3f} MHz")
+    print(f"US matrix : {mat_us_db.shape}  freq range {f_us[0]/1e3:.1f}–{f_us[-1]/1e3:.1f} kHz")
 
-ae_records: list[dict] = []   # {"kappa": float, "f": ndarray, "p": ndarray}
-us_records: list[dict] = []
-n_skipped = 0
+else:
+    files = discover_hdf5_files(
+        INPUT_DIR,
+        file_patterns=cfg.get("filters", {}).get("file_patterns"),
+    )
+    print(f"Found {len(files)} HDF5 file(s)")
 
-for fp in files:
-    try:
-        with h5py.File(fp, "r") as hf:
-            sweeps_grp = hf["sweeps"]
-            first_key  = list(sweeps_grp.keys())[0]
-            time_axis  = sweeps_grp[first_key]["AE"]["time"][()]
-            fs: float  = 1.0 / float(np.mean(np.diff(time_axis)))
+    ae_records: list[dict] = []   # {"kappa": float, "f": ndarray, "p": ndarray}
+    us_records: list[dict] = []
+    n_skipped = 0
 
-            lm = dict(hf["metadata"]["lubricant"].attrs)
-            for k, v in _VIS_FALLBACK.items():
-                lm.setdefault(k, v)
+    for fp in files:
+        try:
+            with h5py.File(fp, "r") as hf:
+                sweeps_grp = hf["sweeps"]
+                first_key  = list(sweeps_grp.keys())[0]
+                time_axis  = sweeps_grp[first_key]["AE"]["time"][()]
+                fs: float  = 1.0 / float(np.mean(np.diff(time_axis)))
 
-            for sweep_name, sweep in sweeps_grp.items():
-                attrs  = dict(sweep.attrs)
-                rpm    = float(attrs.get("telem_rpm_meas",    attrs.get("rpm",           np.nan)))
-                temp_c = float(attrs.get("telem_omron_pv_c",  attrs.get("temperature_c", np.nan)))
+                lm = dict(hf["metadata"]["lubricant"].attrs)
+                for k, v in _VIS_FALLBACK.items():
+                    lm.setdefault(k, v)
 
-                if not (RPM_MIN <= rpm <= RPM_MAX):
-                    n_skipped += 1
-                    continue
-                if np.isnan(rpm) or np.isnan(temp_c):
-                    n_skipped += 1
-                    continue
+                for sweep_name, sweep in sweeps_grp.items():
+                    attrs  = dict(sweep.attrs)
+                    rpm    = float(attrs.get("telem_rpm_meas",    attrs.get("rpm",           np.nan)))
+                    temp_c = float(attrs.get("telem_omron_pv_c",  attrs.get("temperature_c", np.nan)))
 
-                try:
-                    kap = calculate_kappa(
-                        rpm=rpm, temp_c=temp_c, d_pw=D_PW_MM,
-                        nu_40=float(lm["viscosity_40c_cst"]),
-                        nu_100=float(lm["viscosity_100c_cst"]),
-                    )
-                except Exception:
-                    n_skipped += 1
-                    continue
-                if np.isnan(kap):
-                    n_skipped += 1
-                    continue
+                    if not (RPM_MIN <= rpm <= RPM_MAX):
+                        n_skipped += 1
+                        continue
+                    if np.isnan(rpm) or np.isnan(temp_c):
+                        n_skipped += 1
+                        continue
 
-                # AE — full bandwidth Welch
-                if "AE" in sweep:
-                    sig = sweep["AE"]["voltage"][()]
-                    f_ae, p_ae = welch(
-                        sig, fs=fs,
-                        nperseg=AE_NPERSEG,
-                        noverlap=int(AE_NPERSEG * NOVERLAP_FRAC),
-                        window="hann",
-                    )
-                    ae_records.append({"kappa": kap, "f": f_ae, "p": p_ae})
-                    del sig
+                    try:
+                        kap = calculate_kappa(
+                            rpm=rpm, temp_c=temp_c, d_pw=D_PW_MM,
+                            nu_40=float(lm["viscosity_40c_cst"]),
+                            nu_100=float(lm["viscosity_100c_cst"]),
+                        )
+                    except Exception:
+                        n_skipped += 1
+                        continue
+                    if np.isnan(kap):
+                        n_skipped += 1
+                        continue
 
-                # US — high-resolution Welch, keep 0–40 kHz slice
-                if "UL" in sweep:
-                    sig = sweep["UL"]["voltage"][()]
-                    nperseg_us = min(US_NPERSEG, len(sig))
-                    f_us_full, p_us_full = welch(
-                        sig, fs=fs,
-                        nperseg=nperseg_us,
-                        noverlap=int(nperseg_us * NOVERLAP_FRAC),
-                        window="hann",
-                    )
-                    mask_us = f_us_full <= US_F_MAX_HZ
-                    us_records.append({
-                        "kappa": kap,
-                        "f": f_us_full[mask_us],
-                        "p": p_us_full[mask_us],
-                    })
-                    del sig
+                    # AE — full bandwidth Welch
+                    if "AE" in sweep:
+                        sig = sweep["AE"]["voltage"][()]
+                        f_ae, p_ae = welch(
+                            sig, fs=fs,
+                            nperseg=AE_NPERSEG,
+                            noverlap=int(AE_NPERSEG * NOVERLAP_FRAC),
+                            window="hann",
+                        )
+                        ae_records.append({"kappa": kap, "f": f_ae, "p": p_ae})
+                        del sig
 
-    except Exception as exc:
-        print(f"  WARNING: {fp.name}: {exc}")
+                    # US — high-resolution Welch, keep 0–40 kHz slice
+                    if "UL" in sweep:
+                        sig = sweep["UL"]["voltage"][()]
+                        nperseg_us = min(US_NPERSEG, len(sig))
+                        f_us_full, p_us_full = welch(
+                            sig, fs=fs,
+                            nperseg=nperseg_us,
+                            noverlap=int(nperseg_us * NOVERLAP_FRAC),
+                            window="hann",
+                        )
+                        mask_us = f_us_full <= US_F_MAX_HZ
+                        us_records.append({
+                            "kappa": kap,
+                            "f": f_us_full[mask_us],
+                            "p": p_us_full[mask_us],
+                        })
+                        del sig
 
-print(f"Loaded  {len(ae_records)} AE  /  {len(us_records)} US  sweep PSDs "
-      f"({n_skipped} skipped by RPM/κ filter)")
+        except Exception as exc:
+            print(f"  WARNING: {fp.name}: {exc}")
 
-# %%
-# =============================================================================
-# Build sorted 2-D matrices  (n_sweeps × n_freq_bins)
-# =============================================================================
+    print(f"Loaded  {len(ae_records)} AE  /  {len(us_records)} US  sweep PSDs "
+          f"({n_skipped} skipped by RPM/κ filter)")
 
-def _build_matrix(
-    records: list[dict],
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Sort by κ, stack PSDs.  Returns (kappa_vec, freq_vec, matrix_dB)."""
-    records = sorted(records, key=lambda r: r["kappa"])
-    kappas  = np.array([r["kappa"] for r in records])
-    f_vec   = records[0]["f"]
-    mat     = np.stack([r["p"] for r in records])           # (n_sweeps, n_freq)
-    mat_db  = 10.0 * np.log10(np.maximum(mat, 1e-30))
-    return kappas, f_vec, mat_db
+    # Build sorted 2-D matrices  (n_sweeps × n_freq_bins)
+    def _build_matrix(
+        records: list[dict],
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Sort by κ, stack PSDs.  Returns (kappa_vec, freq_vec, matrix_dB)."""
+        records = sorted(records, key=lambda r: r["kappa"])
+        kappas  = np.array([r["kappa"] for r in records])
+        f_vec   = records[0]["f"]
+        mat     = np.stack([r["p"] for r in records])
+        mat_db  = 10.0 * np.log10(np.maximum(mat, 1e-30))
+        return kappas, f_vec, mat_db
 
+    kappas_ae, f_ae, mat_ae_db = _build_matrix(ae_records)
+    kappas_us, f_us, mat_us_db = _build_matrix(us_records)
 
-kappas_ae, f_ae, mat_ae_db = _build_matrix(ae_records)
-kappas_us, f_us, mat_us_db = _build_matrix(us_records)
+    print(f"AE matrix : {mat_ae_db.shape}  freq range {f_ae[0]/1e6:.3f}–{f_ae[-1]/1e6:.3f} MHz")
+    print(f"US matrix : {mat_us_db.shape}  freq range {f_us[0]/1e3:.1f}–{f_us[-1]/1e3:.1f} kHz")
 
-print(f"AE matrix : {mat_ae_db.shape}  freq range {f_ae[0]/1e6:.3f}–{f_ae[-1]/1e6:.3f} MHz")
-print(f"US matrix : {mat_us_db.shape}  freq range {f_us[0]/1e3:.1f}–{f_us[-1]/1e3:.1f} kHz")
+    np.savez_compressed(
+        CACHE_PATH,
+        kappas_ae=kappas_ae, f_ae=f_ae, mat_ae_db=mat_ae_db,
+        kappas_us=kappas_us, f_us=f_us, mat_us_db=mat_us_db,
+    )
+    print(f"Saved cache → {CACHE_PATH.name}")
 
 # %%
 # =============================================================================

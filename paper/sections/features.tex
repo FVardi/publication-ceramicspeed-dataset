@@ -3,19 +3,54 @@
 \label{sec:features}
 %% ============================================================================
 
-In this section, the correlation of features with $\kappa$ and inter-feature redundancy are analysed to identify the most informative features for modelling.
-The procedure is as follows:
-\begin{itemize}
-    \item Spearman and Pearson correlation ranking,
-    \item Variation inflation factor calculation,
-    \item feature selection based upon correlation and VIF,
-    \item dimensionality reduction and visualization.
-\end{itemize}
+This section reduces the \resNcandAe~AE and \resNcandUs~US candidate features
+(Section~\ref{sec:pipeline}) to compact, non-redundant subsets for modelling, and
+characterises what the surviving features respond to. The analysis proceeds in two
+selection stages -- a relevance filter against $\kappa$ followed by a redundancy
+reduction -- after which the operating-condition dependence and low-dimensional
+structure of the retained sets are examined.
 
-\subsection{Correlation with $\kappa$}
+\subsection{Two-stage feature selection}
+\label{subsec:selection}
+
+\textbf{Stage 1 -- relevance.} Each candidate feature is ranked by its absolute
+Spearman ($|\rho|$, monotonic association) and Pearson ($|r|$, linear association)
+correlation with $\kappa$ across all sweeps. Features must satisfy both
+$|\rho| \geq 0.1$ and $|r| \geq 0.1$ to be retained, removing features carrying
+essentially no monotonic or linear information about the target.
+
+\textbf{Stage 2 -- redundancy.} Among the survivors, redundancy is reduced by a greedy
+procedure that combines the variance inflation factor (VIF) with pairwise correlation:
+features with $\text{VIF} > 10$ or an absolute pairwise Spearman correlation
+$\geq 0.90$ with a higher-ranked feature are removed, lowest combined rank first.
+
+Table~\ref{tab:selection_funnel} summarises the selection funnel.
+
+\begin{table}[H]
+\centering
+\caption{Feature selection funnel: candidate features, survivors of the
+Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy
+reduction.}
+\label{tab:selection_funnel}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Channel} & \textbf{Candidates} & \textbf{After Stage 1} & \textbf{Retained} \\
+\midrule
+AE & \resNcandAe & \resNpostAe & \resNretAe \\
+US & \resNcandUs & \resNpostUs & \resNretUs \\
+\midrule
+Combined & -- & -- & \resNretComb \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Correlation with \texorpdfstring{$\kappa$}{kappa}}
 \label{subsec:raw_spearman}
 
-Table~\ref{tab:raw_spearman} lists the top ten features for each sensor ranked by mean Spearman and Pearson correlation with $\kappa$ across all sweeps, and Figure~\ref{fig:ranking_ae} and Figure~\ref{fig:ranking_us} show the full ranking of all features by absolute Spearman correlation.
+Table~\ref{tab:raw_spearman} lists the top ten features for each sensor ranked by
+combined Spearman--Pearson rank score with $\kappa$, and
+Figures~\ref{fig:ranking_ae} and~\ref{fig:ranking_us} show the full rankings.
 
 \begin{table}[H]
 \centering
@@ -23,71 +58,106 @@ Table~\ref{tab:raw_spearman} lists the top ten features for each sensor ranked b
 for the AE and the US signals.}
 \label{tab:raw_spearman}
 \small
-\begin{tabular}{lccl ccc}
-\toprule
-\multicolumn{3}{c}{\textbf{AE}} &
-\phantom{x} &
-\multicolumn{3}{c}{\textbf{US}} \\
-\cmidrule(lr){1-3}\cmidrule(lr){5-7}
-Feature & $|\rho|$ & $|r|$ & & Feature & $|\rho|$ & $|r|$ \\
-\midrule
-1--2~MHz complexity         & 0.891 & 0.736 & & Spectral mean     & 0.663 & --- \\
-500k--1~MHz mobility        & 0.841 & 0.663 & & Peak              & 0.629 & --- \\
-500k--1~MHz centre freq.    & 0.789 & 0.687 & & RMS               & 0.607 & --- \\
-500k--1~MHz freq.-wt.\ std  & 0.789 & 0.686 & & Std               & 0.606 & --- \\
-500k--1~MHz norm.\ freq.\ std & 0.789 & 0.679 & & Spectral std    & 0.607 & --- \\
-1--2~MHz shape factor       & 0.825 & 0.628 & & Variance          & 0.606 & --- \\
-1--2~MHz spectral mean      & 0.801 & 0.590 & & Norm.\ bandwidth  & 0.607 & --- \\
-1--2~MHz norm.\ bandwidth   & 0.782 & 0.599 & & Freq.\ skewness   & 0.539 & --- \\
-1--2~MHz std                & 0.777 & 0.552 & & Freq.\ kurtosis   & 0.537 & --- \\
-1--2~MHz RMS                & 0.777 & 0.552 & & Kurtosis          & 0.469 & --- \\
-\bottomrule
-\end{tabular}
+\IfFileExists{tables/table_top_features_tabular.tex}%
+  {\input{tables/table_top_features_tabular.tex}}%
+  {\IfFileExists{../outputs/07_paper_export/table_top_features_tabular.tex}%
+    {\input{../outputs/07_paper_export/table_top_features_tabular.tex}}%
+    {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_top\_features\_tabular.tex.}}}
 \end{table}
 
-\todo{Fill in US $|r|$ values from \texttt{feature\_ranking\_us.csv} after running script~02. Rewrite paragraph underneath after.}
-
-The top AE features are drawn overwhelmingly from the 1--2~MHz and 500~kHz--1~MHz sub-bands, with sub-band complexity ($|\rho| = 0.891$) and mobility ($|\rho| = 0.841$) heading the ranking.
-Broadband AE features rank lower than their sub-band counterparts, indicating that the frequency-specific content of the high-frequency AE signal carries more monotonic information about $\kappa$ than the full-band aggregate~\cite{renhart_ae_2021, zhang_coupled_2026}.
-For the US channel, amplitude features (spectral mean, peak, RMS, std) dominate at $|\rho| \approx 0.60$--$0.66$; the maximum US correlation ($|\rho| = 0.663$) is substantially lower than the top AE correlation ($|\rho| = 0.891$).
-Figure~\ref{fig:ranking_ae} and Figure~\ref{fig:ranking_us} show the full feature correlation rankings for each sensor.
+The top-ranked AE feature is \resTopAeFeat{} ($|\rho| = \resTopAeRho$), and the
+top-ranked US feature is \resTopUsFeat{} ($|\rho| = \resTopUsRho$).
+\todo{Interpret the final ranking: which sub-bands dominate for each channel;
+amplitude (RMS) vs.\ shape (complexity, bandwidth, skewness) features; AE vs.\ US
+correlation strength gap.}
+Broadband AE features rank lower than their sub-band counterparts, indicating that
+the frequency-specific content of the high-frequency AE signal carries more monotonic
+information about $\kappa$ than the full-band
+aggregate~\cite{renhart_ae_2021, zhang_coupled_2026}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/feature_ranking_ae_barplot_top20.png}
-\caption{Spearman $|\rho|$ and Pearson $|r|$ between the top 20 AE features and $\kappa$, sorted by combined rank.
-Retained features (after Stage~2 redundancy filtering) are outlined in black.
-The full ranking of all 104~AE features is given in Table~\ref{tab:app_ae_ranking} (Appendix~\ref{app:feature_rankings}).}
+\includegraphics[width=0.85\textwidth]{feature_ranking_ae_barplot_top20.png}
+\caption{Spearman $|\rho|$ and Pearson $|r|$ between the top 20 AE features and
+$\kappa$, sorted by combined rank. Retained features (after Stage~2) are outlined in
+black. The full ranking of all \resNcandAe~AE features is given in
+Table~\ref{tab:app_ae_ranking} (Appendix~\ref{app:feature_rankings}).}
 \label{fig:ranking_ae}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/feature_ranking_us_barplot.png}
-\caption{Spearman $|\rho|$ and Pearson $|r|$ between each US-channel feature and $\kappa$, sorted by combined rank. Retained features highlighted.}
+\includegraphics[width=0.85\textwidth]{feature_ranking_us_barplot.png}
+\caption{Spearman $|\rho|$ and Pearson $|r|$ between each US-channel feature and
+$\kappa$, sorted by combined rank. Retained features highlighted.}
 \label{fig:ranking_us}
 \end{figure}
 
-\subsection{Operating-condition confounding}
-\label{subsec:confound}
+\subsection{Redundancy structure}
+\label{subsec:redundancy}
 
-The raw Spearman correlation between broadband signal energy (as a proxy for all amplitude features) and $\kappa$ is substantially driven by the shared dependence on rotational speed and temperature.
-Quantitatively, RPM has a Spearman correlation of $\rho = +0.62$ with $\kappa$ and temperature has $\rho = -0.68$.
-Higher RPM reduces the required viscosity $\nureq$ (Eq.~\eqref{eq:nu1}) and therefore increases $\kappa$, while simultaneously increasing signal energy through more frequent contact events per second.
-Higher temperature reduces the actual viscosity $\nuop$ and therefore reduces $\kappa$, while also affecting material damping and structural dynamics.
-
-As a consequence, amplitude-dominated features such as RMS, variance, and peak --- which rank among the top features by raw Spearman correlation --- are partially acting as indirect proxies for rotational speed rather than as direct indicators of lubrication film adequacy~\cite{hou_insitu_2025, zhang_coupled_2026, miettinen_analysis_2001}. This confounding is an inherent property of any single-operating-point sensor system without an explicit operating condition normalisation step.
-
-\todo{Update this subsection with partial-correlation or residual analysis once new results are available.}
-
-\subsection{PCA and regime separability}
-\label{subsec:pca}
-
-Figure~\ref{fig:pca} shows the first two principal components of the retained AE and US features sets coloured by $\kappa$ value. Visual inspection shows that some separability in this subspace is possible. This confirms that the retained feature sets carry regime-relevant discriminative information. \todo{Create new figures with new dataset}
+Figure~\ref{fig:corr_matrix} shows the inter-feature Spearman correlation matrix and
+Figure~\ref{fig:vif} the VIF distribution of the Stage~1 survivors.
+\todo{One short paragraph: where the redundancy concentrates (within-band amplitude
+clusters; centre-frequency--bandwidth pairs), and note that because the candidate set
+is canonical (Section~\ref{sec:pipeline}), remaining correlations reflect genuine
+signal structure rather than definitional identities.}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/pca_kappa_regimes.png}
-\caption{PCA projection of the retained AE and US feature sets, coloured by lubrication $\kappa$ value.}
+\includegraphics[width=0.8\textwidth]{inter_feature_correlation.png}
+\caption{Inter-feature Spearman correlation matrix of the Stage~1 survivors.}
+\label{fig:corr_matrix}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{vif_barplot.png}
+\caption{Variance inflation factors of the Stage~1 survivors; the dashed line marks
+the $\text{VIF} = 10$ removal threshold.}
+\label{fig:vif}
+\end{figure}
+
+\subsection{Operating-condition dependence}
+\label{subsec:confound}
+
+The raw correlation between signal features and $\kappa$ is partially driven by the
+shared dependence on rotational speed and temperature: RPM has a Spearman correlation
+of $\rho = \resRhoRpmKappa$ with $\kappa$ and temperature has
+$\rho = \resRhoTempKappa$.
+Higher RPM reduces the required viscosity $\nureq$ (Eq.~\eqref{eq:nu1}) and therefore
+increases $\kappa$, while simultaneously increasing signal energy through more
+frequent contact events per second. Higher temperature reduces the actual viscosity
+$\nuop$ and therefore reduces $\kappa$, while also affecting material damping and
+structural dynamics.
+
+As a consequence, amplitude features such as RMS are partially acting as indirect
+proxies for rotational speed rather than as direct indicators of lubrication film
+adequacy~\cite{hou_insitu_2025, zhang_coupled_2026, miettinen_analysis_2001}.
+This confounding is inherent to any single-operating-point sensor system without an
+explicit operating-condition normalisation step. Because $\kappa$ is fully determined
+by the operating point (Section~\ref{subsec:kappa}), a model given measured RPM and
+temperature directly would predict $\kappa$ near-perfectly by construction; the
+contribution of the acoustic features is to recover this information without
+tachometer or thermometer access.
+\todo{Add the diagnostic: regress each top feature (and each retained set) against
+RPM and against temperature; report $R^2$. This quantifies how much of the feature
+information is an operating-condition proxy.}
+
+\subsection{Low-dimensional structure and regime separability}
+\label{subsec:pca}
+
+Figure~\ref{fig:pca} shows the first two principal components of the retained AE and
+US feature sets coloured by $\kappa$ value. Visual inspection shows that some
+separability in this subspace is possible, confirming that the retained feature sets
+carry regime-relevant discriminative information.
+\todo{Regenerate the figure from the final run and describe the gradient/regime
+structure observed.}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{pca_kappa_regimes.png}
+\caption{PCA projection of the retained AE and US feature sets, coloured by
+lubrication $\kappa$ value.}
 \label{fig:pca}
 \end{figure}

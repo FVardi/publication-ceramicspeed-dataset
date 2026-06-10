@@ -125,7 +125,7 @@ def get_sensor_prefilter(
     The pre-filter is applied to each sensor's signal *before* the broadband
     ``extract_features`` call, constraining the spectrum to the sensor's
     effective bandwidth.  This prevents out-of-band noise from biasing
-    spectral features (e.g. ``center_frequency``, ``rms_frequency``) for
+    spectral features (e.g. ``center_frequency``, ``spectral_bandwidth``) for
     sensors whose usable content is much narrower than the DAQ Nyquist limit.
 
     Parameters

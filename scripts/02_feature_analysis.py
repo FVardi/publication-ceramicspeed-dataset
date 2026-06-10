@@ -22,7 +22,8 @@ import argparse
 import json
 import sys
 
-sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 import matplotlib.pyplot as plt
 
@@ -55,19 +56,12 @@ from ceramicspeed.config import load_config, get_output_dir
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=str, default=None)
-    parser.add_argument(
-        "--target", type=str, default="kappa",
-        choices=["kappa", "sp_mean_v"],
-        help="Regression target for correlation/selection (default: kappa).",
-    )
     args, _ = parser.parse_known_args()
     return args
 
 
 args = parse_args()
 cfg = load_config(args.config)
-TARGET_COL: str = args.target
-print(f"Target: {TARGET_COL}")
 
 OUTPUT_DIR = get_output_dir(cfg)
 SCRIPT_DIR = OUTPUT_DIR / "02_feature_analysis"
@@ -124,27 +118,20 @@ us_df = us_df.set_index(["file", "sweep", "sensor"])
 # Calculate kappa
 # =============================================================================
 
-def _resolve_target(metadata: "pd.DataFrame") -> "pd.Series":
-    if TARGET_COL == "kappa":
-        return metadata.apply(
-            lambda row: calculate_kappa(
-                rpm=row["rpm"],
-                temp_c=row["temperature_c"],
-                d_pw=D_PW_MM,
-                nu_40=row["viscosity_40c_cst"],
-                nu_100=row["viscosity_100c_cst"],
-            ),
-            axis=1,
-        )
-    if TARGET_COL not in metadata.columns:
-        raise KeyError(
-            f"Target '{TARGET_COL}' not in metadata. "
-            "Re-run 01_feature_generation.py on a file that has an SP channel."
-        )
-    return metadata[TARGET_COL].astype(float)
+def _calc_kappa(metadata: "pd.DataFrame") -> "pd.Series":
+    return metadata.apply(
+        lambda row: calculate_kappa(
+            rpm=row["rpm"],
+            temp_c=row["temperature_c"],
+            d_pw=D_PW_MM,
+            nu_40=row["viscosity_40c_cst"],
+            nu_100=row["viscosity_100c_cst"],
+        ),
+        axis=1,
+    )
 
-ae_target = _resolve_target(ae_metadata)
-us_target = _resolve_target(us_metadata)
+ae_target = _calc_kappa(ae_metadata)
+us_target = _calc_kappa(us_metadata)
 
 # %%
 # =============================================================================
@@ -215,7 +202,7 @@ for sensor_label, ranking, spearman, pearson in [
     ax_r.set_yticks(y)
     ax_r.set_yticklabels(feature_order)
     ax_r.axvline(0, color="k", lw=0.8)
-    ax_r.set_xlabel(f"Correlation with {TARGET_COL}")
+    ax_r.set_xlabel("Correlation with κ")
     ax_r.set_title(f"{sensor_label} — feature correlation ranking")
     ax_r.legend(loc="lower right")
     ax_r.grid(ls=":", axis="x", alpha=0.4)
@@ -227,13 +214,94 @@ for sensor_label, ranking, spearman, pearson in [
 
 # %%
 # =============================================================================
+# PCA visualisation coloured by kappa regime
+# =============================================================================
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+ae_pca_coords, ae_pca, _ = pca_transform(ae_df)
+us_pca_coords, us_pca, _ = pca_transform(us_df)
+
+plot_pca_kappa(ae_pca_coords, ae_target, ae_pca,
+               ax=axes[0], title="AE — PCA colored by κ")
+plot_pca_kappa(us_pca_coords, us_target, us_pca,
+               ax=axes[1], title="Ultrasound — PCA colored by κ")
+
+fig.tight_layout()
+plt.savefig(FIGURES_DIR / "pca_kappa_regimes.png", dpi=600)
+plt.show()
+print("Saved: pca_kappa_regimes.png")
+
+# %%
+# =============================================================================
+# Redundancy analysis — inter-feature correlation matrix
+# =============================================================================
+
+fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+
+_, _, ae_corr_mat = plot_correlation_matrix(
+    ae_df, method="spearman", ax=axes[0], title="AE — Spearman inter-feature |ρ|"
+)
+_, _, us_corr_mat = plot_correlation_matrix(
+    us_df, method="spearman", ax=axes[1], title="US — Spearman inter-feature |ρ|"
+)
+fig.tight_layout()
+plt.savefig(FIGURES_DIR / "inter_feature_correlation.png", dpi=150)
+plt.show()
+print("Saved: inter_feature_correlation.png")
+
+# %%
+# =============================================================================
+# Variance Inflation Factor
+# =============================================================================
+
+ae_vif = variance_inflation_factors(ae_df)
+us_vif = variance_inflation_factors(us_df)
+
+# %%
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+plot_vif(ae_vif, ax=axes[0], title="AE — Variance Inflation Factor")
+plot_vif(us_vif, ax=axes[1], title="US — Variance Inflation Factor")
+fig.tight_layout()
+plt.savefig(FIGURES_DIR / "vif_barplot.png", dpi=150)
+plt.show()
+print("Saved: vif_barplot.png")
+
+# %%
+# =============================================================================
+# Redundancy summary — flag features by all three criteria
+# =============================================================================
+
+ae_redundancy = identify_redundant_features(ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
+us_redundancy = identify_redundant_features(us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
+
+# %%
+print("AE redundancy flags:")
+print(ae_redundancy.to_string())
+# %%
+print("\nUS redundancy flags:")
+print(us_redundancy.to_string())
+
+# %%
+# =============================================================================
+# Greedy redundancy reduction — retained feature subsets
+# =============================================================================
+
+ae_retained = reduce_redundant_features(ae_df, ae_target, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
+us_retained = reduce_redundant_features(us_df, us_target, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
+
+# %%
+print(f"\nAE: {len(ae_df.columns)} → {len(ae_retained)} features retained")
+print("Retained:", ae_retained)
+print(f"\nUS: {len(us_df.columns)} → {len(us_retained)} features retained")
+print("Retained:", us_retained)
+
+# %%
+# =============================================================================
 # Trimmed bar plot for paper — top 20 AE features only, retained highlighted
 # =============================================================================
 
 TOP_N_AE = 20
-
-def _bar_color(feature, retained_set, base, highlight):
-    return highlight if feature in retained_set else base
 
 ae_top20_order = ae_ranking.head(TOP_N_AE).index.tolist()[::-1]  # best at top
 rho_top = ae_spearman["rho"].abs().reindex(ae_top20_order).values
@@ -251,7 +319,7 @@ for i, feat in enumerate(ae_top20_order):
 ax20.set_yticks(y20)
 ax20.set_yticklabels(ae_top20_order, fontsize=8)
 ax20.axvline(0, color="k", lw=0.8)
-ax20.set_xlabel(f"|Correlation with {TARGET_COL}|")
+ax20.set_xlabel("|Correlation with κ|")
 ax20.set_title(f"AE — top {TOP_N_AE} features by combined rank (retained outlined)")
 ax20.legend(
     handles=[
@@ -337,90 +405,6 @@ print("Saved: feature_ranking_ae_appendix.tex, feature_ranking_us_appendix.tex")
 
 # %%
 # =============================================================================
-# PCA visualisation coloured by kappa regime
-# =============================================================================
-
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-
-ae_pca_coords, ae_pca, _ = pca_transform(ae_df)
-us_pca_coords, us_pca, _ = pca_transform(us_df)
-
-plot_pca_kappa(ae_pca_coords, ae_target, ae_pca,
-               ax=axes[0], title=f"AE — PCA colored by {TARGET_COL}")
-plot_pca_kappa(us_pca_coords, us_target, us_pca,
-               ax=axes[1], title=f"Ultrasound — PCA colored by {TARGET_COL}")
-
-fig.tight_layout()
-plt.savefig(FIGURES_DIR / "pca_kappa_regimes.png", dpi=600)
-plt.show()
-print("Saved: pca_kappa_regimes.png")
-
-# %%
-# =============================================================================
-# Redundancy analysis — inter-feature correlation matrix
-# =============================================================================
-
-fig, axes = plt.subplots(1, 2, figsize=(18, 8))
-
-_, _, ae_corr_mat = plot_correlation_matrix(
-    ae_df, method="spearman", ax=axes[0], title="AE — Spearman inter-feature |ρ|"
-)
-_, _, us_corr_mat = plot_correlation_matrix(
-    us_df, method="spearman", ax=axes[1], title="US — Spearman inter-feature |ρ|"
-)
-fig.tight_layout()
-plt.savefig(FIGURES_DIR / "inter_feature_correlation.png", dpi=150)
-plt.show()
-print("Saved: inter_feature_correlation.png")
-
-# %%
-# =============================================================================
-# Variance Inflation Factor
-# =============================================================================
-
-ae_vif = variance_inflation_factors(ae_df)
-us_vif = variance_inflation_factors(us_df)
-
-# %%
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-plot_vif(ae_vif, ax=axes[0], title="AE — Variance Inflation Factor")
-plot_vif(us_vif, ax=axes[1], title="US — Variance Inflation Factor")
-fig.tight_layout()
-plt.savefig(FIGURES_DIR / "vif_barplot.png", dpi=150)
-plt.show()
-print("Saved: vif_barplot.png")
-
-# %%
-# =============================================================================
-# Redundancy summary — flag features by all three criteria
-# =============================================================================
-
-ae_redundancy = identify_redundant_features(ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
-us_redundancy = identify_redundant_features(us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
-
-# %%
-print("AE redundancy flags:")
-print(ae_redundancy.to_string())
-# %%
-print("\nUS redundancy flags:")
-print(us_redundancy.to_string())
-
-# %%
-# =============================================================================
-# Greedy redundancy reduction — retained feature subsets
-# =============================================================================
-
-ae_retained = reduce_redundant_features(ae_df, ae_target, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
-us_retained = reduce_redundant_features(us_df, us_target, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
-
-# %%
-print(f"\nAE: {len(ae_df.columns)} → {len(ae_retained)} features retained")
-print("Retained:", ae_retained)
-print(f"\nUS: {len(us_df.columns)} → {len(us_retained)} features retained")
-print("Retained:", us_retained)
-
-# %%
-# =============================================================================
 # Save retained feature lists + rankings for downstream scripts
 # =============================================================================
 
@@ -434,8 +418,7 @@ feature_selection_output = {
         "all_columns": us_df.columns.tolist(),
     },
 }
-sel_fname = "feature_selection.json" if TARGET_COL == "kappa" else f"feature_selection_{TARGET_COL}.json"
-out_path = OUTPUT_DIR / sel_fname
+out_path = OUTPUT_DIR / "feature_selection.json"
 with open(out_path, "w") as fh:
     json.dump(feature_selection_output, fh, indent=2)
 print(f"Saved: {out_path.name}")

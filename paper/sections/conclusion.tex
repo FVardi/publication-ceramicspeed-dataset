@@ -10,12 +10,12 @@ The main findings are as follows:
 
 \begin{enumerate}
   \item \textbf{AE sub-band features are strong predictors of $\kappa$.}
-    LightGBM on 32 retained AE features achieves hold-out $R^2 = 0.951$, RMSE~$= 0.078$~$\kappa$-units. The 1--2~MHz complexity feature is the dominant SHAP contributor and the only feature consistent across all three model types, identifying the high-frequency AE
-    sub-band as the most informative frequency range for lubrication regime prediction.
-  \item \textbf{Sensor fusion yields a marginal gain---significant under cross-validation, unconfirmed on hold-out.}
-    The LightGBM combined model achieves $R^2 = 0.953$ ($\Delta R^2 = +0.002$ over AE alone); the within-CV corrected $t$-test rejects equality ($p = 0.024$), but hold-out significance tests (Wilcoxon $p = 0.88$, Diebold--Mariano $p = 0.28$, bootstrap 95\%~CI including zero) cannot confirm the improvement. The heterodyned US channel contributes only 6 retained features with substantially weaker correlations than AE, limiting its independent contribution.
+    LightGBM on \resNretAe{} retained AE features achieves hold-out $R^2 = \resHOrsqLgbAe$, RMSE~$= \resHOrmseLgbAe$~$\kappa$-units. The 1--2~MHz complexity feature is the dominant SHAP contributor and the only feature consistent across all three model types, identifying the high-frequency AE
+    sub-band as the most informative frequency range for lubrication regime prediction.\todo{Update SHAP claim with new results}
+  \item \textbf{Sensor fusion.}\todo{Reword verdict once results are frozen}
+    The LightGBM combined model achieves $R^2 = \resHOrsqLgbComb$ ($\Delta R^2 = \resDrsqLgbCombAe$ over AE alone); within-CV corrected $t$-test $p = \resPcvAeComb$; hold-out tests: Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano $p = \resPdmAeComb$, bootstrap 95\%~CI $[\resDrmseLoAeComb,\, \resDrmseHiAeComb]$. The heterodyned US channel contributes \resNretUs{} retained features with weaker correlations than AE, limiting its independent contribution.
   \item \textbf{AE strongly and significantly outperforms the US channel.}
-    The AE--US gap ($\Delta R^2 = 0.35$ for LightGBM) is confirmed highly significant by all test statistics, reflecting the fundamental bandwidth limitation of the heterodyned US probe.
+    The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$ for LightGBM) is confirmed highly significant by all test statistics, reflecting the fundamental bandwidth limitation of the heterodyned US probe.
   \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
     Twenty-five outer RMSE scores per model provide stable, conservative performance
     estimates; corrected significance tests confirm that LightGBM significantly outperforms linear models within each sensor configuration, while the Elastic Net--Polynomial difference is not significant for the combined feature set.
