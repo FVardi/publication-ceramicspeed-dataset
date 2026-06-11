@@ -18,9 +18,20 @@ The main findings are as follows:
   \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
     The \resNouterScores{} outer RMSE scores per model provide stable, conservative performance
     estimates; corrected significance tests confirm that all pairwise model differences within each sensor configuration are significant after Holm--Bonferroni correction, with LightGBM strongest throughout.
-  \item \textbf{The $\kappa$ regression framework is validated} as a highly effective approach for passive non-invasive LCM, achieving substantially higher performance than prior comparable studies, attributed to the sub-band feature set and the large continuous-sweep dataset.
+  \item \textbf{The $\kappa$ regression framework is workable for passive
+    non-invasive LCM, with a quantified caveat.} Most of the headline performance is
+    recoverable from acoustically inferred operating points alone
+    ($R^2 = \resTwoStageRsq$ via the two-stage decomposition), so the framework is
+    best understood as an acoustic operating-point soft sensor combined with the
+    ISO~281 mapping; the within-speed-step analysis nevertheless confirms a genuine,
+    temperature-mediated film channel beyond the operating-point proxy.
 \end{enumerate}
 
-Future work should address the identified limitations by: acquiring wideband passive
-ultrasound to replace the heterodyned probe; validating across multiple independent
-sessions, bearing types, and lubricants; investigating temporal autocorrelation and its effect on hold-out validity; and developing physically motivated sub-band ratio features that are explicitly designed to be robust to operating-condition variation.
+Future work should address the identified limitations by: validating the
+model-derived $\kappa$ reference against an independent film-thickness proxy,
+using slipring-based conductance measurements on the same test rig (data
+collection ongoing); acquiring wideband passive ultrasound to replace the
+heterodyned probe; validating across multiple independent sessions, bearing types,
+and lubricants; investigating temporal autocorrelation and its effect on hold-out
+validity; and developing physically motivated sub-band ratio features that are
+explicitly designed to be robust to operating-condition variation.

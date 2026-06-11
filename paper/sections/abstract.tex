@@ -1,38 +1,23 @@
 \begin{abstract}
-Inadequate lubrication is responsible for an estimated 30--80\% of rolling element
-bearing failures, yet reliable online, non-invasive lubrication condition monitoring
-(LCM) remains an unsolved engineering problem. Passive sensor-based approaches are most practical for industrial retrofit because they
-require no bearing modification, but the signal processing challenge of separating
-lubrication-relevant information from confounded operating-condition effects has not
-been systematically characterised for simultaneous acoustic emission (AE) and passive
-ultrasound (US) sensing.
-This paper presents a controlled study in which AE and passive US signals are
-simultaneously acquired from a ball bearing during staircase speed sweeps
-(\resRpmMinMeas--\resRpmMaxMeas~rpm) at temperatures spanning
-\resTempMinMeas--\resTempMaxMeas~\si{\celsius}, covering the
-boundary, mixed, and full-film lubrication regimes across \resNsweeps{} sweeps
-per channel.
-The ISO~281 viscosity ratio $\kappa \in [\resKappaMin,\,\resKappaMax]$ (mean \resKappaMean) is derived
-analytically from bearing geometry, lubricant properties, and operating conditions as
-a continuous, physics-grounded regression target.
-For the AE channel, 14~canonical time-domain and frequency-domain features are extracted from the
-broadband signal and from three frequency sub-bands (20--500~kHz, 500~kHz--1~MHz,
-1--2~MHz), yielding 56~candidate features; 42~candidate features are extracted from the US channel
-(broadband 0--20~kHz and two sub-bands: 0--10~kHz and 10--20~kHz).
-A two-stage selection retains \resNretAe~AE and \resNretUs~US features after a joint
-Spearman--Pearson correlation threshold filter and a greedy variance-inflation-factor
-and pairwise-correlation redundancy reduction.
-Three regression model families are benchmarked across three sensor configurations
-using repeated nested \resNfoldsCv-fold cross-validation ($R = \resNrepeats$ repetitions, \resNouterScores~outer scores
-per model); LightGBM on AE features alone achieves a hold-out performance of
-$R^2 = \resHOrsqLgbAe$, $\text{RMSE} = \resHOrmseLgbAe$~$\kappa$-units.
-Fusing AE and US features yields a small but consistently significant improvement of
-$\Delta\text{RMSE} = \resDrmseAeComb$ (Nadeau--Bengio corrected $t$-test
-$p = \resPcvAeComb$; hold-out Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano
-$p = \resPdmAeComb$, bootstrap 95\% CI
-$[\resDrmseLoAeComb,\,\resDrmseHiAeComb]$ excluding zero), indicating that the heterodyned US channel carries a modest amount of non-redundant $\kappa$ information.
-Significance of pairwise model differences is assessed by Nadeau--Bengio corrected
-repeated $k$-fold $t$-tests with Holm--Bonferroni correction for within-sensor
-comparisons, and by Wilcoxon signed-rank, Diebold--Mariano, and bootstrap $\Delta$RMSE
-confidence intervals for cross-sensor comparisons.
+Inadequate lubrication causes an estimated 30--80\% of rolling-element bearing
+failures, yet online, non-invasive lubrication condition monitoring (LCM) remains
+unsolved: lubrication-relevant signal content is weak and strongly confounded with
+operating conditions. This paper presents a controlled dual-channel study in which
+wideband acoustic emission (AE) and heterodyned passive ultrasound (US) signals are
+acquired simultaneously from a ball bearing across staircase speed sweeps
+(\resRpmMinMeas--\resRpmMaxMeas~rpm) and 13 temperature blocks
+(\resTempMinMeas--\resTempMaxMeas~\si{\celsius}), spanning the boundary, mixed, and
+full-film regimes, with the ISO~281 viscosity ratio $\kappa$ as a continuous,
+physics-grounded regression target. Sub-band decomposition reveals a film-gated
+high-frequency AE band: 1--2~MHz power vanishes at a comparable lubrication state
+rather than a comparable speed, and its leading feature dominates model attributions
+across all model families. Gradient boosting on \resNretAe{} selected AE features
+attains hold-out $R^2 = \resHOrsqLgbAe$; a two-stage decomposition shows that most of
+this performance is recoverable from acoustically inferred operating points alone,
+while within-speed-step analysis confirms a genuine, temperature-mediated lubrication
+channel beyond the operating-point proxy. Fusing AE with US yields a small but
+consistently significant improvement, answering the long-argued but previously
+untested question of AE--US complementarity: the heterodyned US channel carries a
+modest amount of non-redundant $\kappa$ information. All results are validated by
+repeated nested cross-validation with corrected significance tests.
 \end{abstract}

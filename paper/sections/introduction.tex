@@ -48,12 +48,39 @@ This study deliberately fixes the bearing, lubricant, and load, varying only rot
 
 This paper makes the following contributions:
 \begin{enumerate}
-  \item \textbf{A dual-channel LCM dataset.} The first dataset to pair calibrated AE and passive-US signals from a single ball bearing across a continuous speed (100--\SI{3000}{rpm}) and temperature (40--\SI{100}{\celsius}) sweep spanning the boundary, mixed, and full-film regimes, with an analytically derived ISO~281 $\kappa$ ground truth.
-  \item \textbf{Slipring based film thickness measurement}\todo{Expand if novel}
-  \item \textbf{Features of sub-bands of AE signals predict $\kappa$. }
-  LightGBM on AE features alone reaches hold-out $R^2 = \resHOrsqLgbAe$ (RMSE~$= \resHOrmseLgbAe$~$\kappa$-units); SHAP attribution identifies the high-frequency 1--2~MHz AE sub-band as the single most informative range for $\kappa$ prediction.
-  \item \textbf{AE substantially outperforms passive (heterodyned) US.} The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$) is confirmed significant across all tests, quantifying the value of wideband AE over a heterodyned passive-US channel.
-  \item \textbf{The AE--US fusion question is answered quantitatively.} Combining the two channels yields a small but statistically robust gain ($\Delta\text{RMSE} = \resDrmseAeComb$), significant under repeated nested cross-validation ($p = \resPcvAeComb$) and confirmed on the independent hold-out set---directly addressing the open question of whether a second acoustic modality supplies non-redundant $\kappa$ information.
+  \item \textbf{A film-gated high-frequency AE band is identified and validated.}
+  Total-band-power analysis at fixed temperature---robust to drive EMI by
+  construction, since spectral redistribution conserves energy within a band---shows
+  that 1--2~MHz AE content vanishes at a comparable lubrication state
+  ($\kappa \approx \resKneeKappaHot$--$\resKneeKappaCool$) rather than a comparable
+  speed (\resKneeRpmCool{} vs.\ \resKneeRpmHot~rpm across temperature windows). Two
+  film-mediated generation mechanisms (asperity emission vs.\ drive-induced bearing
+  currents) are delineated with testable implications. SHAP attribution independently
+  ranks the leading 1--2~MHz feature first across all three model families.
+  \item \textbf{A confound-decomposition methodology for acoustic LCM.} Because
+  $\kappa$ is determined by the operating point, any feature--$\kappa$ regression
+  risks acting as an operating-point soft sensor. A two-stage decomposition
+  (features $\rightarrow$ RPM/temperature $\rightarrow$ ISO~281 mapping, recovering
+  $R^2 = \resTwoStageRsq$ of the direct model's \resHOrsqLgbAe) quantifies the proxy
+  share, while within-RPM-step correlation analysis (median $\rho = \resWithinStepRhoHC$
+  with temperature at fixed drive state) isolates the genuine lubrication-channel
+  sensitivity. This diagnostic is applicable to any condition-monitoring study whose
+  target is derived from the operating point.
+  \item \textbf{The AE--US complementarity question is answered quantitatively.}
+  This is the first study to simultaneously acquire calibrated wideband AE and
+  heterodyned passive US from a single ball bearing and assess their joint value:
+  AE strongly outperforms US ($\Delta R^2 = \resDrsqLgbAeUs$), and fusion adds a
+  small but statistically robust gain ($\Delta\text{RMSE} = \resDrmseAeComb$,
+  significant under repeated nested cross-validation and all hold-out
+  tests)---complementarity is real but modest, with the heterodyned baseband
+  identified as the bottleneck.
+  \item \textbf{A dual-channel dataset and reproducible evaluation protocol.}
+  \resNsweeps{} sweeps spanning the boundary through full-film regimes
+  ($\kappa \in [\resKappaMin,\,\resKappaMax]$) with an analytically derived ISO~281
+  $\kappa$ reference, evaluated under repeated nested cross-validation
+  (\resNouterScores{} outer scores) with Nadeau--Bengio-corrected and
+  Holm--Bonferroni-adjusted inference.\todo{Align with final data availability
+  decision (full deposit, features+code only, or on request).}
 \end{enumerate}
 
 The remainder of the paper is organised as follows. Section~\ref{sec:background} reviews the theory of $\kappa$ and the physical origins of AE and US signals. Section~\ref{sec:setup} describes the experimental setup and data collection. Section~\ref{sec:pipeline} presents the signal-processing and feature-extraction pipeline. Section~\ref{sec:features} reports the feature analysis. Section~\ref{sec:modelling} presents the regression modelling and statistical evaluation.
