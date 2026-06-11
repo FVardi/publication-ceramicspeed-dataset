@@ -605,6 +605,253 @@ for contrib_path in sorted(SHAP_DIR.glob("shap_sensor_contribution_*.csv")):
 
 # %%
 # =============================================================================
+# Plot D1 — Band validation: stationary vs running PSDs (from 08)
+# =============================================================================
+
+BAND_DIR = OUTPUT_DIR / "08_band_validation"
+_psd_path = BAND_DIR / "tables" / "psd_curves.npz"
+if _psd_path.exists():
+    _npz = np.load(_psd_path)
+    freq = _npz["freq"]
+    curves = {}
+    for key in _npz.files:
+        if not key.startswith("psd__"):
+            continue
+        _, tb, group, ntag = key.split("__")
+        curves.setdefault(tb, []).append((group, int(ntag[1:]), _npz[key]))
+    bands_cfg = cfg["frequency_bands"]["AE"]
+    for tb, items in curves.items():
+        fig, ax = plt.subplots(figsize=(7.5, 4.2))
+        for group, n, arr in sorted(items):
+            is_still = group == "standstill"
+            ax.loglog(freq, arr, lw=1.1,
+                      color="#2c2c2c" if is_still else None,
+                      alpha=0.95 if is_still else 0.75,
+                      label=f"{'stationary' if is_still else group} (n={n})")
+        for b in bands_cfg:
+            ax.axvspan(max(b["f_lo"], 1), b["f_hi"], alpha=0.06, color=COLOR_BAR)
+        ax.set_xlim(1e3, freq.max())
+        ax.set_xlabel("Frequency [Hz]")
+        ax.set_ylabel(r"PSD [V$^2$/Hz]")
+        ax.set_title(f"AE PSD, temperature bin {tb}")
+        ax.legend(fontsize=8)
+        fig.tight_layout()
+        safe = tb.replace(" ", "").replace(",", "_").replace("(", "").replace("]", "")
+        fig_path = SCRIPT_DIR / f"band_validation_psd_{safe}.png"
+        plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+        # stable alias used by the paper: the coolest bin (contains the
+        # stationary reference)
+        _lo = float(tb.split(",")[0].strip("( ").strip())
+        if _lo == min(float(t.split(",")[0].strip("( ").strip()) for t in curves):
+            plt.savefig(SCRIPT_DIR / "band_validation_psd.png", dpi=DPI, bbox_inches="tight")
+            print("Saved: band_validation_psd.png (paper alias)")
+        plt.close()
+        print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D1 (run scripts/08_band_validation.py first)")
+
+# %%
+# =============================================================================
+# Plot D2 — Headline feature at standstill vs running (from 08)
+# =============================================================================
+
+_sf_path = BAND_DIR / "tables" / "standstill_features.csv"
+if _sf_path.exists():
+    sf = pd.read_csv(_sf_path)
+    hl = "AE_1000-2000kHz__complexity"
+    fig, ax = plt.subplots(figsize=(6.5, 4))
+    for is_still, lbl, col in [(False, "running", COLOR_BAR), (True, "stationary", "#D65F5F")]:
+        sub = sf[(sf["group"] == "standstill") == is_still]
+        ax.scatter(sub["temp"], sub[hl], s=18, alpha=0.8, label=lbl, color=col)
+    ax.set_xlabel("Temperature [°C]")
+    ax.set_ylabel(hl.replace("__", " "))
+    ax.legend()
+    ax.grid(ls=":", alpha=0.4)
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / "band_validation_standstill_feature.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D2 (run scripts/08_band_validation.py first)")
+
+# %%
+# =============================================================================
+# Plot D3 — Comb-strip band power vs RPM, per temperature window (from 10)
+# =============================================================================
+
+MECH_DIR = OUTPUT_DIR / "10_band_mechanism"
+for tw_dir in sorted(MECH_DIR.glob("tw_*")) if MECH_DIR.exists() else []:
+    cs_path = tw_dir / "tables" / "comb_strip.csv"
+    if not cs_path.exists():
+        continue
+    cs = pd.read_csv(cs_path)
+    band_labels = [b["label"] for b in cfg["frequency_bands"]["AE"]]
+    fig, axes = plt.subplots(1, len(band_labels), figsize=(4.6 * len(band_labels), 3.8),
+                             sharex=True)
+    for ax, label in zip(np.atleast_1d(axes), band_labels):
+        sub = cs[cs["band"] == label]
+        run, still = sub[sub["rpm"] >= 60], sub[sub["rpm"] < 60]
+        ax.semilogy(run["rpm"], run["p_broad"], "o", ms=4.5, color=COLOR_BAR,
+                    label="broadband residual")
+        ax.semilogy(run["rpm"], run["p_line"], "s", ms=4.5, color="#D65F5F",
+                    alpha=0.75, label="line (comb) component")
+        if not still.empty:
+            ax.axhline(still["p_broad"].median(), color="#2c2c2c", ls="--", lw=1,
+                       label="stationary broadband")
+        ax.set_title(label)
+        ax.set_xlabel("RPM")
+        ax.grid(ls=":", alpha=0.4)
+    ax0 = np.atleast_1d(axes)[0]
+    ax0.set_ylabel(r"Band power [V$^2$]")
+    ax0.legend(fontsize=8)
+    fig.suptitle(f"Comb-stripped AE band power ({tw_dir.name.replace('tw_', '')})", y=1.02)
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / f"comb_strip_vs_rpm_{tw_dir.name}.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    # stable alias used by the paper: the coolest window
+    _all_tw = sorted(MECH_DIR.glob("tw_*"), key=lambda d: float(d.name[3:].split("-")[0]))
+    if tw_dir == _all_tw[0]:
+        plt.savefig(SCRIPT_DIR / "comb_strip_cool.png", dpi=DPI, bbox_inches="tight")
+        print("Saved: comb_strip_cool.png (paper alias)")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+if not MECH_DIR.exists():
+    print("Skipped D3 (run scripts/10_band_mechanism.py first)")
+
+# %%
+# =============================================================================
+# Plot D4 — Within-RPM-step temperature sensitivity (from 10)
+# =============================================================================
+
+_ws_candidates = sorted(MECH_DIR.glob("tw_*/tables/within_step_rho.csv")) if MECH_DIR.exists() else []
+if _ws_candidates:
+    ws = pd.read_csv(_ws_candidates[0])
+    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    for feat_name, sub in ws.groupby("feature"):
+        ax.plot(sub["step"], sub["rho_temp"], marker="o", ms=3, lw=1,
+                label=feat_name.replace("__", " "))
+    ax.axhline(0, color="#2c2c2c", lw=0.8)
+    ax.set_xlabel("RPM step")
+    ax.set_ylabel(r"Within-step Spearman $\rho$(feature, temperature)")
+    ax.legend(fontsize=7)
+    ax.grid(ls=":", alpha=0.4)
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / "within_step_rho.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D4 (run scripts/10_band_mechanism.py first)")
+
+# %%
+# =============================================================================
+# Plot D5 — Two-stage vs direct kappa prediction (from 09 + 04)
+# =============================================================================
+
+PROXY_DIR = OUTPUT_DIR / "09_proxy_diagnostics"
+_ts_path = PROXY_DIR / "tables" / "two_stage_predictions.csv"
+_direct_path = PRED_DIR / "model_holdout_lightgbm_ae.csv"
+if _ts_path.exists() and _direct_path.exists():
+    ts = pd.read_csv(_ts_path)
+    direct = pd.read_csv(_direct_path).dropna(subset=["file"])
+
+    def _r2_rmse(y, yh):
+        y, yh = np.asarray(y), np.asarray(yh)
+        ss = 1 - np.sum((y - yh) ** 2) / np.sum((y - y.mean()) ** 2)
+        return ss, float(np.sqrt(np.mean((y - yh) ** 2)))
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.5, 4.4), sharex=True, sharey=True)
+    panels = [
+        (ts["y_true"], ts["y_pred_two_stage"],
+         "Two-stage: features → (R̂PM, T̂) → κ"),
+        (direct["y_true"], direct["y_pred"],
+         "Direct: features → κ (LightGBM)"),
+    ]
+    for ax, (y, yh, ttl) in zip(axes, panels):
+        r2, rmse = _r2_rmse(y, yh)
+        ax.scatter(y, yh, s=4, alpha=0.3, color=COLOR_BAR)
+        lim = [0, float(max(y.max(), yh.max())) * 1.05]
+        ax.plot(lim, lim, ls="--", lw=1, color=COLOR_IDEAL)
+        ax.set_xlabel(r"True $\kappa$")
+        ax.set_title(f"{ttl}\n$R^2$={r2:.3f}, RMSE={rmse:.3f}")
+        ax.grid(ls=":", alpha=0.4)
+    axes[0].set_ylabel(r"Predicted $\kappa$")
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / "two_stage_vs_direct.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D5 (run scripts/09_proxy_diagnostics.py first)")
+
+# %%
+# =============================================================================
+# Plot D6 — VIF of Stage-1 survivors, log axis (from 02)
+# =============================================================================
+
+_vif_paths = {n: OUTPUT_DIR / "02_feature_analysis" / "tables" / f"vif_{n}.csv"
+              for n in ("ae", "us")}
+if all(pp.exists() for pp in _vif_paths.values()):
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=False)
+    for ax, (n, pp) in zip(axes, _vif_paths.items()):
+        v = pd.read_csv(pp).sort_values("vif", ascending=False).reset_index(drop=True)
+        v["vif"] = v["vif"].clip(upper=1e6)  # display cap for (near-)collinear features
+        colors = [COLOR_BAR if r else "#bbbbbb" for r in v["retained"]]
+        ax.bar(range(len(v)), v["vif"], color=colors)
+        ax.set_yscale("log")
+        ax.axhline(10, color="#2c2c2c", ls="--", lw=1)
+        ax.set_xticks(range(len(v)))
+        ax.set_xticklabels([f.replace("__", "\n") for f in v["feature"]],
+                           rotation=90, fontsize=5)
+        ax.set_title(f"{n.upper()} — VIF (log scale)")
+        ax.set_ylabel("VIF" if n == "ae" else "")
+        ax.grid(axis="y", ls=":", alpha=0.4)
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / "vif_log.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D6 (re-run scripts/02_feature_analysis.py to export vif_ae/us.csv)")
+
+# %%
+# =============================================================================
+# Plot D7 — Total band power vs RPM at fixed temperatures (from 10)
+# =============================================================================
+
+_tw_dirs = sorted(MECH_DIR.glob("tw_*")) if MECH_DIR.exists() else []
+if _tw_dirs:
+    band_labels = [b["label"] for b in cfg["frequency_bands"]["AE"]]
+    _tw_colors = ["#4878CF", "#D65F5F", "#6ACC65"]
+    fig, axes = plt.subplots(1, len(band_labels), figsize=(4.4 * len(band_labels), 3.8),
+                             sharex=True)
+    for ax, label in zip(np.atleast_1d(axes), band_labels):
+        for color, tw_dir in zip(_tw_colors, _tw_dirs):
+            cs_path = tw_dir / "tables" / "comb_strip.csv"
+            if not cs_path.exists():
+                continue
+            cs = pd.read_csv(cs_path)
+            sub = cs[(cs["band"] == label) & (cs["rpm"] >= 60)]
+            tw_label = tw_dir.name.replace("tw_", "").replace("C", "°C")
+            ax.semilogy(sub["rpm"], sub["p_total"], "o", ms=4.5, color=color,
+                        alpha=0.8, label=tw_label)
+        ax.set_title(label)
+        ax.set_xlabel("RPM")
+        ax.grid(ls=":", alpha=0.4)
+    ax0 = np.atleast_1d(axes)[0]
+    ax0.set_ylabel(r"Total band power [V$^2$]")
+    ax0.legend(fontsize=8, title="temperature")
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / "band_power_vs_rpm.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D7 (run scripts/10_band_mechanism.py first)")
+
+# %%
+# =============================================================================
 # Entry point
 # =============================================================================
 

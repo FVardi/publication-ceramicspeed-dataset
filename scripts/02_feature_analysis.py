@@ -290,6 +290,15 @@ print(us_redundancy.to_string())
 ae_retained = reduce_redundant_features(ae_df, ae_target, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
 us_retained = reduce_redundant_features(us_df, us_target, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
 
+# Persist VIF values + retention flags so 06_plots.py can re-render the
+# VIF figure (log axis) without recomputation.
+for _vif, _ret, _name in [(ae_vif, ae_retained, "ae"), (us_vif, us_retained, "us")]:
+    _v = _vif.reset_index()
+    _v.columns = ["feature", "vif"]
+    _v["retained"] = _v["feature"].isin(set(_ret))
+    _v.to_csv(TABLES_DIR / f"vif_{_name}.csv", index=False)
+print("Saved: vif_ae.csv, vif_us.csv")
+
 # %%
 print(f"\nAE: {len(ae_df.columns)} → {len(ae_retained)} features retained")
 print("Retained:", ae_retained)

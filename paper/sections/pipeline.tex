@@ -27,7 +27,7 @@ signals~\cite{renhart_ae_2021, zhang_coupled_2026}.
 For the AE channel, three sub-bands are extracted in addition to the broadband signal:
 (i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
 (ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
-(iii)~1--2~MHz, covering high-frequency micro-fracture events.\todo{These interpretations of bands need to be justified by the literature or by our own analysis.} The US channel is first restricted to 0--20~kHz, consistent with the heterodyned
+(iii)~1--2~MHz, covering high-frequency activity associated with film breakdown; the content of this band is validated in Section~\ref{subsec:band_validation} and its physical origin discussed in Section~\ref{subsec:disc_hf}. The US channel is first restricted to 0--20~kHz, consistent with the heterodyned
 baseband of the probe (Section~\ref{subsec:origins}), and two sub-bands
 (0--10~kHz and 10--20~kHz) are extracted in addition.
 The sub-bands are summarised in Table~\ref{tab:subbands}.
@@ -55,6 +55,45 @@ US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
 \end{tabular}}
 \end{table}
 
+
+\subsection{Sub-band signal validation}
+\label{subsec:band_validation}
+
+The sub-band interpretation rests on the assumption that the band content is
+bearing-generated. Because the VFD injects switching EMI---visible as a line comb
+at $\approx$4.7~kHz spacing and its multiples, matching the VFD switching
+frequency (Section~\ref{subsec:rig})---this assumption is verified rather than
+presumed. The validation works with \emph{total} band power: spectral
+redistribution conserves energy within a band, so changes in the comb's line
+shape with drive state cannot produce a net change in band power.
+
+Figure~\ref{fig:band_power} shows the total power of each AE band as a function
+of RPM within two fixed temperature windows, and the three bands behave
+qualitatively differently. The 20--500~kHz band rises monotonically with speed
+($\rho = \resRhoPowRpmLow$ at 45--55~\si{\celsius}), as expected for
+mechanically generated contact and rolling
+noise~\cite{miettinen_analysis_2001, zhang_coupled_2026}. The 500~kHz--1~MHz
+band rises only weakly ($\rho = \resRhoPowRpmMid$). The 1--2~MHz band is
+\emph{inversely} related to speed ($\rho = \resRhoPowRpmHigh$): its power
+falls with speed and reaches a common electronics floor near
+\resKneeRpmCool~rpm ($\kappa \approx \resKneeKappaCool$) at
+45--55~\si{\celsius}, but persists to \resKneeRpmHot~rpm
+($\kappa \approx \resKneeKappaHot$) at 85--95~\si{\celsius}, where the film
+forms later in the speed range. The high-frequency content thus disappears at a
+comparable lubrication state rather than at a comparable speed: it is
+rotation-generated and gated by the lubricant film, superimposed on the drive's
+EMI comb. The physical mechanism is discussed in Section~\ref{subsec:disc_hf}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{band_power_vs_rpm.png}
+\caption{Total AE band power as a function of RPM at two fixed temperature
+windows. The 20--500~kHz band rises monotonically with speed; the 1--2~MHz band
+decays to a common electronics floor at a temperature-dependent speed,
+i.e.\ at a comparable lubrication state ($\kappa$) rather than a comparable
+RPM.}
+\label{fig:band_power}
+\end{figure}
 
 \subsection{Feature extraction}
 \label{subsec:features_extract}

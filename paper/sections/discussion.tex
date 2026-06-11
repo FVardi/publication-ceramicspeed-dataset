@@ -7,15 +7,35 @@
 \label{subsec:disc_ae}
 
 The consistently superior performance of AE over the US channel across all model
-families reflects a fundamental hardware difference. The AE sensor captures genuine wideband stress-wave emissions extending into the MHz range (analysed here up to \SI{2}{MHz}), directly sensitive to individual asperity contact events. The US channel is heterodyned, limiting its useful content to below approximately \SI{10}{kHz}, where the signal is a mixture of low-frequency machinery noise, VFD harmonics, and structural vibration. The physical information about microscale contact events is largely absent in this frequency range. Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor would be expected to substantially improve the US-channel models.
+families reflects a fundamental hardware difference. The AE sensor captures wideband, rotation-generated content extending into the MHz range (analysed here up to \SI{2}{MHz}): verified stress-wave emission up to several hundred kHz, and film-gated high-frequency activity above (Sections~\ref{subsec:band_validation} and~\ref{subsec:disc_hf}). The US channel is heterodyned, limiting its recorded content to a 0--20~kHz baseband in which the signal is a mixture of down-mixed contact activity, low-frequency machinery noise, VFD harmonics, and structural vibration; within this baseband, the 10--20~kHz half carries the strongest $\kappa$ correlations (Section~\ref{subsec:raw_spearman}). The physical information about microscale contact events is largely absent in this frequency range. Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor would be expected to substantially improve the US-channel models.
+
+\subsection{Origin of the high-frequency AE content}
+\label{subsec:disc_hf}
+
+The validation of Section~\ref{subsec:band_validation} shows that the 1--2~MHz band
+superimposes a VFD switching comb on a broadband, rotation-generated component that
+vanishes once the lubricant film forms. Two mechanisms are compatible with this
+behaviour. The first is mechanical: asperity-contact emission whose high-frequency
+tail remains detectable despite the strong structure-borne attenuation at
+MHz frequencies. The
+second is electrical: VFD common-mode voltage discharging through the bearing while
+the film is thin (bearing currents), producing broadband high-frequency transients
+that are directly film-gated and would also explain the prominence of drive-related
+structure in the same band.\todo{Add bearing-current/EDM references.}
+Both mechanisms are film-mediated, so the band's predictive value for $\kappa$ is
+genuine in either case; distinguishing them---for instance via shaft-voltage
+measurement or an electrically insulated sensor mount---is left to future work.
+For deployment, the electrical hypothesis implies that the high-frequency features
+may be drive-specific, whereas the verified 20--500~kHz band, whose energy rises monotonically with
+speed, is expected to transfer across drive configurations.
 
 \subsection{Fusion gain}
 \label{subsec:disc_fusion}
 
-The fusion result ($\Delta R^2 = \resDrsqLgbCombAe$ on the hold-out) can be understood from two complementary angles.\todo{Reword this paragraph once results are frozen: with current outputs the gain \emph{is} confirmed on hold-out.}
+The fusion gain ($\Delta R^2 = \resDrsqLgbCombAe$, $\Delta\text{RMSE} = \resDrmseAeComb$ on the hold-out) is small but statistically robust, detected under repeated nested cross-validation and confirmed by all three hold-out tests. Its limited magnitude can be understood from two complementary angles.
 First, the US channel retains only \resNretUs{} features after selection (vs.\ \resNretAe{} for AE), and
 the top US correlations ($|\rho| \leq \resTopUsRho$) are weaker than the top AE
-correlations ($|\rho| = \resTopAeRho$). The US channel therefore contributes a limited amount of additional information to the combined model (hold-out set: \resNholdout~samples). Second, the US channel's effective bandwidth ($< 10$~kHz after heterodyning) means its information content partially overlaps with the low-frequency tail of the AE signal, limiting the independent contribution it can make.
+correlations ($|\rho| = \resTopAeRho$). The US channel therefore contributes a genuine but limited amount of non-redundant information to the combined model. Second, the US channel's heterodyned 0--20~kHz baseband means its information content partially overlaps with the low-frequency tail of the AE signal, limiting the independent contribution it can make.
 
 This result is an informative contribution to the LCM literature, where AE--ultrasound complementarity is widely \emph{argued} but rarely \emph{tested}.
 Whether a wideband passive ultrasound sensor (rather than a heterodyned probe) would
@@ -25,10 +45,11 @@ remains an open question for future work.
 \subsection{Interpreting the amplitude-confounding result}
 \label{subsec:disc_confound}
 
-The strong raw Spearman correlations of amplitude features (RMS, variance, Hjorth
-mobility) with $\kappa$ should be interpreted with caution. As discussed in Section~\ref{subsec:confound}, rotational speed is a driver of both $\kappa$ (through $\nureq$ in Eq.~\eqref{eq:nu1}) and broadband signal energy (through the rate of and energy in contact events per revolution as described in~\cite{zhang_coupled_2026}). A model trained on amplitude features therefore exploits speed as an indirect proxy for $\kappa$ rather than sensing purely lubrication-specific signal changes directly.
+The strong raw Spearman correlations of amplitude features (RMS and related
+statistics) and frequency-tracking features (Hjorth mobility, centre frequency)
+with $\kappa$ should be interpreted with caution. As discussed in Section~\ref{subsec:confound}, rotational speed is a driver of both $\kappa$ (through $\nureq$ in Eq.~\eqref{eq:nu1}) and broadband signal energy (through the rate of and energy in contact events per revolution as described in~\cite{zhang_coupled_2026}). A model trained on amplitude features therefore exploits speed as an indirect proxy for $\kappa$ rather than sensing purely lubrication-specific signal changes directly.
 
-This confounding does not invalidate the regression results: a model that uses speed-mediated amplitude changes to predict $\kappa$ is still predicting $\kappa$, and its predictions may be operationally useful. However, it does indicate that the model's generalisation to operating conditions outside its training distribution (different speed ranges, different bearing loads) may be limited. Future feature engineering should prioritise spectral shape and ratio features (frequency kurtosis, normalised bandwidth, spectral flatness) that are expected to carry
+This confounding does not invalidate the regression results: a model that uses speed-mediated amplitude changes to predict $\kappa$ is still predicting $\kappa$, and its predictions may be operationally useful. However, it does indicate that the model's generalisation to operating conditions outside its training distribution (different speed ranges, different bearing loads) may be limited. The two-stage analysis of Section~\ref{subsec:confound} makes this concrete: predicted operating points alone, fed through the ISO~281 mapping, recover $R^2 = \resTwoStageRsq$ of the direct model's $R^2 = \resHOrsqLgbAe$---the model is, to first order, an operating-point soft sensor, and its lubrication sensitivity beyond the operating point rests on the within-step evidence of Section~\ref{subsec:confound}. Future feature engineering should prioritise amplitude-invariant spectral-shape features (spectral skewness and kurtosis, spectral bandwidth, spectral flatness) that are expected to carry
 a higher proportion of genuine lubrication-state information relative to operating
 condition proxies.
 
@@ -38,7 +59,7 @@ condition proxies.
 The $\kappa$ regression framework is validated as a methodologically sound approach for passive non-invasive LCM, when $\kappa$ is assumed to be representative of the lubrication conditions in the bearing. A hold-out $R^2 = \resHOrsqLgbAe$ and RMSE~$= \resHOrmseLgbAe$~$\kappa$-units for a single AE sensor represents strong performance across a demanding continuous speed-and-temperature ramp spanning boundary through full-film lubrication conditions. This exceeds the performance reported by Jakobsen et al.~\cite{jakobsen_detecting_2023} in a comparable passive sensing study with US. \todo{True? And why do we see this result?}
 
 The repeated nested cross-validation design provides appropriately conservative
-performance estimates: the 25~outer RMSE scores capture fold-to-fold variance without the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter search. The corrected significance tests confirm that performance differences between model families are assessed under assumptions that properly account for data re-use.
+performance estimates: the \resNouterScores~outer RMSE scores capture fold-to-fold variance without the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter search. The corrected significance tests confirm that performance differences between model families are assessed under assumptions that properly account for data re-use.
 
 \subsection{Limitations}
 \label{subsec:disc_limits}

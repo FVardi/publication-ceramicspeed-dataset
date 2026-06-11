@@ -166,6 +166,12 @@ for name in (
     "resDrsqLgbAeUs", "resDrsqLgbCombAe", "resRelRmsePctLgbAe",
     "resRhoRpmKappa", "resRhoTempKappa",
     "resNrepeats", "resNouterScores", "resNfoldsCv",
+    "resProxyRpmRsq", "resProxyRpmRmse", "resProxyTempRsq", "resProxyTempRmse",
+    "resTwoStageRsq", "resTwoStageRmse",
+    "resSnrLowDb", "resSnrMidDb", "resSnrHighDb",
+    "resWithinStepRhoHC", "resKneeRpmCool", "resKneeRpmHot",
+    "resRhoPowRpmLow", "resRhoPowRpmMid", "resRhoPowRpmHigh",
+    "resKneeKappaCool", "resKneeKappaHot",
     "resNsweepsRaw", "resNsweepsRemoved", "resWindowMs", "resWindowIntervalS",
     "resSweepsPerHold", "resRpmMinMeas", "resRpmMaxMeas",
     "resTempMinMeas", "resTempMaxMeas",
@@ -194,6 +200,7 @@ def _read_csv(path):
 mc = _read_csv(mc_path)
 if mc is not None:
     mc.columns = [c.replace("²", "2") for c in mc.columns]
+    mc = mc.dropna(subset=["model"])
     cv_std = {}
     cv = _read_csv(cv_path)
     if cv is not None:
@@ -226,24 +233,19 @@ if mc is not None:
     if ("LightGBM", "Combined") in ho and ("LightGBM", "AE") in ho:
         macros["resDrsqLgbCombAe"] = fmt(ho[("LightGBM", "Combined")] - ho[("LightGBM", "AE")], 3)
 
-    # Table body, LightGBM block first (sorted by HO R2 desc), then linear models
-    rows.sort(key=lambda t: -t["ho_r2"])
+    # Table body — sorted by CV RMSE ascending (best first)
+    rows.sort(key=lambda t: t["cv_rmse"])
     best_r2 = max(t["ho_r2"] for t in rows)
-    gbm = [t for t in rows if t["model"] == "LightGBM"]
-    lin = [t for t in rows if t["model"] != "LightGBM"]
     lines = [r"\begin{tabular}{llcccc}", r"\toprule",
              r"\textbf{Model} & \textbf{Sensors} &"
              r" \textbf{CV RMSE} & \textbf{HO $R^2$} & \textbf{HO MAE} & \textbf{HO RMSE} \\",
              r"\midrule"]
-    for block, sep in ((gbm, True), (lin, False)):
-        for t in block:
-            cvs = "" if math.isnan(t["cv_std"]) else rf" \pm {t['cv_std']:.4f}"
-            r2 = rf"\textbf{{{t['ho_r2']:.3f}}}" if t["ho_r2"] == best_r2 else f"{t['ho_r2']:.3f}"
-            lines.append(
-                f"{t['model']:<11s} & {t['sensor']:<8s} & ${t['cv_rmse']:.4f}{cvs}$ & "
-                f"{r2} & {t['ho_mae']:.3f} & {t['ho_rmse']:.3f} \\\\")
-        if sep and lin:
-            lines.append(r"\midrule")
+    for t in rows:
+        cvs = "" if math.isnan(t["cv_std"]) else rf" \pm {t['cv_std']:.4f}"
+        r2 = rf"\textbf{{{t['ho_r2']:.3f}}}" if t["ho_r2"] == best_r2 else f"{t['ho_r2']:.3f}"
+        lines.append(
+            f"{t['model']:<11s} & {t['sensor']:<8s} & ${t['cv_rmse']:.4f}{cvs}$ & "
+            f"{r2} & {t['ho_mae']:.3f} & {t['ho_rmse']:.3f} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     table_models_body = "\n".join(lines)
 else:
@@ -254,6 +256,8 @@ else:
 # ---------------------------------------------------------------------------
 
 _cv_design = _read_csv(cv_path)
+if _cv_design is not None:
+    _cv_design = _cv_design.dropna(subset=["model"])
 if _cv_design is not None and "n_scores" in _cv_design.columns:
     n_scores = int(_cv_design["n_scores"].iloc[0])
     n_folds = int((cfg.get("modelling") or {}).get("cv_n_splits", 5))
@@ -270,6 +274,7 @@ else:
 ct_path = OUTPUT_DIR / "05_holdout_tests" / "tables" / "stat_tests_cross_featureset.csv"
 ct = _read_csv(ct_path)
 if ct is not None:
+    ct = ct.dropna(subset=["model_a"])
     for _, r in ct.iterrows():
         sa = SENSOR_KEYS[r["model_a"].split("_", 1)[1]]
         sb = SENSOR_KEYS[r["model_b"].split("_", 1)[1]]
@@ -339,10 +344,13 @@ if rk_ae is not None and rk_us is not None:
     for i in range(10):
         a = rk_ae.iloc[i] if i < len(rk_ae) else None
         u = rk_us.iloc[i] if i < len(rk_us) else None
-        left = (f"{pretty_feature(a['feature'])} & {a['|rho|']:.3f} & {a['|r|']:.3f}"
-                if a is not None else " & & ")
-        right = (f"{pretty_feature(u['feature'])} & {u['|rho|']:.3f} & {u['|r|']:.3f}"
-                 if u is not None else " & & ")
+        _ret_ae = set(sel.get("AE", {}).get("retained", [])) if sel else set()
+        _ret_us = set(sel.get("UL", sel.get("US", {})).get("retained", [])) if sel else set()
+        def _mark(row, ret):
+            d = r"$^{\dagger}$" if row["feature"] in ret else ""
+            return f"{pretty_feature(row['feature'])}{d} & {row['|rho|']:.3f} & {row['|r|']:.3f}"
+        left = _mark(a, _ret_ae) if a is not None else " & & "
+        right = _mark(u, _ret_us) if u is not None else " & & "
         lines.append(f"{left} & & {right} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     table_top_feats_body = "\n".join(lines)
@@ -416,6 +424,67 @@ try:
         macros["resRelRmsePctLgbAe"] = f"{rel:.0f}"
 except Exception as exc:
     warn(f"parquet-based statistics unavailable ({exc})")
+
+# ---------------------------------------------------------------------------
+# 5. Diagnostics: proxy models (09) and band validation/mechanism (08, 10)
+# ---------------------------------------------------------------------------
+
+try:
+    px = json.loads((OUTPUT_DIR / "09_proxy_diagnostics" / "proxy_stats.json")
+                    .read_text().rstrip("\x00"))
+    macros["resProxyRpmRsq"] = fmt(px["rpm_r2"])
+    macros["resProxyRpmRmse"] = f"{px['rpm_rmse']:.0f}"
+    macros["resProxyTempRsq"] = fmt(px["temp_r2"])
+    macros["resProxyTempRmse"] = f"{px['temp_rmse']:.1f}"
+    macros["resTwoStageRsq"] = fmt(px["two_stage_r2"])
+    macros["resTwoStageRmse"] = fmt(px["two_stage_rmse"])
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"proxy_stats.json unavailable ({exc})")
+
+try:
+    bv = json.loads((OUTPUT_DIR / "08_band_validation" / "band_validation_stats.json")
+                    .read_text().rstrip("\x00"))
+    bands = bv["bands"]
+    for key, name in [("resSnrLowDb", "AE_20-500kHz"),
+                      ("resSnrMidDb", "AE_500-1000kHz"), ("resSnrHighDb", "AE_1000-2000kHz")]:
+        macros[key] = f"{bands[name]['snr_db_median']:+.0f}"
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"band_validation_stats.json unavailable ({exc})")
+
+try:
+    bm = json.loads((OUTPUT_DIR / "10_band_mechanism" / "tw_45-55C" /
+                     "band_mechanism_stats.json").read_text().rstrip("\x00"))
+    macros["resWithinStepRhoHC"] = f"{bm['test_B_within_step']['AE_1000-2000kHz__complexity']['median_rho']:+.2f}"
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"band_mechanism_stats.json unavailable ({exc})")
+
+# Knee of the 1-2 MHz broadband decay vs RPM, per temperature window
+try:
+    import importlib.util as _ilu2
+    _spec2 = _ilu2.spec_from_file_location("cs_kappa2", ROOT / "src" / "ceramicspeed" / "calculate_kappa.py")
+    _ck2 = _ilu2.module_from_spec(_spec2); _spec2.loader.exec_module(_ck2)
+    for tw, tmid, suffix in [("tw_45-55C", 50.0, "Cool"), ("tw_85-95C", 90.0, "Hot")]:
+        cs = _read_csv(OUTPUT_DIR / "10_band_mechanism" / tw / "tables" / "comb_strip.csv")
+        if cs is None:
+            continue
+        b = cs[(cs["band"] == "AE_1000-2000kHz") & (cs["rpm"] >= 60)].sort_values("rpm")
+        floor = b.nlargest(8, "rpm")["p_total"].median()
+        above = b[b["p_total"] > 2 * floor]
+        if above.empty:
+            continue
+        knee = float(above["rpm"].max())
+        if suffix == "Cool":
+            from scipy.stats import spearmanr as _sp
+            for band, key in [("AE_20-500kHz", "resRhoPowRpmLow"),
+                              ("AE_500-1000kHz", "resRhoPowRpmMid"),
+                              ("AE_1000-2000kHz", "resRhoPowRpmHigh")]:
+                bb = cs[(cs["band"] == band) & (cs["rpm"] >= 60)]
+                macros[key] = f"{_sp(bb['rpm'], bb['p_total'])[0]:+.2f}"
+        macros[f"resKneeRpm{suffix}"] = f"{knee:.0f}"
+        macros[f"resKneeKappa{suffix}"] = fmt(_ck2.calculate_kappa(
+            rpm=knee, temp_c=tmid, d_pw=cfg["bearing"]["d_pw_mm"], nu_40=22.0, nu_100=4.1), 2)
+except Exception as exc:
+    warn(f"knee analysis unavailable ({exc})")
 
 # ---------------------------------------------------------------------------
 # Write outputs

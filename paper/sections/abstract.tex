@@ -26,12 +26,11 @@ Three regression model families are benchmarked across three sensor configuratio
 using repeated nested \resNfoldsCv-fold cross-validation ($R = \resNrepeats$ repetitions, \resNouterScores~outer scores
 per model); LightGBM on AE features alone achieves a hold-out performance of
 $R^2 = \resHOrsqLgbAe$, $\text{RMSE} = \resHOrmseLgbAe$~$\kappa$-units.
-Fusing AE and US features yields an improvement of
+Fusing AE and US features yields a small but consistently significant improvement of
 $\Delta\text{RMSE} = \resDrmseAeComb$ (Nadeau--Bengio corrected $t$-test
 $p = \resPcvAeComb$; hold-out Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano
 $p = \resPdmAeComb$, bootstrap 95\% CI
-$[\resDrmseLoAeComb,\,\resDrmseHiAeComb]$).\todo{Reword the fusion conclusion
-once results are frozen.}
+$[\resDrmseLoAeComb,\,\resDrmseHiAeComb]$ excluding zero), indicating that the heterodyned US channel carries a modest amount of non-redundant $\kappa$ information.
 Significance of pairwise model differences is assessed by Nadeau--Bengio corrected
 repeated $k$-fold $t$-tests with Holm--Bonferroni correction for within-sensor
 comparisons, and by Wilcoxon signed-rank, Diebold--Mariano, and bootstrap $\Delta$RMSE

@@ -7,15 +7,22 @@
 %% HIGHLIGHTS (3--5 bullets, $\leq$85 characters each):
 %% 1. Simultaneous AE and passive US signals regressed to ISO 281 viscosity ratio \kappa{}
 %% 2. 56 AE sub-band and 42 US features; two-stage correlation and VIF selection
-%% 3. LightGBM on AE alone achieves R$^2$=0.951, RMSE=0.078 \kappa{} on held-out test set
-%% 4. AE+US fusion yields only a marginal gain, unconfirmed on held-out data
+%% 3. LightGBM on AE alone achieves R$^2$=0.953, RMSE=0.079 \kappa{} on held-out test set
+%% 4. AE+US fusion adds a small gain, confirmed significant on held-out data
 %% 5. Rigorous evaluation via 25 repeated nested CV folds and corrected t-tests
 %%
+%% Layout toggle — comment one block, uncomment the other
+%% --- REVIEW (wide margins, 12pt, 1.5× spacing) ---
 \documentclass[12pt]{article}
-
-%% Packages
 \usepackage[a4paper, top=25mm, bottom=25mm, left=25mm, right=25mm]{geometry}
 \usepackage[T1]{fontenc}
+
+%% --- MSSP approximation (2-col, 10pt Times, single-spaced) ---
+% \documentclass[10pt,twocolumn]{article}
+% \usepackage[a4paper, top=19mm, bottom=25mm, left=20mm, right=20mm, columnsep=6mm]{geometry}
+% \usepackage[T1]{fontenc}
+% \usepackage{mathptmx}   % Times for text + maths
+
 \usepackage[english]{babel}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
@@ -52,7 +59,7 @@
 \newcommand{\celsius}{{}^{\circ}\mathrm{C}}
 \newcommand{\num}[1]{#1}
 
-%% Line spacing for review
+%% Line spacing — use \onehalfspacing for review, comment out for MSSP mode
 \onehalfspacing
 %\linenumbers
 

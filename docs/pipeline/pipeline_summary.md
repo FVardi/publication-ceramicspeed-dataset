@@ -8,7 +8,7 @@ Predict **κ (kappa)** — the lubrication film thickness ratio — from raw bea
 ## Data
 - **Format**: HDF5 files, one file per test run, multiple sweeps per file
 - **Sensors**: two channels per sweep
-  - `AE` — Acoustic Emission, effective bandwidth 0–190 kHz
+  - `AE` — Acoustic Emission, analysed to 2 MHz (12.5 MHz sampling)
   - `US` — Ultrasound (heterodyned probe), effective bandwidth 0–20 kHz (HDF5 channel key: `UL`)
 - **Processing**: files loaded in parallel (joblib, all CPU cores)
 

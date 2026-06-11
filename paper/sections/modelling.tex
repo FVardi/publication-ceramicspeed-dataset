@@ -54,7 +54,7 @@ Pairwise significance tests are conducted at two levels.
 \textbf{Level 1 --- Within-sensor comparisons (architecture differences).}
 For pairs of models trained on the same sensor configuration (e.g., Elastic Net vs.\
 Polynomial on AE), the corrected repeated $k$-fold $t$-test of Nadeau and
-Bengio~\cite{nadeau_inference_2003} is applied to the 25~paired RMSE scores.
+Bengio~\cite{nadeau_inference_2003} is applied to the \resNouterScores~paired RMSE scores.
 This test corrects the standard paired $t$-test for the positive correlation induced by
 shared training data across repeated folds.
 Multiple within-sensor comparisons are adjusted by the Holm--Bonferroni step-down
@@ -114,9 +114,7 @@ $\Delta\text{RMSE} = \resDrmseAeComb$ with 95\%~CI $[\resDrmseLoAeComb,\, \resDr
 For the linear models, the combined feature set performs similarly to AE alone
 (Elastic Net: $R^2$ \resHOrsqEnetComb{} vs.\ \resHOrsqEnetAe; Polynomial:
 \resHOrsqPolyComb{} vs.\ \resHOrsqPolyAe).
-\todo{Interpret the fusion result against the final frozen numbers: with the current
-outputs the hold-out tests \emph{confirm} a small fusion gain, reversing the earlier
-``unconfirmed on hold-out'' narrative.}
+The fusion gain is small in absolute terms but consistent across all four tests, indicating that the US channel contributes a modest amount of non-redundant information.
 
 \textbf{Model consistency.}
 The close agreement between nested CV RMSE and hold-out RMSE across all models
@@ -132,15 +130,17 @@ set for all model families under the AE-only configuration.
 \label{fig:pred_vs_actual}
 \end{figure}
 \todo{Update visual interpretation of the figure after new results.}
-\textbf{SHAP-based feature importance.} \todo{Update sections after new results}
+\textbf{SHAP-based feature importance.}
 SHAP (SHapley Additive exPlanations) values computed via TreeExplainer identify
 which AE sub-band features drive the $\kappa$ predictions.
 The dominant contributor by a large margin is \textit{1--2~MHz complexity}
-(mean $|\text{SHAP}| = 0.162$), followed by \textit{500~kHz--1~MHz centre frequency}
-(0.051) and \textit{1--2~MHz mobility} (0.038).
-The 1--2~MHz band complexity feature is also the only feature ranked in the top~10
-across all three model types (cross-model agreement, Table~\ref{tab:shap_agree}),
-making it the most robust single predictor of $\kappa$ in the dataset.
+(mean $|\text{SHAP}| = 0.168$), followed by \textit{500~kHz--1~MHz centre frequency}
+(0.078) and \textit{1--2~MHz mobility} (0.044).
+The 1--2~MHz complexity feature ranks \emph{first} for all three model types, and the
+500~kHz--1~MHz centre frequency also appears in all three top-10s (cross-model
+agreement, Table~\ref{tab:shap_agree}), making 1--2~MHz complexity the most robust
+single predictor of $\kappa$ in the dataset.\todo{SHAP numbers are hand-typed from
+shap\_importance\_lightgbm\_ae.csv; consider adding them to 07\_paper\_export.}
 Figure~\ref{fig:shap} shows the full importance ranking.
 
 \begin{table}[H]
@@ -151,11 +151,12 @@ Figure~\ref{fig:shap} shows the full importance ranking.
 \textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & \textbf{LightGBM} & \textbf{Models in top 10} \\
 \midrule
 1--2~MHz complexity          & 1 & 1 & 1 & 3 \\
-1--2~MHz mobility            & 2 & -- & 3 & 2 \\
-500k--1~MHz spectral std     & 3 & -- & 10 & 2 \\
-Broadband freq.\ skewness    & 10 & -- & 4 & 2 \\
-500k--1~MHz centre freq.     & -- & 10 & 2 & 2 \\
-500k--1~MHz dominant freq.   & -- & 4 & 7 & 2 \\
+500k--1~MHz centre freq.     & 7 & 8 & 2 & 3 \\
+Broadband spectral flatness  & 2 & -- & 5 & 2 \\
+1--2~MHz mobility            & 3 & -- & 3 & 2 \\
+500k--1~MHz RMS              & 5 & -- & 9 & 2 \\
+1--2~MHz dominant freq.      & 6 & -- & 8 & 2 \\
+500k--1~MHz dominant freq.   & -- & 5 & 6 & 2 \\
 \bottomrule
 \end{tabular}
 \caption{Cross-model SHAP agreement for AE features: features appearing in the

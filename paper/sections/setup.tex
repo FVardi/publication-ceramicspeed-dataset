@@ -13,7 +13,7 @@ The test rig is a custom-built bearing test stand at AU (Herning, Denmark). A si
 \subsection{Operating conditions}
 \label{subsec:ops}
 
-The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step\todo{How is RPM controlled}. This staircase is repeated for each of 13 temperature blocks (40--100~\si{\celsius} in 5~\si{\celsius} increments) where temperature is controlled with \todo{With what?}. Staircases are separated by a 2-minute standstill (RPM = 0) at the start of each block for thermal stabilisation. The applied radial load is constant at 2 N throughout the experiment. The total duration of the experiment is approximately 14 hours. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded blocks because the staircase begins before each block reaches its set-point.\todo{Verify this explanation of the 33--40~\si{\celsius} readings.}
+The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step\todo{How is RPM controlled}. This staircase is repeated for each of 13 temperature blocks (40--100~\si{\celsius} in 5~\si{\celsius} increments) where temperature is controlled with \todo{With what?}. Staircases are separated by a 2-minute standstill (RPM = 0) at the start of each block for thermal stabilisation.\todo{The recorded data contains no per-block standstill sweeps -- only a single stationary warm-up segment (44 sweeps, 37--50~\si{\celsius}) at the start of the experiment; verify whether acquisition was paused during the per-block standstills and reword this sentence accordingly.} The hold at the \SI{3000}{rpm} staircase peak is substantially longer than the ordinary steps (approximately 20~minutes, while the next temperature set-point is established), so this operating point is strongly over-represented in the data: it accounts for roughly a third of all sweeps. The applied radial load is constant at 2 N throughout the experiment. The total duration of the experiment is approximately 14 hours. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded blocks.\todo{Explain why this happens}
 
 The lubrication conditions in the bearing are not expected to change during the experiment in other ways than what is entailed by rpm and temperature and the effect of these upon the lubricant. It is not expected or assumed that any degradation, starvation or contamination of the lubricant happens.
 
@@ -45,7 +45,7 @@ Two sensors simultaneously acquire signals from the bearing housing through a sh
   \item[RPM sensor:]
   \item[Load sensor:]
 \end{description}\todo{Need help to write these bullet points.}
-The shared sample rate ensures that AE and US signals share timestamps.
+The shared sample rate and DAQ setup ensures that AE and US signals share timestamps.
 
 \textbf{Acquisition windows (sweeps).}
 Data are acquired as short windows rather than continuously: every
@@ -54,7 +54,8 @@ $\sim$\resWindowIntervalS~s the oscilloscope captures a \resWindowMs~ms window
 and US waveforms, together with the mean RPM and housing temperature over the window.
 Throughout this paper, one such window is referred to as a \emph{sweep}, and a sweep
 is the unit of observation for all feature extraction, model training, and
-evaluation. The protocol yields \resNsweepsRaw{} raw sweeps, of which
+evaluation. After excluding an initial stationary warm-up segment recorded before the first
+staircase, the protocol yields \resNsweepsRaw{} raw sweeps, of which
 \resNsweepsRemoved{} with measured RPM above the \SI{3000}{rpm} protocol maximum are
 discarded, leaving \resNsweeps{} sweeps per channel (median \resSweepsPerHold{}
 sweeps per staircase hold). The resulting $\kappa$ distribution spans

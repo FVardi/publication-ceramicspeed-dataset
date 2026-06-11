@@ -62,7 +62,9 @@ welch:
 sensors:
   AE:
     f_min: 0
-    f_max: 190_000
+    f_max: 6_250_000   # full Nyquist at 12.5 MHz sampling. (A previous 190 kHz
+                       # value stemmed from an earlier low-sample-rate experiment
+                       # and was NOT a property of the AE sensor.)
   UL:
     f_min: 0
     f_max: 10_000
