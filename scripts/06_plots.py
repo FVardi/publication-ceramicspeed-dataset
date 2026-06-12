@@ -66,6 +66,13 @@ args = parse_args()
 cfg = load_config(args.config)
 
 OUTPUT_DIR = get_output_dir(cfg)
+# Fall back to the repo-local outputs/ when the configured machine profile
+# does not match this machine (same guard as scripts 07-10).
+from pathlib import Path as _P
+_REPO_OUT = _P(__file__).resolve().parent.parent / "outputs"
+if not (OUTPUT_DIR / "features.parquet").exists() and (_REPO_OUT / "features.parquet").exists():
+    print(f"NOTE: {OUTPUT_DIR} has no pipeline outputs; falling back to {_REPO_OUT}")
+    OUTPUT_DIR = _REPO_OUT
 SCRIPT_DIR = OUTPUT_DIR / "06_plots"
 SCRIPT_DIR.mkdir(exist_ok=True)
 
@@ -125,7 +132,7 @@ raw_feature_df, raw_metadata_df = load_parquet_pair(OUTPUT_DIR)
 
 feat_sel_path = OUTPUT_DIR / "feature_selection.json"
 with open(feat_sel_path) as fh:
-    feature_selection: dict = json.load(fh)
+    feature_selection: dict = json.loads(fh.read().rstrip("\x00"))
 
 sensor_names  = list(feature_selection.keys())
 model_types   = ["ElasticNet", "Polynomial", "LightGBM"]
