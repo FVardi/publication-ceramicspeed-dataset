@@ -111,6 +111,7 @@ BAND_DISPLAY = {
     "AE_1000-2000kHz": "1--2~MHz",
     "US_0-10kHz": "0--10~kHz",
     "US_10-20kHz": "10--20~kHz",
+    "US_20-100kHz": "20--100~kHz",
 }
 
 FEAT_DISPLAY = {
@@ -136,7 +137,8 @@ FEAT_DISPLAY = {
 def pretty_feature(name: str) -> str:
     if "__" in name:
         band, feat = name.rsplit("__", 1)
-        return f"{BAND_DISPLAY.get(band, band)} {FEAT_DISPLAY.get(feat, feat)}"
+        band_disp = BAND_DISPLAY.get(band, band.replace("_", r"\_"))
+        return f"{band_disp} {FEAT_DISPLAY.get(feat, feat)}"
     disp = FEAT_DISPLAY.get(name, name)
     return disp[0].upper() + disp[1:] if disp and disp[0].islower() else disp
 
@@ -169,7 +171,7 @@ for name in (
     "resProxyRpmRsq", "resProxyRpmRmse", "resProxyTempRsq", "resProxyTempRmse",
     "resTwoStageRsq", "resTwoStageRmse",
     "resSnrLowDb", "resSnrMidDb", "resSnrHighDb",
-    "resWithinStepRhoHC", "resKneeRpmCool", "resKneeRpmHot",
+    "resWithinStepRhoHC", "resWithinStepFeat", "resKneeRpmCool", "resKneeRpmHot",
     "resRhoPowRpmLow", "resRhoPowRpmMid", "resRhoPowRpmHigh",
     "resKneeKappaCool", "resKneeKappaHot",
     "resNsweepsRaw", "resNsweepsRemoved", "resWindowMs", "resWindowIntervalS",
@@ -454,7 +456,10 @@ except (FileNotFoundError, OSError, KeyError) as exc:
 try:
     bm = json.loads((OUTPUT_DIR / "10_band_mechanism" / "tw_45-55C" /
                      "band_mechanism_stats.json").read_text().rstrip("\x00"))
-    macros["resWithinStepRhoHC"] = f"{bm['test_B_within_step']['AE_1000-2000kHz__complexity']['median_rho']:+.2f}"
+    _wsb = bm["test_B_within_step"]
+    _best = max(_wsb, key=lambda k: abs(_wsb[k]["median_rho"]))
+    macros["resWithinStepRhoHC"] = f"{_wsb[_best]['median_rho']:+.2f}"
+    macros["resWithinStepFeat"] = pretty_feature(_best)
 except (FileNotFoundError, OSError, KeyError) as exc:
     warn(f"band_mechanism_stats.json unavailable ({exc})")
 
@@ -507,6 +512,16 @@ if table_models_body:
     files["table_models_tabular.tex"] = header + table_models_body + "\n"
 if table_top_feats_body:
     files["table_top_features_tabular.tex"] = header + table_top_feats_body + "\n"
+
+# Refresh the appendix ranking-table copies so the paper compiles without outputs/
+for _n in ("ae", "us"):
+    _src = OUTPUT_DIR / "02_feature_analysis" / "tables" / f"feature_ranking_{_n}_appendix.tex"
+    try:
+        _txt = _src.read_text(encoding="utf-8").rstrip("\x00")
+        (PAPER_TABLES_DIR / _src.name).write_text(_txt, encoding="utf-8")
+        print(f"Copied {_src.name} to paper/tables")
+    except (FileNotFoundError, OSError):
+        warn(f"{_src} unavailable -- appendix copy not refreshed")
 
 for fname, content in files.items():
     for dest in (EXPORT_DIR / fname, PAPER_TABLES_DIR / fname):

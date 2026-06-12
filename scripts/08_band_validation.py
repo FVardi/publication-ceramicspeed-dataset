@@ -113,6 +113,9 @@ for d in (SCRIPT_DIR, FIGURES_DIR, TABLES_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 AE_BANDS = [(b["f_lo"], b["f_hi"], b["label"]) for b in cfg["frequency_bands"]["AE"]]
+# Bands excluded from modelling but still characterised here:
+AE_BANDS += [(b["f_lo"], b["f_hi"], b["label"])
+             for b in cfg.get("validation_extra_bands", {}).get("AE", [])]
 
 if args.data_file:
     data_files = [Path(args.data_file)]

@@ -687,6 +687,7 @@ for tw_dir in sorted(MECH_DIR.glob("tw_*")) if MECH_DIR.exists() else []:
         continue
     cs = pd.read_csv(cs_path)
     band_labels = [b["label"] for b in cfg["frequency_bands"]["AE"]]
+    band_labels += [b["label"] for b in cfg.get("validation_extra_bands", {}).get("AE", [])]
     fig, axes = plt.subplots(1, len(band_labels), figsize=(4.6 * len(band_labels), 3.8),
                              sharex=True)
     for ax, label in zip(np.atleast_1d(axes), band_labels):
@@ -823,6 +824,7 @@ else:
 _tw_dirs = sorted(MECH_DIR.glob("tw_*")) if MECH_DIR.exists() else []
 if _tw_dirs:
     band_labels = [b["label"] for b in cfg["frequency_bands"]["AE"]]
+    band_labels += [b["label"] for b in cfg.get("validation_extra_bands", {}).get("AE", [])]
     _tw_colors = ["#4878CF", "#D65F5F", "#6ACC65"]
     fig, axes = plt.subplots(1, len(band_labels), figsize=(4.4 * len(band_labels), 3.8),
                              sharex=True)

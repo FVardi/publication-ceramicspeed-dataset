@@ -12,10 +12,10 @@ Lubrication failure---through starvation, viscosity degradation, or contaminatio
 Despite this, lubrication condition monitoring (LCM) has received far less attention
 than vibration-based fault detection and remaining-useful-life estimation, which are
 now mature and widely deployed~\cite{wang_phm_2018,shang_comprehensive_2024}.
-The lubrication signal is harder to exploit: its acoustic and vibratory signatures are weaker than the impulsive signatures of spalling or raceway cracks and are strongly entangled with speed and load, so operating-condition effects readily mask the lubrication-dependent component~\cite{marticorena_cage_2022,shang_comprehensive_2024,zhang_coupled_2026}. Yet accurate online LCM would enable condition-based relubrication---applying lubricant when and in the quantity actually needed, rather than on fixed schedules that systematically under- and over-lubricate~\cite{wakiru_review_2019}.
+The lubrication signal is harder to exploit: its acoustic and vibratory signatures are weaker than the impulsive signatures of spalling or raceway cracks and are strongly entangled with speed and load, so operating-condition effects readily mask the lubrication-dependent component~\cite{marticorena_cage_2022,shang_comprehensive_2024,zhang_coupled_2026}. Within bearing fault diagnosis, this entanglement has motivated a substantial recent literature on diagnosis under varying and unseen working conditions~\cite{pang_smia_2024,hua_dife_2025,jiang_mechanism_2025}; for LCM the problem is sharper still, because the lubrication target itself is derived from the operating point---a confound this paper addresses with an explicit diagnostic decomposition (Section~\ref{subsec:confound}). Yet accurate online LCM would enable condition-based relubrication---applying lubricant when and in the quantity actually needed, rather than on fixed schedules that systematically under- and over-lubricate~\cite{wakiru_review_2019}.
 
 % Limitations of conventional CM for LCM
-The dominant bearing-monitoring approach, vibration analysis, detects macroscopic faults such as raceway spalling and rolling-element damage through characteristic-frequency analysis, but is inherently insensitive to the subtle tribological changes of film formation and breakdown~\cite{shang_comprehensive_2024,cornel_condition_2021}. Temperature monitoring and oil analysis add complementary information but are indirect, subject to sampling delay, or require access to the lubricant reservoir, and none provides a direct, continuous, non-invasive indicator of the instantaneous lubrication regime under operating conditions~\cite{wakiru_review_2019}.
+The dominant bearing-monitoring approach, vibration analysis, detects macroscopic faults such as raceway spalling and rolling-element damage through characteristic-frequency analysis, but is inherently insensitive to the subtle tribological changes of film formation and breakdown~\cite{shang_comprehensive_2024,cornel_condition_2021}. Temperature monitoring and oil analysis add complementary information but are indirect, subject to sampling delay, or require access to the lubricant reservoir, and none provides a direct, continuous, non-invasive indicator of the instantaneous lubrication regime under operating conditions~\cite{wakiru_review_2019,sun_online_2021}.
 
 % Passive AE and US as practical sensing routes (detail deferred to Background)
 Passive, non-invasive sensing, e.g. acoustic emission (AE) and passive ultrasound
@@ -28,18 +28,18 @@ The sensitivity of AE to lubrication regime is well established. Miettinen et
 al.~\cite{miettinen_analysis_2001} showed that AE pulse count and RMS distinguish
 boundary, mixed, and full-film regimes and respond to base-oil viscosity and thickener content in grease-lubricated bearings. Yoshioka and
 Shimizu~\cite{yoshioka_compound_2009} combined AE and vibration monitoring on a
-grease-lubricated deep-groove ball bearing using envelope demodulation and statistical AE parameters. Tandon et al.~\cite{tandon_ae_2006} found AE and shock-pulse sensors to outperform accelerometers for detecting grease contamination in a ball bearing---the scenario closest to the present study. More recently, Cornel et al.~\cite{cornel_condition_2021} showed that AE detects lubrication-sensitive surface damage such as micro-pitting and smearing up to eight hours earlier than vibration monitoring, and Hou and Zhang~\cite{hou_insitu_2025} derived amplitude- and energy-centre features that classify lubrication status across speeds and viscosity levels, though without a continuous regression target, and with no variation of temperature.
+grease-lubricated deep-groove ball bearing using envelope demodulation and statistical AE parameters. Tandon et al.~\cite{tandon_ae_2006} found AE and shock-pulse sensors to outperform accelerometers for detecting grease contamination in a ball bearing---the scenario closest to the present study. More recently, Cornel et al.~\cite{cornel_condition_2021} showed that AE detects lubrication-sensitive surface damage such as micro-pitting and smearing up to eight hours earlier than vibration monitoring, Wang et al.~\cite{wang_fingerprint_2023} developed AE fingerprint features with dynamic thresholds for bearing fault detection, and Hou and Zhang~\cite{hou_insitu_2025} derived amplitude- and energy-centre features that classify lubrication status across speeds and viscosity levels, though without a continuous regression target, and with no variation of temperature.
 
 % Literature review part B: signal processing, physical models, and passive US
 On the signal-processing side, Renhart et al.~\cite{renhart_ae_2021} applied octave
-filter-bank decomposition with RMS--friction features to characterise AE tribological events, and Marticorena and Garc\'{i}a Peyrano~\cite{marticorena_cage_2022} showed that spectral correlation of AE resolves lubrication-regime changes under varying load, demonstrating that kinematic and acoustic features can partially decouple operating-condition confounds. The physical link between film adequacy and the AE signature has been formalised by Liu et al.~\cite{liu_combined_2021} and Zhang et al.~\cite{zhang_coupled_2026}, whose coupled vibration--AE models tie emission intensity and frequency content to EHL film thickness and the rate of asperity contact. For the passive-ultrasound channel, Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} showed that broadband acoustic features carry measurable information about the IS  O~281 viscosity ratio $\kappa$.
+filter-bank decomposition with RMS--friction features to characterise AE tribological events, and Marticorena and Garc\'{i}a Peyrano~\cite{marticorena_cage_2022} showed that spectral correlation of AE resolves lubrication-regime changes under varying load, demonstrating that kinematic and acoustic features can partially decouple operating-condition confounds. The physical link between film adequacy and the AE signature has been formalised by Liu et al.~\cite{liu_combined_2021} and Zhang et al.~\cite{zhang_coupled_2026}, whose coupled vibration--AE models tie emission intensity and frequency content to EHL film thickness and the rate of asperity contact. For the passive-ultrasound channel, Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} showed that broadband acoustic features carry measurable information about the ISO~281 viscosity ratio $\kappa$.
 
 % Kappa as a continuous, physics-grounded target
 A recurring limitation of data-driven LCM is its reliance on discrete fault labels or qualitative lubrication states rather than a physically interpretable, continuous target. The ISO~281 viscosity ratio $\kappa$ removes this limitation: it is the ratio of the lubricant's actual kinematic viscosity at operating temperature to the minimum viscosity required for full EHL film formation at the current speed and bearing geometry, mapping the instantaneous operating point to a standardised lubrication-adequacy index (Section~\ref{sec:background}). A model trained to predict $\kappa$ implicitly learns the joint dependence on speed, temperature, and lubricant properties, and its output is directly interpretable against established regime boundaries. Despite this, $\kappa$ has seldom been used as a regression objective in acoustic condition monitoring.
 
 % Jakobsen relation and the consolidated gap
 The clearest precedent is the work of Jakobsen et
-al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024}, who established $\kappa$ regression for passive bearing acoustics, predicting $\kappa$ from low-cost MEMS microphone and accelerometer features using LASSO and neural networks. The present study adopts their $\kappa$ target and extends it in three respects: it adds a calibrated wideband AE channel acquired simultaneously with the passive US channel, extracts frequency sub-band features from both signals, and tests whether the two modalities are complementary. This last point is an open question: AE--US complementarity is argued on physical grounds in reviews~\cite{shang_comprehensive_2024,wang_advanced_2024} but has not been quantified experimentally, and it carries direct practical weight, since a second sensor adds cost and complexity and is justified only if it supplies non-redundant information. No prior study has simultaneously acquired AE and passive US from a single ball bearing and quantitatively assessed their joint value for $\kappa$ regression.
+al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024}, who established $\kappa$ regression for passive bearing acoustics, predicting $\kappa$ from low-cost MEMS microphone and accelerometer features using LASSO and neural networks. The present study adopts their $\kappa$ target and extends it in three respects: it adds a wideband AE channel, analysed to the sensor's 1~MHz specification, acquired simultaneously with the passive US channel, extracts frequency sub-band features from both signals, and tests whether the two modalities are complementary. This last point is an open question: AE--US complementarity is argued on physical grounds in reviews~\cite{shang_comprehensive_2024,wang_advanced_2024} but has not been quantified experimentally, and it carries direct practical weight, since a second sensor adds cost and complexity and is justified only if it supplies non-redundant information. No prior study has simultaneously acquired AE and passive US from a single ball bearing and quantitatively assessed their joint value for $\kappa$ regression.
 
 % Scope and generalizability
 This study deliberately fixes the bearing, lubricant, and load, varying only rotational speed and temperature. Holding the mechanical configuration constant isolates the lubrication-dependent acoustic response from the bearing-to-bearing variability and degradation processes that would otherwise confound it---a prerequisite for establishing whether AE and passive US carry $\kappa$-relevant information at all. The resulting limits on generalisation across bearing types, lubricants, and load regimes are genuine, but not addressed here.
@@ -48,32 +48,30 @@ This study deliberately fixes the bearing, lubricant, and load, varying only rot
 
 This paper makes the following contributions:
 \begin{enumerate}
-  \item \textbf{A film-gated high-frequency AE band is identified and validated.}
-  Total-band-power analysis at fixed temperature---robust to drive EMI by
-  construction, since spectral redistribution conserves energy within a band---shows
-  that 1--2~MHz AE content vanishes at a comparable lubrication state
-  ($\kappa \approx \resKneeKappaHot$--$\resKneeKappaCool$) rather than a comparable
-  speed (\resKneeRpmCool{} vs.\ \resKneeRpmHot~rpm across temperature windows). Two
-  film-mediated generation mechanisms (asperity emission vs.\ drive-induced bearing
-  currents) are delineated with testable implications. SHAP attribution independently
-  ranks the leading 1--2~MHz feature first across all three model families.
   \item \textbf{A confound-decomposition methodology for acoustic LCM.} Because
   $\kappa$ is determined by the operating point, any feature--$\kappa$ regression
   risks acting as an operating-point soft sensor. A two-stage decomposition
   (features $\rightarrow$ RPM/temperature $\rightarrow$ ISO~281 mapping, recovering
   $R^2 = \resTwoStageRsq$ of the direct model's \resHOrsqLgbAe) quantifies the proxy
-  share, while within-RPM-step correlation analysis (median $\rho = \resWithinStepRhoHC$
-  with temperature at fixed drive state) isolates the genuine lubrication-channel
-  sensitivity. This diagnostic is applicable to any condition-monitoring study whose
-  target is derived from the operating point.
+  share, while within-RPM-step correlation analysis of \resWithinStepFeat{}
+  (median $\rho = \resWithinStepRhoHC$ with temperature at fixed drive state)
+  isolates the genuine lubrication-channel sensitivity.
   \item \textbf{The AE--US complementarity question is answered quantitatively.}
-  This is the first study to simultaneously acquire calibrated wideband AE and
-  heterodyned passive US from a single ball bearing and assess their joint value:
-  AE strongly outperforms US ($\Delta R^2 = \resDrsqLgbAeUs$), and fusion adds a
-  small but statistically robust gain ($\Delta\text{RMSE} = \resDrmseAeComb$,
-  significant under repeated nested cross-validation and all hold-out
-  tests)---complementarity is real but modest, with the heterodyned baseband
-  identified as the bottleneck.
+  This is the first study to simultaneously acquire wideband AE and heterodyned
+  passive US from a single ball bearing and assess their joint value: fusing the
+  channels reduces hold-out RMSE from \resHOrmseLgbAe{} to \resHOrmseLgbComb{}
+  ($\Delta\text{RMSE} = \resDrmseAeComb$), significant under repeated grouped
+  cross-validation and all hold-out tests, with the extended 20--100~kHz US band
+  contributing selected features to the combined model. AE outperforms US on the
+  hold-out set, while fold-level inference between the single channels is
+  inconclusive under group-respecting cross-validation.  \item \textbf{A leakage-aware, instrumentation-honest evaluation protocol.}
+  Recorded content above the AE sensor's 1~MHz specification---present despite an
+  acquisition low-pass at the same frequency, and of undetermined origin---is
+  characterised and excluded from analysis. Visit-grouped data splits remove the
+  near-duplicate leakage inherent to windowed acquisition of slowly varying
+  protocols. Under matched random-split protocols, performance equals prior
+  $\kappa$-regression work; the stricter visit-grouped figures are, to the
+  authors' knowledge, the first reported for this task.
   \item \textbf{A dual-channel dataset and reproducible evaluation protocol.}
   \resNsweeps{} sweeps spanning the boundary through full-film regimes
   ($\kappa \in [\resKappaMin,\,\resKappaMax]$) with an analytically derived ISO~281
@@ -83,19 +81,27 @@ This paper makes the following contributions:
   decision (full deposit, features+code only, or on request).}
 \end{enumerate}
 
-The remainder of the paper is organised as follows. Section~\ref{sec:background} reviews the theory of $\kappa$ and the physical origins of AE and US signals. Section~\ref{sec:setup} describes the experimental setup and data collection. Section~\ref{sec:pipeline} presents the signal-processing and feature-extraction pipeline. Section~\ref{sec:features} reports the feature analysis. Section~\ref{sec:modelling} presents the regression modelling and statistical evaluation.
-Section~\ref{sec:discussion} discusses the findings, and Section~\ref{sec:conclusion}
-concludes.
+The remainder of the paper is organised as follows. Section~\ref{sec:background} reviews the theory of $\kappa$ and the physical origins of AE and US signals.
+Section~\ref{sec:setup} describes the experimental setup and data collection.
+Section~\ref{sec:pipeline} presents the signal-processing and feature-extraction
+pipeline, including the characterisation of the frequency sub-bands.
+Section~\ref{sec:features} reports the feature analysis and the
+operating-condition confound decomposition. Section~\ref{sec:modelling} presents
+the regression modelling and statistical evaluation.
+Section~\ref{sec:discussion} discusses the findings, and
+Section~\ref{sec:conclusion} concludes.
 
-The overall pipeline of the experiment, signal processing, modeling, and evaluation is seen in Figure~\ref{fig:pipeline_overview}.
+The overall pipeline of the experiment, signal processing, modelling, and
+evaluation is shown in Figure~\ref{fig:pipeline_overview}.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{pipeline_overview}
-  \caption{Overview of the experimental and modelling pipeline. AE and passive US signals
-    are acquired simultaneously from the test rig and decomposed into broadband and
-    sub-band features. Three sensor configurations (AE-only, AE+US fusion, US-only) are
-    evaluated across three regression model families under repeated nested cross-validation,
-    with the viscosity ratio $\kappa$ as the regression target.}
+  \caption{Overview of the experimental and modelling pipeline. AE and passive US
+    signals are acquired simultaneously from the test rig and decomposed into
+    broadband and sub-band features. Three sensor configurations (AE-only, AE+US
+    fusion, US-only) are evaluated across three regression model families under
+    repeated nested cross-validation, with the viscosity ratio $\kappa$ as the
+    regression target.}
   \label{fig:pipeline_overview}
 \end{figure}

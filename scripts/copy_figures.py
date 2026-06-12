@@ -32,7 +32,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def extract_figure_names(tex_path: Path) -> list[str]:
+    """Scan main.tex and all sections/*.tex for includegraphics names."""
     text = tex_path.read_text(encoding="utf-8")
+    sections_dir = tex_path.parent / "sections"
+    if sections_dir.is_dir():
+        for sec in sorted(sections_dir.glob("*.tex")):
+            text += sec.read_text(encoding="utf-8")
     # Match \includegraphics[...]{filename} — strip any leading path component
     raw = re.findall(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}", text)
     names = []
@@ -44,6 +49,10 @@ def extract_figure_names(tex_path: Path) -> list[str]:
 
 
 def find_in_outputs(name: str) -> Path | None:
+    # Prefer the styled 06_plots render when one exists.
+    preferred = OUTPUT_DIR / "06_plots" / name
+    if preferred.exists():
+        return preferred
     for match in OUTPUT_DIR.rglob(name):
         return match
     return None

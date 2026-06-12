@@ -38,6 +38,7 @@ from ceramicspeed.analysis import (
     variance_inflation_factors,
     identify_redundant_features,
     reduce_redundant_features,
+    reduce_redundant_features_iterative,
     pca_transform,
 )
 from ceramicspeed.visualization import (
@@ -287,8 +288,9 @@ print(us_redundancy.to_string())
 # Greedy redundancy reduction — retained feature subsets
 # =============================================================================
 
-ae_retained = reduce_redundant_features(ae_df, ae_target, ae_corr_mat, ae_vif, vif_threshold=VIF_THRESHOLD)
-us_retained = reduce_redundant_features(us_df, us_target, us_corr_mat, us_vif, vif_threshold=VIF_THRESHOLD)
+# Stage 2: iterative VIF elimination (relevance-aware, VIFs recomputed each round)
+ae_retained = reduce_redundant_features_iterative(ae_df, ae_target, vif_threshold=VIF_THRESHOLD)
+us_retained = reduce_redundant_features_iterative(us_df, us_target, vif_threshold=VIF_THRESHOLD)
 
 # Persist VIF values + retention flags so 06_plots.py can re-render the
 # VIF figure (log axis) without recomputation.
@@ -443,4 +445,5 @@ print("Saved: feature_ranking_ae.csv, feature_ranking_us.csv")
 
 if __name__ == "__main__":
     print("\n02_feature_analysis complete.")
+
 

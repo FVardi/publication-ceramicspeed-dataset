@@ -45,7 +45,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.linear_model import ElasticNet, ElasticNetCV, Ridge, RidgeCV
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
+from sklearn.model_selection import GroupShuffleSplit, KFold, StratifiedKFold, train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from tqdm import tqdm
 
@@ -96,6 +96,7 @@ RANDOM_STATE: int = cfg.get("random_state", 42)
 model_cfg = cfg.get("modelling", {})
 CV_N_SPLITS: int = model_cfg.get("cv_n_splits", 5)
 TEST_SIZE: float = model_cfg.get("test_size", 0.2)
+GROUPED_SPLIT: bool = bool(model_cfg.get("grouped_split", False))
 
 _dbg = cfg.get("debug", {})
 CV_N_REPEATS: int = model_cfg.get("n_repeats", 10)
@@ -180,13 +181,47 @@ metadata["kappa"] = metadata.apply(
     axis=1,
 )
 
+def _derive_hold_groups(meta_df: pd.DataFrame) -> np.ndarray:
+    """Contiguous staircase-hold ids.
+
+    Sweeps are visited in chronological order (per file); a new group starts
+    whenever the commanded 100-rpm step changes. All ~10 sibling sweeps of one
+    60-second hold (and both sensor rows of each sweep) share a group, so
+    grouped splits never place near-duplicate windows on both sides."""
+    sweep_no = meta_df["sweep"].str.split("_").str[1].astype(int).values
+    files = meta_df["file"].values
+    step = np.round(meta_df["rpm"].values / 100.0)
+    order = np.lexsort((sweep_no, files))
+    gid = np.empty(len(meta_df), dtype=int)
+    g = 0
+    prev = None
+    for pos in order:
+        key = (files[pos], step[pos])
+        if prev is None or key[0] != prev[0] or key[1] != prev[1]:
+            g += 1
+        gid[pos] = g
+        prev = key
+    return gid
+
+
+hold_groups = _derive_hold_groups(metadata)
+print(f"Derived {len(np.unique(hold_groups))} hold groups "
+      f"(grouped_split={GROUPED_SPLIT})")
+
 sweep_keys = df[["file", "sweep"]].drop_duplicates().reset_index(drop=True)
-train_sweep_idx, _ = train_test_split(
-    np.arange(len(sweep_keys)),
-    test_size=TEST_SIZE,
-    random_state=RANDOM_STATE,
-    shuffle=True,
-)
+if GROUPED_SPLIT:
+    _key_first = pd.DataFrame({"file": df["file"], "sweep": df["sweep"],
+                               "g": hold_groups}).drop_duplicates(["file", "sweep"])
+    _gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+    train_sweep_idx, _ = next(_gss.split(np.arange(len(sweep_keys)),
+                                         groups=_key_first["g"].values))
+else:
+    train_sweep_idx, _ = train_test_split(
+        np.arange(len(sweep_keys)),
+        test_size=TEST_SIZE,
+        random_state=RANDOM_STATE,
+        shuffle=True,
+    )
 train_sweeps = set(
     zip(sweep_keys.iloc[train_sweep_idx]["file"], sweep_keys.iloc[train_sweep_idx]["sweep"])
 )
@@ -195,6 +230,8 @@ train_idx = np.where(row_in_train)[0]
 
 df_train = df.iloc[train_idx].reset_index(drop=True)
 meta_train = metadata.iloc[train_idx].reset_index(drop=True)
+groups_train = hold_groups[train_idx]
+_group_map = dict(zip(zip(df["file"], df["sweep"]), hold_groups))
 
 print(f"Training pool: {len(df_train)} rows ({len(train_sweep_idx)} sweeps)")
 
@@ -211,9 +248,11 @@ for sensor_name, sel_info in feature_selection.items():
     X_tr = df_train.loc[tr_mask, retained].reset_index(drop=True)
     y_tr = meta_train.loc[tr_mask, "kappa"].reset_index(drop=True)
     valid = X_tr.notna().all(axis=1)
+    g_tr = pd.Series(groups_train)[tr_mask.values].reset_index(drop=True)
     X_tr = X_tr[valid].reset_index(drop=True)
     y_tr = y_tr[valid].values
-    sensor_train[sensor_name] = (X_tr, y_tr)
+    g_tr = g_tr[valid].values
+    sensor_train[sensor_name] = (X_tr, y_tr, g_tr)
     print(f"  {sensor_name}: {X_tr.shape[0]} samples, {X_tr.shape[1]} features")
 
 
@@ -239,6 +278,7 @@ retained_map = {
 
 X_combined_train: pd.DataFrame | None = None
 y_combined_train: np.ndarray | None = None
+g_combined_train: np.ndarray | None = None
 
 try:
     parts = [_build_keyed(df_train, meta_train, sname, ret) for sname, ret in retained_map.items()]
@@ -254,6 +294,7 @@ try:
     feat_cols = [c for c in merged.columns if c != "kappa"]
     X_combined_train = pd.DataFrame(merged[feat_cols].values, columns=feat_cols)
     y_combined_train = merged["kappa"].values
+    g_combined_train = np.array([_group_map[k] for k in merged.index])
     print(f"  Combined: {X_combined_train.shape[0]} samples, {X_combined_train.shape[1]} features")
 except Exception as exc:
     print(f"WARNING: Could not build combined training set: {exc}")
@@ -374,21 +415,34 @@ def repeated_nested_cv(
     X: pd.DataFrame,
     y: np.ndarray,
     fold_score_fn,
+    groups: np.ndarray | None = None,
     n_splits: int = CV_N_SPLITS,
     n_repeats: int = CV_N_REPEATS,
     desc: str = "",
 ) -> np.ndarray:
     """Run R×k repeated nested CV; return array of shape (R*k,) RMSE scores."""
-    # Bin κ into 5 quantile-based strata so rare high/low values are spread
-    # evenly across folds rather than potentially concentrating in one fold.
-    y_bins = pd.qcut(np.asarray(y), q=5, labels=False, duplicates="drop").astype(int)
-    fold_splits = [
-        (tr, val)
-        for r in range(n_repeats)
-        for tr, val in StratifiedKFold(
-            n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r
-        ).split(X, y_bins)
-    ]
+    if GROUPED_SPLIT and groups is not None:
+        # Group-respecting outer folds: sibling sweeps of one staircase hold
+        # never straddle the train/validation boundary.
+        fold_splits = [
+            (tr, val)
+            for r in range(n_repeats)
+            for tr, val in GroupShuffleSplit(
+                n_splits=n_splits, test_size=1.0 / n_splits,
+                random_state=RANDOM_STATE + r,
+            ).split(X, groups=groups)
+        ]
+    else:
+        # Bin κ into 5 quantile-based strata so rare high/low values are spread
+        # evenly across folds rather than potentially concentrating in one fold.
+        y_bins = pd.qcut(np.asarray(y), q=5, labels=False, duplicates="drop").astype(int)
+        fold_splits = [
+            (tr, val)
+            for r in range(n_repeats)
+            for tr, val in StratifiedKFold(
+                n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE + r
+            ).split(X, y_bins)
+        ]
     scores = []
     with tqdm(total=len(fold_splits), desc=desc or "folds", leave=False) as pbar:
         for score in Parallel(n_jobs=_N_WORKERS, return_as="generator")(
@@ -412,42 +466,45 @@ sensor_names = list(feature_selection.keys())
 
 # --- Elastic Net ---
 for sensor_name in sensor_names:
-    X_tr, y_tr = sensor_train[sensor_name]
+    X_tr, y_tr, g_tr = sensor_train[sensor_name]
     model_name = f"ElasticNet_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
-    cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _enet_fold_score, desc=model_name)
+    cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _enet_fold_score, groups=g_tr, desc=model_name)
 
 if X_combined_train is not None:
     model_name = "ElasticNet_Combined"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(
-        X_combined_train, y_combined_train, _enet_fold_score, desc=model_name)
+        X_combined_train, y_combined_train, _enet_fold_score,
+        groups=g_combined_train, desc=model_name)
 
 # --- Polynomial ---
 for sensor_name in sensor_names:
-    X_tr, y_tr = sensor_train[sensor_name]
+    X_tr, y_tr, g_tr = sensor_train[sensor_name]
     model_name = f"Polynomial_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
-    cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _poly_fold_score, desc=model_name)
+    cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _poly_fold_score, groups=g_tr, desc=model_name)
 
 if X_combined_train is not None:
     model_name = "Polynomial_Combined"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(
-        X_combined_train, y_combined_train, _poly_fold_score, desc=model_name)
+        X_combined_train, y_combined_train, _poly_fold_score,
+        groups=g_combined_train, desc=model_name)
 
 # --- LightGBM (nested Optuna HP search per outer fold) ---
 for sensor_name in sensor_names:
-    X_tr, y_tr = sensor_train[sensor_name]
+    X_tr, y_tr, g_tr = sensor_train[sensor_name]
     model_name = f"LightGBM_{_SENSOR_LABEL.get(sensor_name, sensor_name)}"
     print(f"\nRepeated nested CV: {model_name}")
-    cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _lgb_fold_score, desc=model_name)
+    cv_scores[model_name] = repeated_nested_cv(X_tr, y_tr, _lgb_fold_score, groups=g_tr, desc=model_name)
 
 if X_combined_train is not None:
     model_name = "LightGBM_Combined"
     print(f"\nRepeated nested CV: {model_name}")
     cv_scores[model_name] = repeated_nested_cv(
-        X_combined_train, y_combined_train, _lgb_fold_score, desc=model_name)
+        X_combined_train, y_combined_train, _lgb_fold_score,
+        groups=g_combined_train, desc=model_name)
 
 # Save raw CV score distributions
 cv_scores_df = pd.DataFrame(cv_scores)

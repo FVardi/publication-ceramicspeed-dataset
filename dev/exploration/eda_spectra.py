@@ -3,10 +3,13 @@ eda_spectra.py
 ==============
 Visualise selected individual sweep spectra for qualitative inspection.
 
-Plots PSD (Welch) for each sweep in ``sweep_selection`` (config.yaml).
-Layout: rows = sensors, columns = selected sweeps.  Y-axis is shared
-within each sensor row so absolute PSD levels are comparable across
-sweeps; sensors use independent y-scales.
+Plots the RAW one-sided FFT magnitude (no Welch averaging, no pre-filtering)
+of the AE and US channels for each sweep in ``sweep_selection`` (config.yaml).
+AE is shown over its full acquired bandwidth (to Nyquist); US up to 40 kHz so
+that content above the heterodyned 0--20 kHz baseband is visible.
+
+Layout: rows = sensors, columns = selected sweeps. Y-axis shared within each
+sensor row; sensors use independent y-scales.
 
 Usage
 -----
@@ -21,19 +24,29 @@ Usage
 
 import argparse
 import pathlib
+import sys
 
+import h5py
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 
+try:
+    ROOT = pathlib.Path(__file__).resolve().parents[2]
+except NameError:
+    ROOT = pathlib.Path.cwd()
+    while not (ROOT / "config.yaml").exists() and ROOT != ROOT.parent:
+        ROOT = ROOT.parent
+
+sys.path.insert(0, str(ROOT / "src"))
+
+from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.config import get_input_dir, get_output_dir, load_config
-from ceramicspeed.eda import load_sweeps
 
 # %%
 # =============================================================================
 # Configuration
 # =============================================================================
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -45,101 +58,121 @@ def parse_args() -> argparse.Namespace:
 args = parse_args()
 cfg = load_config(args.config)
 
+INPUT_DIR  = pathlib.Path(get_input_dir(cfg))
 OUTPUT_DIR = get_output_dir(cfg)
-INPUT_DIR  = get_input_dir(cfg)
-EDA_DIR = OUTPUT_DIR / "eda"
+EDA_DIR    = OUTPUT_DIR / "eda"
 EDA_DIR.mkdir(exist_ok=True)
 
 SENSORS: tuple[str, ...] = ("AE", "UL")
-SWEEP_SELECTION: list[str] = cfg.get("sweep_selection", [])
-SENSOR_LIMITS: dict = cfg.get("sensors", {})
+US_F_MAX = 40_000.0          # show US up to 40 kHz (above the 0-20 kHz baseband)
 
+SWEEP_SELECTION: list[str] = cfg.get("sweep_selection", [])
 if not SWEEP_SELECTION:
     raise ValueError("No sweep_selection defined in config.yaml")
 
-# %%
-# =============================================================================
-# Load selected sweeps
-# =============================================================================
-
-hdf5_files = sorted(pathlib.Path(INPUT_DIR).glob("*.hdf5"))
+pats = cfg.get("filters", {}).get("file_patterns") or ["*"]
+hdf5_files = sorted(p for p in INPUT_DIR.iterdir()
+                    if p.suffix in (".hdf5", ".h5") and any(s in p.stem for s in pats))
 if not hdf5_files:
-    raise FileNotFoundError(f"No .hdf5 files found in {INPUT_DIR}")
+    raise FileNotFoundError(f"No matching HDF5 files in {INPUT_DIR}")
 
-sweeps = load_sweeps(
-    hdf5_files,
-    cfg,
-    sensors=SENSORS,
-    waveform_ms=10.0,
-    env_show_ms=10.0,
-    skip_stats=True,
-    sweep_names=SWEEP_SELECTION,
-)
-
-sweeps.sort(key=lambda r: r.get("kappa", float("nan")))
-print(f"Loaded {len(sweeps)} sweep records")
-for r in sweeps:
-    print(f"  {r['sweep']:20s}  κ={r['kappa']:.3f}  RPM={r['rpm']:.0f}  T={r['temperature_c']:.0f}°C")
+print(f"Found {len(hdf5_files)} HDF5 file(s); sweep_selection: {SWEEP_SELECTION}")
 
 # %%
 # =============================================================================
-# PSD spectra — shared y-axis per sensor, independent across sensors
+# Load raw voltages + metadata for the selected sweeps
 # =============================================================================
 
-n_cols = len(sweeps)
-n_rows = len(SENSORS)
+_VIS_FALLBACK = {"viscosity_40c_cst": 22.0, "viscosity_100c_cst": 4.1}
 
-kappa_vals = [r["kappa"] for r in sweeps]
-norm  = mcolors.Normalize(vmin=min(kappa_vals), vmax=max(kappa_vals))
-cmap  = plt.cm.viridis
+records = []
+for fp in hdf5_files:
+    with h5py.File(fp, "r") as f:
+        grp = f["sweeps"]
+        present = [s for s in SWEEP_SELECTION if s in grp]
+        if not present:
+            continue
+        lm = dict(f["metadata"]["lubricant"].attrs)
+        for k, v in _VIS_FALLBACK.items():
+            lm.setdefault(k, v)
+        first = grp[present[0]][SENSORS[0]]["time"][()]
+        fs = 1.0 / float(first[1] - first[0])
+        for name in present:
+            attrs = dict(grp[name].attrs)
+            rpm  = float(attrs.get("rpm", attrs.get("telem_rpm_meas", np.nan)))
+            temp = float(attrs.get("temperature_c", attrs.get("telem_omron_pv_c", np.nan)))
+            rec = {
+                "sweep": name, "rpm": rpm, "temperature_c": temp, "fs": fs,
+                "kappa": calculate_kappa(
+                    rpm=max(rpm, 1.0), temp_c=temp,
+                    d_pw=cfg["bearing"]["d_pw_mm"],
+                    nu_40=float(lm["viscosity_40c_cst"]),
+                    nu_100=float(lm["viscosity_100c_cst"]),
+                ),
+            }
+            for sensor in SENSORS:
+                if sensor in grp[name]:
+                    rec[sensor] = grp[name][sensor]["voltage"][()].astype(float)
+            records.append(rec)
 
-fig, axes = plt.subplots(
-    n_rows, n_cols,
-    figsize=(4.5 * n_cols, 4 * n_rows),
-    sharey="row",   # shared within each sensor row, independent between sensors
-    squeeze=False,
-)
+records.sort(key=lambda r: r.get("kappa", float("nan")))
+print(f"Loaded {len(records)} sweep records (fs = {records[0]['fs']/1e6:.3f} MHz)")
+for r in records:
+    print(f"  {r['sweep']:14s}  κ={r['kappa']:.3f}  RPM={r['rpm']:.0f}  T={r['temperature_c']:.0f}°C")
+
+# %%
+# =============================================================================
+# Raw FFT spectra
+# =============================================================================
+
+n_cols     = len(records)
+kappa_vals = [r["kappa"] for r in records]
+norm       = mcolors.Normalize(vmin=min(kappa_vals), vmax=max(kappa_vals))
+cmap       = plt.cm.viridis
+
+fig, axes = plt.subplots(len(SENSORS), n_cols,
+                         figsize=(4.5 * n_cols, 4 * len(SENSORS)),
+                         sharey="row", squeeze=False)
 
 for row_i, sensor in enumerate(SENSORS):
-    f_max = SENSOR_LIMITS.get(sensor, {}).get("f_max", None)
-
-    for col_i, rec in enumerate(sweeps):
+    for col_i, rec in enumerate(records):
         ax = axes[row_i, col_i]
-
-        if sensor not in rec.get("psd", {}):
+        if sensor not in rec:
             ax.set_visible(False)
             continue
-
-        f, p = rec["psd"][sensor]
-        if f_max is not None:
-            mask = f <= f_max
-            f, p = f[mask], p[mask]
-
+        x    = rec[sensor]
+        fs   = rec["fs"]
+        mag  = np.abs(np.fft.rfft(x)) / len(x)
+        freq = np.fft.rfftfreq(len(x), d=1.0 / fs)
         color = cmap(norm(rec["kappa"]))
-        ax.semilogy(f / 1e3, p, lw=1.0, color=color)
-
-        ax.set_title(
-            f"{rec['sweep']}\nκ={rec['kappa']:.3f}  RPM={rec['rpm']:.0f}  T={rec['temperature_c']:.0f}°C",
-            fontsize=8,
-        )
-        ax.set_xlabel("Frequency [kHz]")
+        if sensor == "AE":
+            ax.loglog(freq[1:] / 1e6, mag[1:], lw=0.4, color=color)
+            ax.set_xlim(1e-3, fs / 2 / 1e6)   # 0.001–6.25 MHz
+            ax.set_xlabel("Frequency [MHz]")
+        else:
+            m = freq <= US_F_MAX
+            ax.semilogy(freq[m] / 1e3, mag[m], lw=0.4, color=color)
+            ax.set_xlim(0, US_F_MAX / 1e3)
+            ax.set_xlabel("Frequency [kHz]")
+        ax.set_title(f"{rec['sweep']}\nκ={rec['kappa']:.3f}  RPM={rec['rpm']:.0f}  "
+                     f"T={rec['temperature_c']:.0f}°C", fontsize=8)
         ax.grid(ls=":", which="both", alpha=0.3)
-
         if col_i == 0:
-            ax.set_ylabel(f"{sensor}\nPSD  [V² / Hz]")
+            ax.set_ylabel(f"{'US' if sensor == 'UL' else sensor}\nraw |FFT|  [V]")
 
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 fig.colorbar(sm, ax=axes, label="κ", shrink=0.6)
-fig.suptitle("Individual sweep spectra", fontsize=12)
+fig.suptitle("Individual sweep raw FFT spectra (unfiltered)", fontsize=12)
 fig.tight_layout()
 plt.savefig(EDA_DIR / "eda_spectra.png", dpi=150)
 plt.show()
-print("Saved: eda_spectra.png")
+print(f"Saved: {EDA_DIR / 'eda_spectra.png'}")
 
-# %%
 # =============================================================================
 # Entry point
 # =============================================================================
 
 if __name__ == "__main__":
     print("\neda_spectra complete.")
+
+# %%

@@ -5,9 +5,15 @@
 
 \subsection{Waveforms and spectrograms}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/eda_waveforms.png}
+\caption{}
+\label{fig:waveforms}
+\end{figure}
 
 
-Spectrograms of the raw signals across the operating conditions sorted accordig to $\kappa$ values are shown in Figure~\ref{fig:spectrograms} to illustrate energy of the frequency content and its variation with operating conditions.
+Spectrograms of the raw signals, sorted according to $\kappa$, are shown in Figure~\ref{fig:spectrograms} to illustrate the frequency content and its variation with operating conditions.
 
 \begin{figure}[H]
 \centering
@@ -23,7 +29,7 @@ Spectrograms of the raw signals across the operating conditions sorted accordig 
 The AE and US signals are decomposed into frequency sub-bands prior to feature
 extraction, since the information on lubrication conditions contained in the signals
 is expected to be localised in sub-bands rather than wholly contained in the broadband
-signals~\cite{renhart_ae_2021, zhang_coupled_2026}.
+signals~\cite{renhart_ae_2021, zhang_coupled_2026}. Adaptive decompositions such as symplectic geometry mode decomposition offer data-driven alternatives for isolating informative components~\cite{pan_sgmd_2019}; fixed, physically motivated bands are preferred here so that features remain directly comparable across sweeps and interpretable against the sensing physics.
 For the AE channel, three sub-bands are extracted in addition to the broadband signal:
 (i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
 (ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
@@ -161,6 +167,4 @@ information carried by RMS.
 Extracting the 14-feature set independently for the broadband signal and each
 sub-band yields $14 \times 4 = \resNcandAe$~candidate AE features and
 $14 \times 3 = \resNcandUs$~candidate US features per sweep. Features are named by
-band and statistic (e.g.\ \texttt{AE\_1000-2000kHz\_\_complexity}); broadband
-features carry no band prefix. Section~\ref{sec:features} reduces these candidate
-sets to compact, non-redundant subsets for modelling.
+band and statistic (e.g.\ \texttt{AE\_1000-2000kHz\_\_complexity}); br

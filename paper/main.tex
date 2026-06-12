@@ -1,15 +1,15 @@
 %% ============================================================================
-%% Film-gated high-frequency AE and operating-point confounding (kappa regression)
+%% Sensor complementarity and operating-point proxies (kappa regression)
 %% Revised draft --- June 2026
 %% Target journal: Mechanical Systems and Signal Processing (MSSP)
 %% ============================================================================
 %%
 %% HIGHLIGHTS (3--5 bullets, $\leq$85 characters each):
-%% 1. Simultaneous wideband AE and passive US regressed to ISO 281 viscosity ratio
-%% 2. 1--2 MHz AE power dies at a comparable lubrication state, not a comparable speed
-%% 3. Two-stage decomposition quantifies operating-point proxy share of kappa models
-%% 4. Within-speed-step analysis isolates a genuine temperature-mediated film channel
-%% 5. AE--US fusion gain is small but significant: complementarity confirmed, modest
+%% 1. Simultaneous AE and passive US regressed to the ISO 281 viscosity ratio
+%% 2. Two-stage decomposition quantifies the operating-point proxy share of kappa models
+%% 3. Within-speed-step analysis isolates a temperature-mediated lubrication channel
+%% 4. AE-US fusion cuts RMSE 26% over AE alone, significant on all tests
+%% 5. Visit-grouped splits remove near-duplicate leakage from reported performance
 %%
 %% Layout toggle — comment one block, uncomment the other
 %% --- REVIEW (wide margins, 12pt, 1.5× spacing) ---
@@ -38,6 +38,7 @@
   {../outputs/eda/}
 }
 \usepackage{booktabs}
+\setlength{\marginparwidth}{2cm}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage{array}
 \usepackage{tabularx}
@@ -88,9 +89,9 @@
 \begin{titlepage}
 \vspace*{2cm}
 {\Large\bfseries\color{myblue}
-Film-Gated High-Frequency Acoustic Emission and Operating-Point\\
-Confounding in Dual-Channel Lubrication Condition Monitoring\\
-of a Ball Bearing
+Sensor Complementarity and Operating-Point Proxies in\\
+Acoustic Emission and Passive Ultrasound Regression\\
+of the ISO~281 Viscosity Ratio
 \par}
 \vspace{1.5cm}
 {\large Frederik Appel Vardinghus-Nielsen\par}
@@ -104,8 +105,7 @@ Department of \ldots, Aarhus University, Denmark\\
 \vspace{1cm}
 
 \textbf{Keywords:} acoustic emission; lubrication condition monitoring;
-viscosity ratio $\kappa$; ball bearing; signal processing;
-gradient boosting; sensor fusion
+viscosity ratio $\kappa$; ball bearing; signal processing; sensor fusion
 
 \end{titlepage}
 
@@ -113,6 +113,9 @@ gradient boosting; sensor fusion
 
 \clearpage
 \tableofcontents
+\clearpage
+
+\input{sections/nomenclature}
 \clearpage
 
 \input{sections/introduction}

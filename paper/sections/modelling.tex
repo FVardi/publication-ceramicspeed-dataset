@@ -39,7 +39,10 @@ To obtain stable performance estimates that properly account for the variance in
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/nested_cv_splits.png}
-\caption{Caption}
+\caption{Data partitioning for the repeated nested cross-validation: an 80/20
+sweep-level hold-out split, with the training pool further divided into
+$R = \resNrepeats$ independently seeded \resNfoldsCv-fold outer splits and inner
+hyperparameter-selection folds.}
 \label{fig:data_partition}
 \end{figure}
 

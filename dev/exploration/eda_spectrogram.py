@@ -7,7 +7,7 @@ Each column is the Welch PSD of one sweep.  Sweeps are sorted by κ so the
 plot shows how spectral content shifts across lubrication regimes.
 
   AE  : full bandwidth, 0 – Nyquist (~6.25 MHz at 12.5 MHz sample rate)
-  US  : 0 – 40 kHz; dedicated high-resolution nperseg for the narrow band
+  US  : 0 – 100 kHz; dedicated high-resolution nperseg for the narrow band
 
 White dashed lines mark the sub-band boundaries used in feature extraction.
 
@@ -73,7 +73,7 @@ US_NPERSEG   = 65_536          # ~190 Hz resolution @ 12.5 MHz
 NOVERLAP_FRAC = 0.5
 
 # Display limits
-US_F_MAX_HZ = 40_000.0         # truncate US heatmap at this frequency
+US_F_MAX_HZ = 100_000.0        # truncate US heatmap at this frequency
 
 # Sub-band boundary overlays (must match config.yaml / tab:subbands in paper)
 AE_BAND_EDGES_KHZ = [20.0, 500.0, 1_000.0, 2_000.0]
@@ -84,9 +84,17 @@ US_BAND_EDGES_KHZ = [10.0, 20.0]
 # Stream sweeps — compute PSDs inline, discard raw waveforms
 # =============================================================================
 
-if not args.recompute and CACHE_PATH.exists():
-    print(f"Loading cached matrices from {CACHE_PATH.name} ...")
+_use_cache = (not args.recompute) and CACHE_PATH.exists()
+if _use_cache:
     _cache = np.load(CACHE_PATH)
+    if "idx_ae" not in _cache.files:
+        print("Cache predates chronological support — recomputing from HDF5 ...")
+        _use_cache = False
+
+if _use_cache:
+    print(f"Loading cached matrices from {CACHE_PATH.name} ...")
+    idx_ae     = _cache["idx_ae"]
+    idx_us     = _cache["idx_us"]
     kappas_ae  = _cache["kappas_ae"]
     f_ae       = _cache["f_ae"]
     mat_ae_db  = _cache["mat_ae_db"]
@@ -120,6 +128,7 @@ else:
                     lm.setdefault(k, v)
 
                 for sweep_name, sweep in sweeps_grp.items():
+                    sweep_idx = int(sweep_name.split("_")[1])
                     attrs  = dict(sweep.attrs)
                     rpm    = float(attrs.get("telem_rpm_meas",    attrs.get("rpm",           np.nan)))
                     temp_c = float(attrs.get("telem_omron_pv_c",  attrs.get("temperature_c", np.nan)))
@@ -153,7 +162,7 @@ else:
                             noverlap=int(AE_NPERSEG * NOVERLAP_FRAC),
                             window="hann",
                         )
-                        ae_records.append({"kappa": kap, "f": f_ae, "p": p_ae})
+                        ae_records.append({"idx": sweep_idx, "kappa": kap, "f": f_ae, "p": p_ae})
                         del sig
 
                     # US — high-resolution Welch, keep 0–40 kHz slice
@@ -168,6 +177,7 @@ else:
                         )
                         mask_us = f_us_full <= US_F_MAX_HZ
                         us_records.append({
+                            "idx": sweep_idx,
                             "kappa": kap,
                             "f": f_us_full[mask_us],
                             "p": p_us_full[mask_us],
@@ -183,115 +193,125 @@ else:
     # Build sorted 2-D matrices  (n_sweeps × n_freq_bins)
     def _build_matrix(
         records: list[dict],
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Sort by κ, stack PSDs.  Returns (kappa_vec, freq_vec, matrix_dB)."""
-        records = sorted(records, key=lambda r: r["kappa"])
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Stack PSDs in chronological (sweep-number) order.
+
+        Returns (sweep_idx_vec, kappa_vec, freq_vec, matrix_dB)."""
+        records = sorted(records, key=lambda r: r["idx"])
+        idx_vec = np.array([r["idx"] for r in records])
         kappas  = np.array([r["kappa"] for r in records])
         f_vec   = records[0]["f"]
         mat     = np.stack([r["p"] for r in records])
         mat_db  = 10.0 * np.log10(np.maximum(mat, 1e-30))
-        return kappas, f_vec, mat_db
+        return idx_vec, kappas, f_vec, mat_db
 
-    kappas_ae, f_ae, mat_ae_db = _build_matrix(ae_records)
-    kappas_us, f_us, mat_us_db = _build_matrix(us_records)
+    idx_ae, kappas_ae, f_ae, mat_ae_db = _build_matrix(ae_records)
+    idx_us, kappas_us, f_us, mat_us_db = _build_matrix(us_records)
 
     print(f"AE matrix : {mat_ae_db.shape}  freq range {f_ae[0]/1e6:.3f}–{f_ae[-1]/1e6:.3f} MHz")
     print(f"US matrix : {mat_us_db.shape}  freq range {f_us[0]/1e3:.1f}–{f_us[-1]/1e3:.1f} kHz")
 
     np.savez_compressed(
         CACHE_PATH,
-        kappas_ae=kappas_ae, f_ae=f_ae, mat_ae_db=mat_ae_db,
-        kappas_us=kappas_us, f_us=f_us, mat_us_db=mat_us_db,
+        idx_ae=idx_ae, kappas_ae=kappas_ae, f_ae=f_ae, mat_ae_db=mat_ae_db,
+        idx_us=idx_us, kappas_us=kappas_us, f_us=f_us, mat_us_db=mat_us_db,
     )
     print(f"Saved cache → {CACHE_PATH.name}")
 
 # %%
 # =============================================================================
-# Plot
+# Plot — one figure sorted by κ, one in chronological (sweep-number) order
 # =============================================================================
 
 CMAP = "inferno"
 
-fig, (ax_ae, ax_us) = plt.subplots(
-    2, 1, figsize=(16, 11),
-    gridspec_kw={"hspace": 0.38},
+
+def _render(order_ae, order_us, xlabels_ae, xlabels_us, xlabel, suptitle, outname):
+    fig, (ax_ae, ax_us) = plt.subplots(
+        2, 1, figsize=(16, 11),
+        gridspec_kw={"hspace": 0.38},
+    )
+
+    def _xticks(ax, labels, n_total, n_ticks=10):
+        idx = np.round(np.linspace(0, n_total - 1, n_ticks)).astype(int)
+        ax.set_xticks(idx)
+        ax.set_xticklabels([labels[i] for i in idx], fontsize=8)
+        ax.set_xlabel(xlabel, fontsize=9)
+
+    # ---------- AE heatmap ----------
+    n_ae = len(order_ae)
+    f_ae_mhz = f_ae / 1e6
+    m_ae = mat_ae_db[order_ae]
+    vlo, vhi = np.percentile(m_ae, [2, 98])
+    im = ax_ae.imshow(
+        m_ae.T, aspect="auto", origin="lower",
+        extent=[0, n_ae - 1, f_ae_mhz[0], f_ae_mhz[-1]],
+        cmap=CMAP, vmin=vlo, vmax=vhi, interpolation="nearest",
+    )
+    fig.colorbar(im, ax=ax_ae, label="PSD  [dB re V²/Hz]", pad=0.01)
+    for edge_khz in AE_BAND_EDGES_KHZ:
+        ax_ae.axhline(edge_khz / 1e3, color="white", lw=0.8, ls="--", alpha=0.7,
+                      label=f"{edge_khz:.0f} kHz")
+    ax_ae.legend(fontsize=7, loc="upper right", framealpha=0.5)
+    ax_ae.set_ylabel("Frequency  [MHz]", fontsize=9)
+    ax_ae.set_title(
+        f"AE — spectral heatmap  ({n_ae} sweeps, full bandwidth 0–{f_ae_mhz[-1]:.2f} MHz)",
+        fontsize=10,
+    )
+    _xticks(ax_ae, xlabels_ae, n_ae)
+
+    # ---------- US heatmap ----------
+    n_us = len(order_us)
+    f_us_khz = f_us / 1e3
+    m_us = mat_us_db[order_us]
+    vlo, vhi = np.percentile(m_us, [2, 98])
+    im = ax_us.imshow(
+        m_us.T, aspect="auto", origin="lower",
+        extent=[0, n_us - 1, f_us_khz[0], f_us_khz[-1]],
+        cmap=CMAP, vmin=vlo, vmax=vhi, interpolation="nearest",
+    )
+    fig.colorbar(im, ax=ax_us, label="PSD  [dB re V²/Hz]", pad=0.01)
+    for edge_khz in US_BAND_EDGES_KHZ:
+        ax_us.axhline(edge_khz, color="white", lw=0.8, ls="--", alpha=0.7,
+                      label=f"{edge_khz:.0f} kHz")
+    ax_us.legend(fontsize=7, loc="upper right", framealpha=0.5)
+    ax_us.set_ylabel("Frequency  [kHz]", fontsize=9)
+    ax_us.set_title(
+        f"US — spectral heatmap  ({n_us} sweeps, 0–{f_us_khz[-1]:.0f} kHz)",
+        fontsize=10,
+    )
+    _xticks(ax_us, xlabels_us, n_us)
+
+    fig.suptitle(suptitle, fontsize=12, y=0.99)
+    out_path = EDA_DIR / outname
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.show()
+    print(f"Saved: {out_path}")
+
+
+# κ-sorted view (original behaviour)
+order_ae = np.argsort(kappas_ae)
+order_us = np.argsort(kappas_us)
+_render(
+    order_ae, order_us,
+    [f"{k:.2f}" for k in kappas_ae[order_ae]],
+    [f"{k:.2f}" for k in kappas_us[order_us]],
+    "κ (lubrication ratio) — sweeps sorted left→right by κ",
+    "Spectral heatmaps: PSD vs κ",
+    "eda_spectrogram.png",
 )
 
-
-def _kappa_xticks(
-    kappas: np.ndarray,
-    ax: plt.Axes,
-    n_ticks: int = 10,
-) -> None:
-    """Set x-ticks at evenly spaced sweep indices with κ value labels."""
-    idx = np.round(np.linspace(0, len(kappas) - 1, n_ticks)).astype(int)
-    ax.set_xticks(idx)
-    ax.set_xticklabels([f"{kappas[i]:.2f}" for i in idx], fontsize=8)
-    ax.set_xlabel("κ (lubrication ratio) — sweeps sorted left→right by κ", fontsize=9)
-
-
-# ---------- AE heatmap ----------
-n_ae = len(kappas_ae)
-f_ae_mhz = f_ae / 1e6
-vlo_ae, vhi_ae = np.percentile(mat_ae_db, [2, 98])
-
-im_ae = ax_ae.imshow(
-    mat_ae_db.T,           # transpose: y = frequency, x = sweep index
-    aspect="auto",
-    origin="lower",
-    extent=[0, n_ae - 1, f_ae_mhz[0], f_ae_mhz[-1]],
-    cmap=CMAP,
-    vmin=vlo_ae, vmax=vhi_ae,
-    interpolation="nearest",
+# chronological view (sweep-number order — temperature blocks / staircases visible)
+chrono_ae = np.arange(len(idx_ae))
+chrono_us = np.arange(len(idx_us))
+_render(
+    chrono_ae, chrono_us,
+    [str(i) for i in idx_ae],
+    [str(i) for i in idx_us],
+    "sweep number — chronological order",
+    "Spectral heatmaps: PSD vs time (sweep number)",
+    "eda_spectrogram_chronological.png",
 )
-fig.colorbar(im_ae, ax=ax_ae, label="PSD  [dB re V²/Hz]", pad=0.01)
-
-for edge_khz in AE_BAND_EDGES_KHZ:
-    ax_ae.axhline(edge_khz / 1e3, color="white", lw=0.8, ls="--", alpha=0.7,
-                  label=f"{edge_khz:.0f} kHz")
-ax_ae.legend(fontsize=7, loc="upper right", framealpha=0.5)
-
-ax_ae.set_ylabel("Frequency  [MHz]", fontsize=9)
-ax_ae.set_title(
-    f"AE — spectral heatmap  ({n_ae} sweeps, full bandwidth 0–{f_ae_mhz[-1]:.2f} MHz)",
-    fontsize=10,
-)
-_kappa_xticks(kappas_ae, ax_ae)
-
-# ---------- US heatmap ----------
-n_us = len(kappas_us)
-f_us_khz = f_us / 1e3
-vlo_us, vhi_us = np.percentile(mat_us_db, [2, 98])
-
-im_us = ax_us.imshow(
-    mat_us_db.T,
-    aspect="auto",
-    origin="lower",
-    extent=[0, n_us - 1, f_us_khz[0], f_us_khz[-1]],
-    cmap=CMAP,
-    vmin=vlo_us, vmax=vhi_us,
-    interpolation="nearest",
-)
-fig.colorbar(im_us, ax=ax_us, label="PSD  [dB re V²/Hz]", pad=0.01)
-
-for edge_khz in US_BAND_EDGES_KHZ:
-    ax_us.axhline(edge_khz, color="white", lw=0.8, ls="--", alpha=0.7,
-                  label=f"{edge_khz:.0f} kHz")
-ax_us.legend(fontsize=7, loc="upper right", framealpha=0.5)
-
-ax_us.set_ylabel("Frequency  [kHz]", fontsize=9)
-ax_us.set_title(
-    f"US — spectral heatmap  ({n_us} sweeps, 0–{f_us_khz[-1]:.0f} kHz)",
-    fontsize=10,
-)
-_kappa_xticks(kappas_us, ax_us)
-
-fig.suptitle("Spectral heatmaps: PSD vs κ", fontsize=12, y=0.99)
-
-out_path = EDA_DIR / "eda_spectrogram.png"
-fig.savefig(out_path, dpi=150, bbox_inches="tight")
-plt.show()
-print(f"\nSaved: {out_path}")
 
 # %%
 if __name__ == "__main__":

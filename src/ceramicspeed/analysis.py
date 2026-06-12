@@ -301,6 +301,40 @@ def identify_redundant_features(
     return result.sort_values("vif", ascending=False)
 
 
+def reduce_redundant_features_iterative(
+    df: pd.DataFrame,
+    target: np.ndarray | pd.Series,
+    vif_threshold: float = 5.0,
+) -> list[str]:
+    """Iterative (textbook) VIF elimination with relevance-aware removal.
+
+    While any feature's variance inflation factor exceeds *vif_threshold*,
+    remove the **least target-relevant** feature among those above the
+    threshold (relevance = absolute Spearman correlation with *target*),
+    then recompute all VIFs on the reduced set. This removes both pairwise
+    and distributed (many-to-one) collinearity; the relevance tie-breaking
+    protects the strongest predictors in each collinear cluster.
+
+    Returns
+    -------
+    list[str]
+        Column names of the retained feature subset, in original order.
+    """
+    spear = spearman_correlation(df, target)
+    relevance = spear["rho"].abs()
+
+    cols = list(df.columns)
+    while len(cols) > 1:
+        vif = variance_inflation_factors(df[cols])
+        offenders = vif[vif["vif"] >= vif_threshold]
+        if offenders.empty:
+            break
+        drop = relevance[offenders.index].idxmin()
+        cols.remove(drop)
+
+    return [c for c in df.columns if c in set(cols)]
+
+
 def reduce_redundant_features(
     df: pd.DataFrame,
     target: np.ndarray | pd.Series,

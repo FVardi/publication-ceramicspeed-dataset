@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 from ceramicspeed.loading import load_parquet_pair
 from ceramicspeed.cleaning import filter_by_metadata
@@ -114,6 +114,7 @@ RANDOM_STATE: int = cfg.get("random_state", 42)
 model_cfg = cfg.get("modelling", {})
 CV_N_SPLITS: int = model_cfg.get("cv_n_splits", 5)
 TEST_SIZE: float = model_cfg.get("test_size", 0.2)
+GROUPED_SPLIT: bool = bool(model_cfg.get("grouped_split", False))
 
 _dbg = cfg.get("debug", {})
 
@@ -211,13 +212,40 @@ print(f"{"kappa"} range: [{metadata["kappa"].min():.4f}, {metadata["kappa"].max(
 
 # Split on unique (file, sweep) pairs so both sensor rows for a sweep always
 # land in the same partition — required for the combined model inner join.
+def _derive_hold_groups(meta_df: pd.DataFrame) -> np.ndarray:
+    """Contiguous staircase-hold ids (same definition as 03_evaluation.py)."""
+    sweep_no = meta_df["sweep"].str.split("_").str[1].astype(int).values
+    files = meta_df["file"].values
+    step = np.round(meta_df["rpm"].values / 100.0)
+    order = np.lexsort((sweep_no, files))
+    gid = np.empty(len(meta_df), dtype=int)
+    g = 0
+    prev = None
+    for pos in order:
+        key = (files[pos], step[pos])
+        if prev is None or key[0] != prev[0] or key[1] != prev[1]:
+            g += 1
+        gid[pos] = g
+        prev = key
+    return gid
+
+
 sweep_keys = df[["file", "sweep"]].drop_duplicates().reset_index(drop=True)
-train_sweep_idx, test_sweep_idx = train_test_split(
-    np.arange(len(sweep_keys)),
-    test_size=TEST_SIZE,
-    random_state=RANDOM_STATE,
-    shuffle=True,
-)
+if GROUPED_SPLIT:
+    hold_groups = _derive_hold_groups(metadata)
+    _key_first = pd.DataFrame({"file": df["file"], "sweep": df["sweep"],
+                               "g": hold_groups}).drop_duplicates(["file", "sweep"])
+    _gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+    train_sweep_idx, test_sweep_idx = next(
+        _gss.split(np.arange(len(sweep_keys)), groups=_key_first["g"].values))
+    print(f"Grouped 80/20 split over {_key_first['g'].nunique()} hold groups")
+else:
+    train_sweep_idx, test_sweep_idx = train_test_split(
+        np.arange(len(sweep_keys)),
+        test_size=TEST_SIZE,
+        random_state=RANDOM_STATE,
+        shuffle=True,
+    )
 train_sweeps = set(
     zip(sweep_keys.iloc[train_sweep_idx]["file"], sweep_keys.iloc[train_sweep_idx]["sweep"])
 )

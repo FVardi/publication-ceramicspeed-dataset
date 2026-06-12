@@ -62,12 +62,12 @@ welch:
 sensors:
   AE:
     f_min: 0
-    f_max: 6_250_000   # full Nyquist at 12.5 MHz sampling. (A previous 190 kHz
-                       # value stemmed from an earlier low-sample-rate experiment
-                       # and was NOT a property of the AE sensor.)
+    f_max: 1_000_000   # sensor specified to 1 MHz; a 1 MHz low-pass is applied
+                       # in the acquisition chain. Content above 1 MHz is
+                       # post-filter EM pickup and excluded from analysis.
   UL:
     f_min: 0
-    f_max: 10_000
+    f_max: 100_000
 
 band_width_hz: 100_000
 
@@ -75,7 +75,8 @@ band_width_hz: 100_000
 # UL is heterodyned to <20 kHz — without this, spectral features are
 # dominated by out-of-band noise across the full ~5 MHz DAQ bandwidth.
 sensor_prefilter:
-  UL: {f_lo: 0, f_hi: 20_000}
+  AE: {f_lo: 0, f_hi: 1_000_000}
+  UL: {f_lo: 0, f_hi: 100_000}
 
 # Additional feature set per frequency band.
 # UL bands operate on the prefiltered (0–20 kHz) signal.
@@ -83,10 +84,16 @@ frequency_bands:
   AE:
     - {f_lo:       20_000, f_hi:    500_000, label: "AE_20-500kHz"}
     - {f_lo:      500_000, f_hi:  1_000_000, label: "AE_500-1000kHz"}
-    - {f_lo:    1_000_000, f_hi: 2_000_000, label: "AE_1000-2000kHz"}
   UL:
     - {f_lo:      0, f_hi:  10_000, label: "US_0-10kHz"}
     - {f_lo: 10_000, f_hi:  20_000, label: "US_10-20kHz"}
+    - {f_lo: 20_000, f_hi: 100_000, label: "US_20-100kHz"}
+
+# Bands characterised by the validation scripts (08/10) but EXCLUDED from
+# feature extraction and modelling. Keeps the >1 MHz region documented.
+validation_extra_bands:
+  AE:
+    - {f_lo: 1_000_000, f_hi: 2_000_000, label: "AE_1000-2000kHz"}
 
 # =============================================================================
 # Kappa regime boundaries  (EDA visualisation + feature binning)
@@ -116,7 +123,7 @@ sweep_selection:
 
 feature_selection:
   corr_min: 0.1        # Minimum |Spearman ρ| AND |Pearson r| required to retain a feature
-  vif_threshold: 10.0  # Features with VIF above this are candidates for greedy removal
+  vif_threshold: 5  # Features with VIF above this are candidates for greedy removal
 
 # =============================================================================
 # Evaluation
@@ -132,6 +139,8 @@ evaluation:
 random_state: 42
 
 modelling:
+  grouped_split: true   # split train/holdout and CV folds by staircase hold
+
   test_size:   0.2
   cv_n_splits: 5
   n_repeats:   5      # repeated-CV repeats (full: 10)
