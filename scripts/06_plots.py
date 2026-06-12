@@ -148,7 +148,9 @@ def _tag_parts(tag: str) -> tuple[str, str]:
     return tag, "?"
 
 # RPM colormap (shared across all scatter plots, derived from metadata)
-_rpm_data_max  = float(raw_metadata_df["rpm"].max())
+_RPM_MAX_FILTER = float(cfg.get("filters", {}).get("rpm_max", np.inf))
+_rpm_data_max  = float(
+    raw_metadata_df.loc[raw_metadata_df["rpm"] <= _RPM_MAX_FILTER, "rpm"].max())
 _rpm_ceil      = math.ceil(_rpm_data_max / RPM_STEP) * RPM_STEP
 _rpm_boundaries = np.arange(0, _rpm_ceil + RPM_STEP, RPM_STEP)
 _rpm_n         = len(_rpm_boundaries) - 1
