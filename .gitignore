@@ -1,7 +1,12 @@
 data/
 *.h5
 *.hdf5
-outputs/
+# Results: version the tabular/serialised outputs so figures and tables can be
+# re-rendered on any machine; exclude regenerable images and the heavy EDA cache.
+outputs/**/*.png
+outputs/**/figures/
+outputs/eda/eda_spectrogram_cache.npz
+outputs/07_paper_export/
 __pycache__/
 *.egg-info/
 .venv/

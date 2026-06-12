@@ -1,0 +1,12 @@
+feature,ElasticNet_rank,ElasticNet_in_top10,LightGBM_rank,LightGBM_in_top10,n_models_in_top_k
+US_0-10kHz__mobility,1,True,3,True,2
+US_10-20kHz__mobility,2,True,1,True,2
+US_20-100kHz__complexity,3,True,2,True,2
+US_10-20kHz__complexity,4,True,8,True,2
+complexity,5,True,5,True,2
+US_0-10kHz__kurtosis,6,True,4,True,2
+US_10-20kHz__crest_factor,7,True,6,True,2
+skewness,9,True,9,True,2
+US_0-10kHz__dominant_frequency,10,True,7,True,2
+US_20-100kHz__spectral_bandwidth,8,True,12,False,1
+US_20-100kHz__spectral_skewness,12,False,10,True,1

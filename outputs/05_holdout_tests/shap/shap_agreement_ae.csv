@@ -1,0 +1,12 @@
+feature,ElasticNet_rank,ElasticNet_in_top10,LightGBM_rank,LightGBM_in_top10,n_models_in_top_k
+shape_factor,1,True,4,True,2
+AE_20-500kHz__rms,2,True,2,True,2
+AE_500-1000kHz__mobility,3,True,1,True,2
+AE_500-1000kHz__crest_factor,4,True,3,True,2
+margin_factor,5,True,6,True,2
+AE_20-500kHz__skewness,6,True,7,True,2
+AE_500-1000kHz__rms,7,True,5,True,2
+AE_500-1000kHz__spectral_kurtosis,8,True,9,True,2
+AE_500-1000kHz__skewness,9,True,8,True,2
+spectral_skewness,10,True,11,False,1
+AE_20-500kHz__spectral_skewness,11,False,10,True,1
