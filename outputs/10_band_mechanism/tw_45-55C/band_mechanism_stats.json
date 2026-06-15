@@ -1,18 +1,18 @@
 {
  "test_A_comb_strip": {
   "AE_20-500kHz": {
-   "rho_broad_rpm": 0.933,
-   "rho_line_rpm": 0.914,
-   "line_share_median": 0.344
+   "rho_broad_rpm": 0.912,
+   "rho_line_rpm": 0.898,
+   "line_share_median": 0.342
   },
   "AE_500-1000kHz": {
-   "rho_broad_rpm": 0.692,
-   "rho_line_rpm": 0.35,
-   "line_share_median": 0.239
+   "rho_broad_rpm": 0.685,
+   "rho_line_rpm": 0.263,
+   "line_share_median": 0.237
   },
   "AE_1000-2000kHz": {
-   "rho_broad_rpm": -0.784,
-   "rho_line_rpm": -0.765,
+   "rho_broad_rpm": -0.809,
+   "rho_line_rpm": -0.781,
    "line_share_median": 0.2
   }
  },

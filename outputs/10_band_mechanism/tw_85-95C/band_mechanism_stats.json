@@ -1,32 +1,22 @@
 {
  "test_A_comb_strip": {
   "AE_20-500kHz": {
-   "rho_broad_rpm": 0.84,
-   "rho_line_rpm": 0.831,
-   "line_share_median": 0.541
+   "rho_broad_rpm": 0.885,
+   "rho_line_rpm": 0.873,
+   "line_share_median": 0.513
   },
   "AE_500-1000kHz": {
-   "rho_broad_rpm": 0.184,
-   "rho_line_rpm": -0.343,
-   "line_share_median": 0.244
+   "rho_broad_rpm": 0.172,
+   "rho_line_rpm": -0.442,
+   "line_share_median": 0.237
   },
   "AE_1000-2000kHz": {
-   "rho_broad_rpm": -0.704,
-   "rho_line_rpm": -0.671,
-   "line_share_median": 0.231
+   "rho_broad_rpm": -0.797,
+   "rho_line_rpm": -0.767,
+   "line_share_median": 0.201
   }
  },
  "test_B_within_step": {
-  "AE_1000-2000kHz__complexity": {
-   "median_rho": -0.682,
-   "median_abs": 0.712,
-   "frac_negative": 0.909
-  },
-  "AE_1000-2000kHz__mobility": {
-   "median_rho": 0.571,
-   "median_abs": 0.571,
-   "frac_negative": 0.0
-  },
   "AE_20-500kHz__mobility": {
    "median_rho": -0.561,
    "median_abs": 0.561,
@@ -36,11 +26,6 @@
    "median_rho": -0.497,
    "median_abs": 0.497,
    "frac_negative": 1.0
-  },
-  "AE_1000-2000kHz__rms": {
-   "median_rho": 0.363,
-   "median_abs": 0.409,
-   "frac_negative": 0.182
   },
   "AE_20-500kHz__rms": {
    "median_rho": 0.277,

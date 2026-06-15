@@ -83,7 +83,7 @@ p.add_argument("--temp-window", type=float, nargs=2, default=[45.0, 55.0],
 p.add_argument("--nperseg", type=int, default=1 << 16)
 p.add_argument("--median-kernel", type=int, default=31,
                help="median filter width in PSD bins (must span > line width, < comb spacing x2)")
-p.add_argument("--per-step", type=int, default=2, help="sweeps per RPM step in Test A")
+p.add_argument("--per-step", type=int, default=10, help="sweeps per RPM step in Test A")
 args, _ = p.parse_known_args()
 
 if args.output_dir:

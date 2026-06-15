@@ -1,0 +1,15 @@
+feature,ElasticNet_rank,ElasticNet_in_top9,Polynomial_rank,Polynomial_in_top9,LightGBM_rank,LightGBM_in_top9,n_models_in_top_k
+spectral_mean,1.0,True,2.0,True,1.0,True,3
+crest_factor,2.0,True,1.0,True,9.0,True,3
+kurtosis,4.0,True,3.0,True,5.0,True,3
+skewness,7.0,True,6.0,True,8.0,True,3
+mobility,3.0,True,,False,2.0,True,2
+complexity,5.0,True,,False,6.0,True,2
+normalized_frequency_std,6.0,True,,False,7.0,True,2
+spectral_kurtosis,8.0,True,,False,3.0,True,2
+dominant_frequency,9.0,True,10.0,False,4.0,True,2
+spectral_mean skewness,,False,8.0,True,,False,1
+spectral_mean crest_factor,,False,4.0,True,,False,1
+spectral_mean kurtosis,,False,5.0,True,,False,1
+kurtosis crest_factor,,False,7.0,True,,False,1
+dominant_frequency^2,,False,9.0,True,,False,1

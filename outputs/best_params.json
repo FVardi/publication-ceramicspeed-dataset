@@ -1,0 +1,56 @@
+{
+  "ElasticNet_AE": {
+    "alpha": 0.001,
+    "l1_ratio": 0.7
+  },
+  "ElasticNet_UL": {
+    "alpha": 0.0001,
+    "l1_ratio": 0.1
+  },
+  "ElasticNet_Combined": {
+    "alpha": 0.001,
+    "l1_ratio": 0.1
+  },
+  "Polynomial_AE": {
+    "alpha": 1.0
+  },
+  "Polynomial_UL": {
+    "alpha": 1.0
+  },
+  "Polynomial_Combined": {
+    "alpha": 1.0
+  },
+  "LightGBM_AE": {
+    "colsample_bytree": 0.8,
+    "learning_rate": 0.05,
+    "max_depth": -1,
+    "min_child_samples": 10,
+    "n_estimators": 364,
+    "num_leaves": 63,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "subsample": 0.8
+  },
+  "LightGBM_UL": {
+    "colsample_bytree": 0.8,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "min_child_samples": 10,
+    "n_estimators": 227,
+    "num_leaves": 31,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "subsample": 0.8
+  },
+  "LightGBM_Combined": {
+    "colsample_bytree": 0.8,
+    "learning_rate": 0.05,
+    "max_depth": -1,
+    "min_child_samples": 10,
+    "n_estimators": 394,
+    "num_leaves": 63,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "subsample": 0.8
+  }
+}

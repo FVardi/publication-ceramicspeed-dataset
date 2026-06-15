@@ -35,6 +35,21 @@ Xuanrui Zhang, Dong Zhen, Guojin Feng, Xiaoxia Liang, Hao Zhang, and Fengshou Gu
 \newblock A coupled vibration-acoustic emission model for roller bearings incorporating lubricant traction and sliding friction.
 \newblock {\em Tribology International}, 221:112013, September 2026.
 
+\bibitem{pang_smia_2024}
+Shan Pang.
+\newblock Stacked maximum independence autoencoders: A domain generalization approach for fault diagnosis under various working conditions.
+\newblock {\em Mechanical Systems and Signal Processing}, 208:111035, 2024.
+
+\bibitem{hua_dife_2025}
+Zehui Hua, Juanjuan Shi, and Patrick Dumond.
+\newblock Domain-invariant feature exploration for intelligent fault diagnosis under unseen and time-varying working conditions.
+\newblock {\em Mechanical Systems and Signal Processing}, 224:112193, 2025.
+
+\bibitem{jiang_mechanism_2025}
+Fei Jiang, Yicong Kuang, Tao Li, Shaohui Zhang, Zhaoqian Wu, Ke~Feng, and Weihua Li.
+\newblock Towards enhanced interpretability: A mechanism-driven domain adaptation model for bearing fault diagnosis across operating conditions.
+\newblock {\em Mechanical Systems and Signal Processing}, 225:112244, 2025.
+
 \bibitem{wakiru_review_2019}
 James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
 \newblock A review on lubricant condition monitoring information analysis for maintenance decision support.
@@ -44,6 +59,16 @@ James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
 Daniel Cornel, Francisco Guti{\'e}rrez~Guzm{\'a}n, Georg Jacobs, and Stephan Neumann.
 \newblock Condition monitoring of roller bearings using acoustic emission.
 \newblock {\em Wind Energy Science}, 6(2):367--376, 2021.
+
+\bibitem{zhang_interpretable_2026}
+Xinzhuo Zhang, Zhijun Ren, Kai Huang, Tantao Lin, Yongsheng Zhu, Hong Fu, and Jun Hong.
+\newblock An interpretable rolling-bearing lubrication-state diagnosis method based on multiscale residual and semantic consistency {CycleGAN}.
+\newblock {\em IEEE Transactions on Instrumentation and Measurement}, 75:3512116, 2026.
+
+\bibitem{sun_online_2021}
+Jiayi Sun, Liming Wang, Jianfeng Li, Fangyi Li, Jianyong Li, and Haiyang Lu.
+\newblock Online oil debris monitoring of rotating machinery: A detailed review of more than three decades.
+\newblock {\em Mechanical Systems and Signal Processing}, 149:107341, 2021.
 
 \bibitem{lineham_ultrasonic_2008}
 Jeremy Lineham.
@@ -70,6 +95,11 @@ N.~Tandon, K.~M. Ramakrishna, and G.~S. Yadava.
 \newblock Condition monitoring of electric motor ball bearings for the detection of grease contaminants.
 \newblock {\em Tribology International}, 40:29--36, 2007.
 
+\bibitem{wang_fingerprint_2023}
+Cuiping Wang, Hongyuan Qi, Dongming Hou, Defu Han, and Jiangtian Yang.
+\newblock Fingerprint feature and dynamic threshold mechanism based on acoustic emission for bearing fault detection.
+\newblock {\em Mechanical Systems and Signal Processing}, 199:110496, 2023.
+
 \bibitem{hou_insitu_2025}
 Geng Hou and Liangchi Zhang.
 \newblock In-situ detection of lubrication status of bearings with acoustic emission monitoring.
@@ -92,6 +122,11 @@ Ling Wang and Honor Powrie.
 
 \bibitem{iso_281}
 {ISO} 281:2007 --- rolling bearings --- dynamic load ratings and rating life, 2007.
+
+\bibitem{pan_sgmd_2019}
+Haiyang Pan, Yu~Yang, Xin Li, Jinde Zheng, and Junsheng Cheng.
+\newblock Symplectic geometry mode decomposition and its application to rotating machinery compound fault diagnosis.
+\newblock {\em Mechanical Systems and Signal Processing}, 114:189--211, 2019.
 
 \bibitem{zhang_graph_2024}
 Xinzhuo Zhang, Xuhua Zhang, Linbo Zhu, Chuang Gao, Bo~Ning, and Yongsheng Zhu.

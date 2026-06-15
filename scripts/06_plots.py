@@ -832,8 +832,10 @@ else:
 
 _tw_dirs = sorted(MECH_DIR.glob("tw_*")) if MECH_DIR.exists() else []
 if _tw_dirs:
+    # Validation figure (fig:band_power) shows only the retained AE bands; the
+    # >1 MHz (1--2 MHz) validation_extra_bands are excluded from feature
+    # extraction and modelling, so they are no longer plotted here.
     band_labels = [b["label"] for b in cfg["frequency_bands"]["AE"]]
-    band_labels += [b["label"] for b in cfg.get("validation_extra_bands", {}).get("AE", [])]
     _tw_colors = ["#4878CF", "#D65F5F", "#6ACC65"]
     fig, axes = plt.subplots(1, len(band_labels), figsize=(4.4 * len(band_labels), 3.8),
                              sharex=True)

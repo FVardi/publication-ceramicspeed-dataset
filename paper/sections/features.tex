@@ -143,10 +143,12 @@ contribution beyond it.
 The features are not, however, mere speed trackers. Within a fixed staircase RPM
 step the drive state is approximately constant while the lubricant viscosity varies
 across the 13 temperature blocks; in this setting the strongest feature
-(1--2~MHz complexity) retains a median within-step Spearman correlation of
-$\resWithinStepRhoHC$ with temperature (negative in 91\% of steps, i.e.\ tracking
-$\kappa$; Figure~\ref{fig:within_step}), while remaining constant during the
-stationary heater-driven warm-up. The features therefore sense both $\kappa$
+(\resWithinStepFeat) retains a median within-step Spearman correlation of
+$\resWithinStepRhoHC$ with temperature (predominantly negative across steps, i.e.\
+tracking $\kappa$; Figure~\ref{fig:within_step}), while remaining constant during the
+stationary heater-driven warm-up.\todo{Source the exact fraction of steps with negative
+within-step $\rho$ from 09\_proxy\_diagnostics and add it as a macro; the previous
+``91\%'' referred to the now-removed 1--2~MHz complexity feature.} The features therefore sense both $\kappa$
 channels---speed and temperature---through the rotating bearing, rather than
 reading either operating quantity directly.
 

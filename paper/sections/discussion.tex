@@ -7,27 +7,14 @@
 \label{subsec:disc_ae}
 
 The consistently superior performance of AE over the US channel across all model
-families reflects a fundamental hardware difference. The AE sensor captures wideband, rotation-generated content extending into the MHz range (analysed here up to \SI{2}{MHz}): verified stress-wave emission up to several hundred kHz, and film-gated high-frequency activity above (Sections~\ref{subsec:band_validation} and~\ref{subsec:disc_hf}). The US channel is heterodyned, limiting its recorded content to a 0--20~kHz baseband in which the signal is a mixture of down-mixed contact activity, low-frequency machinery noise, VFD harmonics, and structural vibration; within this baseband, the 10--20~kHz half carries the strongest $\kappa$ correlations (Section~\ref{subsec:raw_spearman}). The physical information about microscale contact events is largely absent in this frequency range. Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor would be expected to substantially improve the US-channel models.
+families reflects a fundamental hardware difference. The AE sensor captures wideband, rotation-generated content extending into the MHz range (analysed here up to \SI{1}{MHz}), dominated by verified stress-wave emission up to several hundred kHz. The US channel is heterodyned, limiting its recorded content to a 0--20~kHz baseband\todo{US is now analysed to 100~kHz (0--10/10--20/20--100~kHz sub-bands); reconcile this ``0--20~kHz baseband'' wording with the extended band in Section~\ref{subsec:filter_bands}.} in which the signal is a mixture of down-mixed contact activity, low-frequency machinery noise, VFD harmonics, and structural vibration; within this baseband, the 10--20~kHz half carries the strongest $\kappa$ correlations (Section~\ref{subsec:raw_spearman}). The physical information about microscale contact events is largely absent in this frequency range. Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor would be expected to substantially improve the US-channel models.
 
-\subsection{Origin of the high-frequency AE content}
-\label{subsec:disc_hf}
-
-The validation of Section~\ref{subsec:band_validation} shows that the 1--2~MHz band
-superimposes a VFD switching comb on a broadband, rotation-generated component that
-vanishes once the lubricant film forms. Two mechanisms are compatible with this
-behaviour. The first is mechanical: asperity-contact emission whose high-frequency
-tail remains detectable despite the strong structure-borne attenuation at
-MHz frequencies. The
-second is electrical: VFD common-mode voltage discharging through the bearing while
-the film is thin (bearing currents), producing broadband high-frequency transients
-that are directly film-gated and would also explain the prominence of drive-related
-structure in the same band.\todo{Add bearing-current/EDM references.}
-Both mechanisms are film-mediated, so the band's predictive value for $\kappa$ is
-genuine in either case; distinguishing them---for instance via shaft-voltage
-measurement or an electrically insulated sensor mount---is left to future work.
-For deployment, the electrical hypothesis implies that the high-frequency features
-may be drive-specific, whereas the verified 20--500~kHz band, whose energy rises monotonically with
-speed, is expected to transfer across drive configurations.
+%% Former \S "Origin of the high-frequency AE content" (subsec:disc_hf) removed
+%% 2026-06-15: obsolete after exclusion of the >1 MHz (1--2 MHz) band, on which the
+%% whole subsection (mechanical vs. bearing-current/EDM hypotheses) was predicated.
+%% NOTE: the still-valid deployment point that the 20--500 kHz band rises
+%% monotonically with speed and should transfer across drive configurations was
+%% lost with it -- relocate to a retained-band discussion if wanted.
 
 \subsection{Fusion gain}
 \label{subsec:disc_fusion}

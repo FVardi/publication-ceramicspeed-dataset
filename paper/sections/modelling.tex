@@ -5,7 +5,7 @@
 \subsection{Experimental design}
 \label{subsec:modelling_design}
 \subsubsection{Data sets and splits}
-The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by sweep-level random sampling, stratified to preserve the $\kappa$ regime distribution. The hold-out set is withheld entirely from all model development steps and used only for final evaluation. The training set is further divided during nested cross-validation described in Section~\ref{subsec:nested_cv}.
+The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by a \emph{visit-grouped} split: sweeps are partitioned into groups corresponding to contiguous 60-second RPM holds (both sensor rows of a sweep kept together), and whole groups---rather than individual sweeps---are assigned to the training or hold-out set with \texttt{GroupShuffleSplit}. This prevents the near-duplicate windows of a single slowly-varying hold from straddling the train/test boundary, as a sweep-level random split would allow. The hold-out set is withheld entirely from all model development steps and used only for final evaluation. The training set is further divided during nested cross-validation described in Section~\ref{subsec:nested_cv}.
 \subsubsection{Model families}
 Three regression model families are evaluated for three sensor configurations,
 as summarised in Table~\ref{tab:model_families}.
@@ -34,17 +34,19 @@ LightGBM &
 
 \subsection{Repeated nested cross-validation}
 \label{subsec:nested_cv}
-To obtain stable performance estimates that properly account for the variance introduced by the train/validation split, the model evaluation uses a repeated nested $k$-fold cross-validation scheme. The outer loop is repeated $R = \resNrepeats$ times with independently re-seeded \resNfoldsCv-fold splits, yielding $R \times k = \resNouterScores$~outer RMSE scores per model--sensor combination. See Figure~\ref{fig:data_partition} for data partitions.
+To obtain stable performance estimates that properly account for the variance introduced by the train/validation split, the model evaluation uses a repeated nested $k$-fold cross-validation scheme. The outer loop is repeated $R = \resNrepeats$ times with independently re-seeded, group-respecting \resNfoldsCv-fold splits (the same hold-group structure as the hold-out split, so near-duplicate windows never straddle a fold boundary), yielding $R \times k = \resNouterScores$~outer RMSE scores per model--sensor combination. See Figure~\ref{fig:data_partition} for data partitions.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/nested_cv_splits.png}
 \caption{Data partitioning for the repeated nested cross-validation: an 80/20
-sweep-level hold-out split, with the training pool further divided into
-$R = \resNrepeats$ independently seeded \resNfoldsCv-fold outer splits and inner
-hyperparameter-selection folds.}
+group-level hold-out split (groups = 60-second RPM holds), with the training pool
+further divided into $R = \resNrepeats$ independently seeded, group-respecting
+\resNfoldsCv-fold outer splits and inner hyperparameter-selection folds.}
 \label{fig:data_partition}
 \end{figure}
+\todo[inline]{Regenerate nested\_cv\_splits.png to depict the visit-grouped scheme; the
+current diagram shows random sweep-level splits.}
 
 For LightGBM, each outer fold contains its own inner Optuna optimisation loop, ensuring that the reported outer scores are not contaminated by hyperparameter selection on the outer fold data.
 For the linear models, hyperparameter selection is handled by \texttt{ElasticNetCV} and \texttt{RidgeCV} within each outer training partition. \todo{Verify that this is correct}
@@ -136,14 +138,16 @@ set for all model families under the AE-only configuration.
 \textbf{SHAP-based feature importance.}
 SHAP (SHapley Additive exPlanations) values computed via TreeExplainer identify
 which AE sub-band features drive the $\kappa$ predictions.
-The dominant contributor by a large margin is \textit{1--2~MHz complexity}
-(mean $|\text{SHAP}| = 0.168$), followed by \textit{500~kHz--1~MHz centre frequency}
-(0.078) and \textit{1--2~MHz mobility} (0.044).
-The 1--2~MHz complexity feature ranks \emph{first} for all three model types, and the
-500~kHz--1~MHz centre frequency also appears in all three top-10s (cross-model
-agreement, Table~\ref{tab:shap_agree}), making 1--2~MHz complexity the most robust
-single predictor of $\kappa$ in the dataset.\todo{SHAP numbers are hand-typed from
-shap\_importance\_lightgbm\_ae.csv; consider adding them to 07\_paper\_export.}
+For LightGBM the dominant contributor by a large margin is
+\textit{500~kHz--1~MHz mobility} (mean $|\text{SHAP}| = 0.205$), followed by
+\textit{20--500~kHz RMS} (0.050) and \textit{500~kHz--1~MHz crest factor} (0.036).
+The 500~kHz--1~MHz mobility feature ranks \emph{first} for both LightGBM and the
+polynomial model and third for Elastic Net (behind the broadband shape factor and
+20--500~kHz RMS), making it the most robust single predictor of $\kappa$ across model
+families (cross-model agreement, Table~\ref{tab:shap_agree}).\todo{SHAP values are
+hand-tabulated from \texttt{outputs/04\_modelling/shap/shap\_importance\_*\_ae.csv};
+add them to 07\_paper\_export so this paragraph and Table~\ref{tab:shap_agree}
+regenerate automatically.}
 Figure~\ref{fig:shap} shows the full importance ranking.
 
 \begin{table}[H]
@@ -153,17 +157,20 @@ Figure~\ref{fig:shap} shows the full importance ranking.
 \toprule
 \textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & \textbf{LightGBM} & \textbf{Models in top 10} \\
 \midrule
-1--2~MHz complexity          & 1 & 1 & 1 & 3 \\
-500k--1~MHz centre freq.     & 7 & 8 & 2 & 3 \\
-Broadband spectral flatness  & 2 & -- & 5 & 2 \\
-1--2~MHz mobility            & 3 & -- & 3 & 2 \\
-500k--1~MHz RMS              & 5 & -- & 9 & 2 \\
-1--2~MHz dominant freq.      & 6 & -- & 8 & 2 \\
-500k--1~MHz dominant freq.   & -- & 5 & 6 & 2 \\
+500k--1~MHz mobility         & 3 & 1  & 1 & 3 \\
+Broadband shape factor       & 1 & 4  & 4 & 3 \\
+Broadband margin factor      & 5 & 2  & 6 & 3 \\
+500k--1~MHz crest factor     & 4 & 10 & 3 & 3 \\
+500k--1~MHz RMS              & 7 & 9  & 5 & 3 \\
+20--500~kHz RMS              & 2 & -- & 2 & 2 \\
+20--500~kHz skewness         & 6 & -- & 7 & 2 \\
+500k--1~MHz skewness         & 9 & -- & 8 & 2 \\
+500k--1~MHz spectral kurt.   & 8 & -- & 9 & 2 \\
 \bottomrule
 \end{tabular}
 \caption{Cross-model SHAP agreement for AE features: features appearing in the
-top~10 by mean $|\text{SHAP}|$ for more than one model type.}
+top~10 by mean $|\text{SHAP}|$ for more than one model type. Polynomial-model ranks
+count base (non-interaction) features only.}
 \label{tab:shap_agree}
 \end{table}
 
