@@ -14,5 +14,5 @@
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How?}{12}{section*.19}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Consider inverting the colors. Green should be better, right?}{13}{section*.22}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ AE sensor/coupler bullets written from the Kistler datasheets in \texttt {docs/}. Remaining bullets (US probe, temperature, RPM, load) await collaborator input. Temperature via an Omron controller?}{14}{section*.23}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{39}{section*.46}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{38}{section*.46}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{39}{section*.48}%
