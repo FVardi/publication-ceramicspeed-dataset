@@ -18,10 +18,10 @@ as summarised in Table~\ref{tab:model_families}.
 \midrule
 Elastic Net &
   $\ell_1$+$\ell_2$ regularised linear model; $\ell_1$ promotes sparsity, $\ell_2$ stabilises correlated features. &
-  $\alpha$ (strength) and $\ell_1$ ratio; \texttt{ElasticNetCV} inner CV loop. \\[4pt]
+  $\alpha$ (9 values, $10^{-4}$--$10^{2}$) $\times$ $\ell_1$ ratio (6 values, $0.1$--$1.0$); \texttt{ElasticNetCV}, inner 5-fold. \\[4pt]
 Polynomial (deg.\ 2) &
   Augments linear model with all pairwise interaction terms; remains linear in parameters. &
-  Ridge penalty $\lambda$; \texttt{RidgeCV} within each outer fold. \\[4pt]
+  Ridge penalty $\lambda$ (15 log-spaced values, $10^{-3}$--$10^{4}$); \texttt{RidgeCV} (leave-one-out) within each outer fold. \\[4pt]
 LightGBM &
   Gradient-boosted trees; captures non-linear feature--$\kappa$ mappings and high-order interactions. &
   Learning rate, num.\ leaves, max.\ depth, min.\ child samples, $\ell_2$ reg.; Bayesian optimisation (Optuna TPE, 20~trials per outer fold). \\
@@ -30,7 +30,7 @@ LightGBM &
 \caption{Regression model families: rationale and hyperparameter tuning strategy.}
 \label{tab:model_families}
 \end{table}
-\todo{Add ElasticNetCV search grid values (number of $\alpha$ candidates and $\ell_1$ ratios tried).}
+
 
 \subsection{Repeated nested cross-validation}
 \label{subsec:nested_cv}
@@ -45,11 +45,9 @@ further divided into $R = \resNrepeats$ independently seeded, group-respecting
 \resNfoldsCv-fold outer splits and inner hyperparameter-selection folds.}
 \label{fig:data_partition}
 \end{figure}
-\todo[inline]{Regenerate nested\_cv\_splits.png to depict the visit-grouped scheme; the
-current diagram shows random sweep-level splits.}
 
 For LightGBM, each outer fold contains its own inner Optuna optimisation loop, ensuring that the reported outer scores are not contaminated by hyperparameter selection on the outer fold data.
-For the linear models, hyperparameter selection is handled by \texttt{ElasticNetCV} and \texttt{RidgeCV} within each outer training partition. \todo{Verify that this is correct}
+For the linear models, hyperparameter selection runs within each outer training partition: \texttt{ElasticNetCV} performs an inner 5-fold search over the $\alpha$/$\ell_1$-ratio grid, and \texttt{RidgeCV} a leave-one-out generalised cross-validation over the $\lambda$ grid; the selected hyperparameters are then refit on the full outer-training fold before the outer validation fold is scored.
 
 The \resNouterScores~outer scores form the empirical sampling distribution of RMSE for each model and are used directly in the significance tests described below.
 \subsection{Statistical significance testing}
@@ -104,9 +102,9 @@ more effectively.
 
 \textbf{Sensor comparison.}
 AE features substantially outperform US features across all model families.
-The LightGBM AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$) is confirmed as highly significant
-(Nadeau--Bengio $p = \resPcvAeUs$; Wilcoxon $p = \resPwxAeUs$; $\Delta\text{RMSE} = \resDrmseAeUs$,
-95\%~CI [\resDrmseLoAeUs, \resDrmseHiAeUs]).
+The LightGBM AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$) is large and significant on the hold-out set
+(Wilcoxon $p = \resPwxAeUs$; $\Delta\text{RMSE} = \resDrmseAeUs$,
+95\%~CI [\resDrmseLoAeUs, \resDrmseHiAeUs]), although the corrected repeated nested-CV $t$-test does not reach significance (Nadeau--Bengio $p = \resPcvAeUs$); we report both.
 This reflects the richer frequency content and more direct physical sensitivity of
 the AE sensor to asperity contact events.
 
@@ -139,38 +137,23 @@ set for all model families under the AE-only configuration.
 SHAP (SHapley Additive exPlanations) values computed via TreeExplainer identify
 which AE sub-band features drive the $\kappa$ predictions.
 For LightGBM the dominant contributor by a large margin is
-\textit{500~kHz--1~MHz mobility} (mean $|\text{SHAP}| = 0.205$), followed by
-\textit{20--500~kHz RMS} (0.050) and \textit{500~kHz--1~MHz crest factor} (0.036).
+\textit{\resShapTopFeat} (mean $|\text{SHAP}| = \resShapTopVal$), followed by
+\textit{\resShapSecondFeat} (\resShapSecondVal) and \textit{\resShapThirdFeat} (\resShapThirdVal).
 The 500~kHz--1~MHz mobility feature ranks \emph{first} for both LightGBM and the
 polynomial model and third for Elastic Net (behind the broadband shape factor and
 20--500~kHz RMS), making it the most robust single predictor of $\kappa$ across model
-families (cross-model agreement, Table~\ref{tab:shap_agree}).\todo{SHAP values are
-hand-tabulated from \texttt{outputs/04\_modelling/shap/shap\_importance\_*\_ae.csv};
-add them to 07\_paper\_export so this paragraph and Table~\ref{tab:shap_agree}
-regenerate automatically.}
-Figure~\ref{fig:shap} shows the full importance ranking.
+families (cross-model agreement, Table~\ref{tab:shap_agree}).Figure~\ref{fig:shap} shows the full importance ranking.
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & \textbf{LightGBM} & \textbf{Models in top 10} \\
-\midrule
-500k--1~MHz mobility         & 3 & 1  & 1 & 3 \\
-Broadband shape factor       & 1 & 4  & 4 & 3 \\
-Broadband margin factor      & 5 & 2  & 6 & 3 \\
-500k--1~MHz crest factor     & 4 & 10 & 3 & 3 \\
-500k--1~MHz RMS              & 7 & 9  & 5 & 3 \\
-20--500~kHz RMS              & 2 & -- & 2 & 2 \\
-20--500~kHz skewness         & 6 & -- & 7 & 2 \\
-500k--1~MHz skewness         & 9 & -- & 8 & 2 \\
-500k--1~MHz spectral kurt.   & 8 & -- & 9 & 2 \\
-\bottomrule
-\end{tabular}
+\IfFileExists{tables/table_shap_agreement_tabular.tex}%
+  {\input{tables/table_shap_agreement_tabular.tex}}%
+  {\IfFileExists{../outputs/07_paper_export/table_shap_agreement_tabular.tex}%
+    {\input{../outputs/07_paper_export/table_shap_agreement_tabular.tex}}%
+    {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_shap\_agreement\_tabular.tex.}}}
 \caption{Cross-model SHAP agreement for AE features: features appearing in the
-top~10 by mean $|\text{SHAP}|$ for more than one model type. Polynomial-model ranks
-count base (non-interaction) features only.}
+top~10 by mean $|\text{SHAP}|$ for more than one model type. Polynomial ranks are positions in the full expanded-term importance list (interaction and squared terms included); only base features are tabulated.}
 \label{tab:shap_agree}
 \end{table}
 

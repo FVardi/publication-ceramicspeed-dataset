@@ -177,6 +177,8 @@ for name in (
     "resNsweepsRaw", "resNsweepsRemoved", "resWindowMs", "resWindowIntervalS",
     "resSweepsPerHold", "resRpmMinMeas", "resRpmMaxMeas",
     "resTempMinMeas", "resTempMaxMeas",
+    "resShapTopFeat", "resShapTopVal", "resShapSecondFeat", "resShapSecondVal",
+    "resShapThirdFeat", "resShapThirdVal",
 ):
     macros[name] = MISSING
 
@@ -463,6 +465,67 @@ try:
 except (FileNotFoundError, OSError, KeyError) as exc:
     warn(f"band_mechanism_stats.json unavailable ({exc})")
 
+# ---------------------------------------------------------------------------
+# 5b. SHAP importances (LightGBM, AE) -- top contributors quoted in the prose
+# ---------------------------------------------------------------------------
+try:
+    shap_imp = pd.read_csv(
+        OUTPUT_DIR / "04_modelling" / "shap" / "shap_importance_lightgbm_ae.csv",
+        index_col=0,
+    ).sort_values("mean_abs_shap", ascending=False)
+    for rank, key in ((0, "Top"), (1, "Second"), (2, "Third")):
+        macros[f"resShap{key}Feat"] = pretty_feature(str(shap_imp.index[rank]))
+        macros[f"resShap{key}Val"] = fmt(float(shap_imp["mean_abs_shap"].iloc[rank]))
+    print(f"SHAP top-3 (LightGBM AE): {shap_imp.index[0]}="
+          f"{shap_imp['mean_abs_shap'].iloc[0]:.3f}")
+except (FileNotFoundError, OSError, KeyError, IndexError) as exc:
+    warn(f"shap importance unavailable ({exc})")
+
+# Cross-model SHAP agreement table (tab:shap_agree): base features that fall in the
+# top-k by mean |SHAP| of more than one model. Ranks are positions in each model's
+# full importance list -- for the polynomial that list includes interaction and
+# squared terms, so a base feature's rank reflects competition with those terms.
+table_shap_body = ""
+try:
+    _topk = int(cfg.get("evaluation", {}).get("shap_top_k", 10))
+    _shap_dir = OUTPUT_DIR / "04_modelling" / "shap"
+    _models = (("ElasticNet", "elasticnet"), ("Polynomial", "polynomial"), ("LightGBM", "lightgbm"))
+    _ranks: dict[str, dict[str, int]] = {}
+    for _disp, _key in _models:
+        _imp = pd.read_csv(_shap_dir / f"shap_importance_{_key}_ae.csv", index_col=0)
+        _imp = _imp.sort_values("mean_abs_shap", ascending=False)
+        _ranks[_disp] = {str(f): i + 1 for i, f in enumerate(_imp.index)}
+
+    def _is_base(f: str) -> bool:  # exclude interaction (" ") and squared ("^") terms
+        return (" " not in f) and ("^" not in f)
+
+    _agg: dict[str, dict[str, int]] = {}
+    for _disp, _ in _models:
+        for _feat, _rk in _ranks[_disp].items():
+            if _rk <= _topk and _is_base(_feat):
+                _agg.setdefault(_feat, {})[_disp] = _rk
+    _rows = [(f, mr) for f, mr in _agg.items() if len(mr) >= 2]
+    _rows.sort(key=lambda it: (-len(it[1]), sum(it[1].values()),
+                               it[1].get("LightGBM", 99), it[0]))
+
+    def _disp_feat(f: str) -> str:
+        return pretty_feature(f) if "__" in f else "Broadband " + FEAT_DISPLAY.get(f, f)
+
+    _lines = [
+        r"\begin{tabular}{lcccc}", r"\toprule",
+        r"\textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & "
+        rf"\textbf{{LightGBM}} & \textbf{{Models in top {_topk}}} \\",
+        r"\midrule",
+    ]
+    for _feat, _mr in _rows:
+        _e, _p, _l = (_mr.get(m, "--") for m in ("ElasticNet", "Polynomial", "LightGBM"))
+        _lines.append(rf"{_disp_feat(_feat)} & {_e} & {_p} & {_l} & {len(_mr)} \\")
+    _lines += [r"\bottomrule", r"\end{tabular}"]
+    table_shap_body = "\n".join(_lines)
+    print(f"SHAP agreement table: {len(_rows)} features (top-{_topk})")
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"shap agreement table unavailable ({exc})")
+
 # Knee of the 1-2 MHz broadband decay vs RPM, per temperature window
 try:
     import importlib.util as _ilu2
@@ -512,6 +575,8 @@ if table_models_body:
     files["table_models_tabular.tex"] = header + table_models_body + "\n"
 if table_top_feats_body:
     files["table_top_features_tabular.tex"] = header + table_top_feats_body + "\n"
+if table_shap_body:
+    files["table_shap_agreement_tabular.tex"] = header + table_shap_body + "\n"
 
 # Refresh the appendix ranking-table copies so the paper compiles without outputs/
 for _n in ("ae", "us"):

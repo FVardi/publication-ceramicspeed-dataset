@@ -810,7 +810,8 @@ if all(pp.exists() for pp in _vif_paths.values()):
         colors = [COLOR_BAR if r else "#bbbbbb" for r in v["retained"]]
         ax.bar(range(len(v)), v["vif"], color=colors)
         ax.set_yscale("log")
-        ax.axhline(10, color="#2c2c2c", ls="--", lw=1)
+        _vif_thresh = float(cfg.get("feature_selection", {}).get("vif_threshold", 5))
+        ax.axhline(_vif_thresh, color="#2c2c2c", ls="--", lw=1)
         ax.set_xticks(range(len(v)))
         ax.set_xticklabels([f.replace("__", "\n") for f in v["feature"]],
                            rotation=90, fontsize=5)

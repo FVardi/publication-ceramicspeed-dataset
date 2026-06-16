@@ -10,11 +10,11 @@ The main findings are as follows:
 
 \begin{enumerate}
   \item \textbf{AE sub-band features are strong predictors of $\kappa$.}
-    LightGBM on \resNretAe{} retained AE features achieves hold-out $R^2 = \resHOrsqLgbAe$, RMSE~$= \resHOrmseLgbAe$~$\kappa$-units. The 1--2~MHz complexity feature is the dominant SHAP contributor, ranked first for all three model types, identifying the high-frequency AE sub-band as the most informative frequency range for lubrication regime prediction.
+    LightGBM on \resNretAe{} retained AE features achieves hold-out $R^2 = \resHOrsqLgbAe$, RMSE~$= \resHOrmseLgbAe$~$\kappa$-units. The \resTopAeFeat{} feature is the dominant SHAP contributor and the most robust single predictor across model families---ranked first for the LightGBM and polynomial models (third for Elastic Net)---identifying the upper AE sub-band (500~kHz--1~MHz) as the most informative frequency range for lubrication-regime prediction.
   \item \textbf{Sensor fusion yields a small but consistently significant gain.}
     The LightGBM combined model achieves $R^2 = \resHOrsqLgbComb$ ($\Delta R^2 = \resDrsqLgbCombAe$ over AE alone); within-CV corrected $t$-test $p = \resPcvAeComb$; hold-out tests: Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano $p = \resPdmAeComb$, bootstrap 95\%~CI $[\resDrmseLoAeComb,\, \resDrmseHiAeComb]$ excluding zero. The heterodyned US channel thus supplies a modest amount of non-redundant information, though its \resNretUs{} retained features are individually weaker than the AE features.
-  \item \textbf{AE strongly and significantly outperforms the US channel.}
-    The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$ for LightGBM) is confirmed highly significant by all test statistics, reflecting the fundamental bandwidth limitation of the heterodyned US probe.
+  \item \textbf{AE substantially outperforms the US channel.}
+    The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$ for LightGBM) is large and significant on the hold-out tests (Wilcoxon $p = \resPwxAeUs$), although the corrected repeated-CV $t$-test does not reach significance ($p = \resPcvAeUs$); we therefore report both. The gap reflects the bandwidth limitation of the heterodyned US probe.
   \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
     The \resNouterScores{} outer RMSE scores per model provide stable, conservative performance
     estimates; corrected significance tests confirm that all pairwise model differences within each sensor configuration are significant after Holm--Bonferroni correction, with LightGBM strongest throughout.
