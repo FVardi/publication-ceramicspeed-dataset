@@ -135,7 +135,7 @@ feature_selection:
 # =============================================================================
 
 evaluation:
-  shap_top_k: 10  # Number of top features per model for cross-model SHAP agreement tables
+  shap_top_k: 5  # Number of top features per model for cross-model SHAP agreement tables
 
 # =============================================================================
 # Modelling

@@ -1,0 +1,18 @@
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Align with final data availability decision (full deposit, features+code only, or on request).}{9}{section*.5}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that this is correct}{11}{section*.7}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Include picture of test rig}{11}{section*.8}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ What is the amount?}{12}{section*.9}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Do we need NLGI cosistency grade?}{12}{section*.10}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is temperature controlled and measured?}{12}{section*.11}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Explain the process and expected outcome.}{12}{section*.12}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is RPM controlled}{12}{section*.13}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ With what?}{12}{section*.14}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ The original protocol described a 2-min RPM\,=\,0 standstill at each block start, but the telemetry shows the 12 set-point increases occurring at $\approx $140--365~rpm (mean $\approx $250~rpm). Confirm the inter-block thermal-stabilisation hold is at the low-rpm staircase bottom, not a true standstill.}{12}{section*.15}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Confirm why the 3000~rpm peak is held for $\sim $20~min (the temperature set-point is not changed there).}{12}{section*.16}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Load corrected from the erroneous ``2~N'': the telemetry channel \texttt {telem\_mass\_g} records a near-constant mass of 60.2--63.7~kg (mean 61.2~kg) across all sweeps, i.e.\ a radial load of $\approx $600~N. Confirm the dead-weight value and whether the $g = 9.81$~m/s\textsuperscript {2} conversion is correct (i.e.\ no lever-arm or mechanical ratio in the loading mechanism).}{12}{section*.17}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Confirm cause of the sub-40\,\ensuremath {\mathrm {{}^{\circ }\mathrm {C}}} excursions (controller undershoot / cooling during the low-rpm holds); author unsure.}{12}{section*.18}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How?}{12}{section*.19}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Consider inverting the colors. Green should be better, right?}{13}{section*.22}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ AE sensor/coupler bullets written from the Kistler datasheets in \texttt {docs/}. Remaining bullets (US probe, temperature, RPM, load) await collaborator input. Temperature via an Omron controller?}{14}{section*.23}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{39}{section*.46}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{39}{section*.48}%

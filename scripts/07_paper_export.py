@@ -165,7 +165,7 @@ for name in (
     "resNsweeps", "resNtrain", "resNholdout",
     "resKappaMin", "resKappaMax", "resKappaMean",
     "resTopAeFeat", "resTopAeRho", "resTopUsFeat", "resTopUsRho",
-    "resDrsqLgbAeUs", "resDrsqLgbCombAe", "resRelRmsePctLgbAe",
+    "resDrsqLgbAeUs", "resDrsqLgbCombAe", "resRelRmsePctLgbAe", "resRelRmseRedCombAe",
     "resRhoRpmKappa", "resRhoTempKappa",
     "resNrepeats", "resNouterScores", "resNfoldsCv",
     "resProxyRpmRsq", "resProxyRpmRmse", "resProxyTempRsq", "resProxyTempRmse",
@@ -178,6 +178,9 @@ for name in (
     "resTempMinMeas", "resTempMaxMeas",
     "resShapTopFeat", "resShapTopVal", "resShapSecondFeat", "resShapSecondVal",
     "resShapThirdFeat", "resShapThirdVal",
+    "resShapTopFeatUs", "resShapTopValUs", "resShapSecondFeatUs", "resShapSecondValUs",
+    "resShapThirdFeatUs", "resShapThirdValUs", "resShapTopK",
+    "resPcvLgbEnetAe", "resPcvLgbPolyAe",
 ):
     macros[name] = MISSING
 
@@ -296,6 +299,24 @@ if ct is not None:
         macros["resNholdout"] = fmt_int(r["n_common_sweeps"])
 else:
     warn(f"{ct_path} missing -- significance tests unavailable")
+
+# ---------------------------------------------------------------------------
+# 2b. Within-feature-set significance (AE architecture comparisons)
+#     Focal contrast: LightGBM vs each linear family on AE (Nadeau-Bengio).
+# ---------------------------------------------------------------------------
+
+wt_path = OUTPUT_DIR / "05_holdout_tests" / "tables" / "stat_tests_within_featureset.csv"
+wt = _read_csv(wt_path)
+if wt is not None:
+    wt = wt.dropna(subset=["model_a"])
+    _wpairs = {(r["model_a"], r["model_b"]): r["cv_p_value"] for _, r in wt.iterrows()}
+    for _lin, _key in (("ElasticNet", "Enet"), ("Polynomial", "Poly")):
+        _p = _wpairs.get((f"{_lin}_AE", "LightGBM_AE"),
+                         _wpairs.get(("LightGBM_AE", f"{_lin}_AE")))
+        if _p is not None:
+            macros[f"resPcvLgb{_key}Ae"] = fmt_p(_p)
+else:
+    warn(f"{wt_path} missing -- within-feature-set tests unavailable")
 
 # ---------------------------------------------------------------------------
 # 3. Feature counts and rankings
@@ -428,6 +449,11 @@ try:
 except Exception as exc:
     warn(f"parquet-based statistics unavailable ({exc})")
 
+# Relative hold-out RMSE reduction of the fused model over AE alone (headline %).
+if macros["resHOrmseLgbAe"] != MISSING and macros["resHOrmseLgbComb"] != MISSING:
+    _rae, _rcb = float(macros["resHOrmseLgbAe"]), float(macros["resHOrmseLgbComb"])
+    macros["resRelRmseRedCombAe"] = f"{100 * (_rae - _rcb) / _rae:.0f}"
+
 # ---------------------------------------------------------------------------
 # 5. Diagnostics: proxy models (09) and band validation/mechanism (08, 10)
 # ---------------------------------------------------------------------------
@@ -480,6 +506,20 @@ try:
 except (FileNotFoundError, OSError, KeyError, IndexError) as exc:
     warn(f"shap importance unavailable ({exc})")
 
+# US counterpart -- top contributors of the LightGBM US model (parallel to AE).
+try:
+    shap_imp_us = pd.read_csv(
+        OUTPUT_DIR / "04_modelling" / "shap" / "shap_importance_lightgbm_us.csv",
+        index_col=0,
+    ).sort_values("mean_abs_shap", ascending=False)
+    for rank, key in ((0, "Top"), (1, "Second"), (2, "Third")):
+        macros[f"resShap{key}FeatUs"] = pretty_feature(str(shap_imp_us.index[rank]))
+        macros[f"resShap{key}ValUs"] = fmt(float(shap_imp_us["mean_abs_shap"].iloc[rank]))
+    print(f"SHAP top-3 (LightGBM US): {shap_imp_us.index[0]}="
+          f"{shap_imp_us['mean_abs_shap'].iloc[0]:.3f}")
+except (FileNotFoundError, OSError, KeyError, IndexError) as exc:
+    warn(f"shap importance (US) unavailable ({exc})")
+
 # Cross-model SHAP agreement table (tab:shap_agree): base features that fall in the
 # top-k by mean |SHAP| of more than one model. Ranks are positions in each model's
 # full importance list -- for the polynomial that list includes interaction and
@@ -487,41 +527,50 @@ except (FileNotFoundError, OSError, KeyError, IndexError) as exc:
 table_shap_body = ""
 try:
     _topk = int(cfg.get("evaluation", {}).get("shap_top_k", 10))
+    macros["resShapTopK"] = str(_topk)
     _shap_dir = OUTPUT_DIR / "04_modelling" / "shap"
     _models = (("ElasticNet", "elasticnet"), ("Polynomial", "polynomial"), ("LightGBM", "lightgbm"))
-    _ranks: dict[str, dict[str, int]] = {}
-    for _disp, _key in _models:
-        _imp = pd.read_csv(_shap_dir / f"shap_importance_{_key}_ae.csv", index_col=0)
-        _imp = _imp.sort_values("mean_abs_shap", ascending=False)
-        _ranks[_disp] = {str(f): i + 1 for i, f in enumerate(_imp.index)}
 
     def _is_base(f: str) -> bool:  # exclude interaction (" ") and squared ("^") terms
         return (" " not in f) and ("^" not in f)
 
-    _agg: dict[str, dict[str, int]] = {}
-    for _disp, _ in _models:
-        for _feat, _rk in _ranks[_disp].items():
-            if _rk <= _topk and _is_base(_feat):
-                _agg.setdefault(_feat, {})[_disp] = _rk
-    _rows = [(f, mr) for f, mr in _agg.items() if len(mr) >= 2]
-    _rows.sort(key=lambda it: (-len(it[1]), sum(it[1].values()),
-                               it[1].get("LightGBM", 99), it[0]))
-
     def _disp_feat(f: str) -> str:
         return pretty_feature(f) if "__" in f else "Broadband " + FEAT_DISPLAY.get(f, f)
 
+    def _agreement_rows(suffix: str):
+        _ranks: dict[str, dict[str, int]] = {}
+        for _disp, _key in _models:
+            _imp = pd.read_csv(_shap_dir / f"shap_importance_{_key}_{suffix}.csv", index_col=0)
+            _imp = _imp.sort_values("mean_abs_shap", ascending=False)
+            _ranks[_disp] = {str(f): i + 1 for i, f in enumerate(_imp.index)}
+        _agg: dict[str, dict[str, int]] = {}
+        for _disp, _ in _models:
+            for _feat, _rk in _ranks[_disp].items():
+                if _rk <= _topk and _is_base(_feat):
+                    _agg.setdefault(_feat, {})[_disp] = _rk
+        _rows = [(f, mr) for f, mr in _agg.items() if len(mr) >= 2]
+        _rows.sort(key=lambda it: (-len(it[1]), sum(it[1].values()),
+                                   it[1].get("LightGBM", 99), it[0]))
+        return _rows
+
+    # Merged AE+US table: one block per sensor under an emphasised subheader.
     _lines = [
         r"\begin{tabular}{lcccc}", r"\toprule",
         r"\textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & "
-        rf"\textbf{{LightGBM}} & \textbf{{Models in top {_topk}}} \\",
-        r"\midrule",
+        rf"\textbf{{LightGBM}} & \textbf{{In top {_topk}}} \\",
     ]
-    for _feat, _mr in _rows:
-        _e, _p, _l = (_mr.get(m, "--") for m in ("ElasticNet", "Polynomial", "LightGBM"))
-        _lines.append(rf"{_disp_feat(_feat)} & {_e} & {_p} & {_l} & {len(_mr)} \\")
+    _total = 0
+    for _sdisp, _suffix in (("AE", "ae"), ("US", "us")):
+        _rows = _agreement_rows(_suffix)
+        _total += len(_rows)
+        _lines.append(r"\midrule")
+        _lines.append(rf"\multicolumn{{5}}{{l}}{{\emph{{{_sdisp}}}}} \\")
+        for _feat, _mr in _rows:
+            _e, _p, _l = (_mr.get(m, "--") for m in ("ElasticNet", "Polynomial", "LightGBM"))
+            _lines.append(rf"\quad {_disp_feat(_feat)} & {_e} & {_p} & {_l} & {len(_mr)} \\")
     _lines += [r"\bottomrule", r"\end{tabular}"]
     table_shap_body = "\n".join(_lines)
-    print(f"SHAP agreement table: {len(_rows)} features (top-{_topk})")
+    print(f"SHAP agreement table (AE+US): {_total} features (top-{_topk})")
 except (FileNotFoundError, OSError, KeyError) as exc:
     warn(f"shap agreement table unavailable ({exc})")
 

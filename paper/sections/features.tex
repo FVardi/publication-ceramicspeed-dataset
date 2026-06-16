@@ -140,9 +140,7 @@ elimination. Values are capped at $10^{6}$ for display.}
 \label{subsec:confound}
 
 The raw correlation between signal features and $\kappa$ is partially driven by the
-shared dependence on rotational speed and temperature: RPM has a Spearman correlation
-of $\rho = \resRhoRpmKappa$ with $\kappa$ and temperature has
-$\rho = \resRhoTempKappa$.
+shared dependence on rotational speed and temperature.
 Higher RPM reduces the required viscosity $\nureq$ (Eq.~\eqref{eq:nu1}) and therefore
 increases $\kappa$, while simultaneously increasing signal energy through more
 frequent contact events per second. Higher temperature reduces the actual viscosity
@@ -158,37 +156,56 @@ by the operating point (Section~\ref{subsec:kappa}), a model given measured RPM 
 temperature directly would predict $\kappa$ near-perfectly by construction; the
 contribution of the acoustic features is to recover this information without
 tachometer or thermometer access.
-This proxy structure is quantified directly. A LightGBM regressor trained on the
-retained AE features predicts RPM with $R^2 = \resProxyRpmRsq$
-(RMSE \resProxyRpmRmse~rpm) and temperature with $R^2 = \resProxyTempRsq$
-(RMSE \resProxyTempRmse~\si{\celsius}) on the hold-out set. Feeding these predicted
-operating points through Eqs.~\eqref{eq:kappa}--\eqref{eq:nu1} yields a two-stage
-$\kappa$ estimate with $R^2 = \resTwoStageRsq$ (RMSE \resTwoStageRmse), nearly
-matching the direct features-to-$\kappa$ model ($R^2 = \resHOrsqLgbAe$,
-RMSE \resHOrmseLgbAe). The direct model is therefore well described as an acoustic
-operating-point soft sensor combined with the ISO~281 mapping, with only a marginal
-contribution beyond it.
 
-The features are not, however, mere speed trackers. Within a fixed staircase RPM
-step the drive state is approximately constant while the lubricant viscosity varies
-across the 13 temperature blocks; in this setting the strongest feature
-(\resWithinStepFeat) retains a median within-step Spearman correlation of
-$\resWithinStepRhoHC$ with temperature (predominantly negative across steps, i.e.\
-tracking $\kappa$; Figure~\ref{fig:within_step}), while remaining constant during the
-stationary heater-driven warm-up.\todo{Source the exact fraction of steps with negative
-within-step $\rho$ from 09\_proxy\_diagnostics and add it as a macro; the previous
-``91\%'' referred to the now-removed 1--2~MHz complexity feature.} The features therefore sense both $\kappa$
-channels---speed and temperature---through the rotating bearing, rather than
-reading either operating quantity directly.
+Marginally, the retained features correlate with $\kappa$ chiefly through this
+operating-point dependence. Rotational speed is the dominant
+axis---it has a Spearman correlation of $\rho = \resRhoRpmKappa$ with $\kappa$,
+against $\rho = \resRhoTempKappa$ for temperature---and a LightGBM regressor on
+the retained AE features recovers the operating point itself almost completely
+(RPM at $R^2 = \resProxyRpmRsq$, temperature at $R^2 = \resProxyTempRsq$).
+Passing these predicted conditions through Eqs.~\eqref{eq:kappa}--\eqref{eq:nu1}
+yields a two-stage $\kappa$ estimate ($R^2 = \resTwoStageRsq$) that nearly equals
+the direct features-to-$\kappa$ model ($R^2 = \resHOrsqLgbAe$), so virtually all
+of the marginal skill is attributable to acoustic operating-point proxying rather
+than to direct film sensing. This marginal view, however, is dominated by the
+speed sweep and conflates the two $\kappa$ channels. We therefore condition on
+each operating variable in turn, using the measured operating point: the
+within-RPM-step correlation with temperature (sweeps grouped into staircase steps
+of fixed speed) isolates the temperature response, while the
+within-temperature-block correlation with speed (sweeps grouped into
+2~\si{\celsius} blocks of measured temperature, within which the temperature
+standard deviation stays below 1~\si{\celsius}) isolates the speed response.
+Figure~\ref{fig:marg_cond} contrasts the marginal and conditional structure for
+every retained feature of both sensors. The speed axis is essentially unchanged
+by conditioning---the features genuinely track rotational speed---whereas the
+temperature axis spreads outward once speed is removed, uncovering a
+lubrication-state sensitivity that the marginal view masks; the strongest AE
+feature, \resWithinStepFeat, reaches a within-step correlation of
+$\rho = \resWithinStepRhoHC$ with temperature. The features are thus acoustic
+operating-point soft sensors that, beyond the proxy share, retain a genuine
+residual sensitivity to the lubrication state.
+
+The two sensors occupy distinct regions of this conditional plane. AE features
+cluster on the speed axis, whereas the passive-US channel resolves the
+temperature dependence more strongly and with mixed sign across its sub-bands
+(Figure~\ref{fig:marg_cond}, right). AE and US therefore capture the lubrication
+state through partly distinct channels rather than redundantly---the
+complementarity their fusion later exploits.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.8\textwidth]{within_step_rho.png}
-\caption{Within-RPM-step Spearman correlation between selected AE sub-band features
-and temperature. At fixed speed the drive state is constant, so non-zero
-correlations reflect sensitivity to the lubrication state rather than to the
-operating point.}
-\label{fig:within_step}
+\includegraphics[width=\textwidth]{marginal_vs_conditional.png}
+\caption{Marginal versus conditional rank-correlation structure of the retained
+AE (circles) and US (squares) features. Each point is one feature; the axes are
+the Spearman correlation with measured temperature ($x$) and rotational speed
+($y$). \emph{Left:} marginal correlations over all sweeps, dominated by the speed
+sweep. \emph{Right:} partition-based conditional correlations---within-RPM-step
+for the temperature axis and within-temperature-block for the speed axis---with
+whiskers showing the inter-quartile range across partitions. Conditioning leaves
+the speed axis essentially unchanged but spreads the features along the
+temperature axis, revealing lubrication-state sensitivity masked in the marginal
+view. AE features track speed; US features lean toward temperature.}
+\label{fig:marg_cond}
 \end{figure}
 
 \subsection{Low-dimensional structure and regime separability}
@@ -207,7 +224,6 @@ predictive power of the US channel (Section~\ref{sec:modelling}). The continuity
 AE gradient, rather than sharp regime boundaries, mirrors the continuous nature of
 $\kappa$ and indicates that the retained features encode a graded film-thickness signal
 rather than a small number of discrete operating states.
-\todo{Confirm pca\_kappa\_regimes.png is rendered from the final visit-grouped run.}
 
 \begin{figure}[H]
 \centering
