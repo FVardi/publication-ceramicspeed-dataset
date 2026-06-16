@@ -19,6 +19,11 @@ machines:
     paths:
       input_dir:  "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"
       output_dir: "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/outputs/"
+  favn:
+    home: "C:/Users/favn"
+    paths:
+      input_dir:  "C:/Users/favn/Documents/Repos/publication-ceramicspeed-dataset/data/"
+      output_dir: "C:/Users/favn/Documents/Repos/publication-ceramicspeed-dataset/outputs/"
 
 paths:  # fallback if no machine matched
   input_dir:  "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"

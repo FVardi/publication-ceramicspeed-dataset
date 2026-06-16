@@ -171,9 +171,8 @@ for name in (
     "resProxyRpmRsq", "resProxyRpmRmse", "resProxyTempRsq", "resProxyTempRmse",
     "resTwoStageRsq", "resTwoStageRmse",
     "resSnrLowDb", "resSnrMidDb", "resSnrHighDb",
-    "resWithinStepRhoHC", "resWithinStepFeat", "resKneeRpmCool", "resKneeRpmHot",
-    "resRhoPowRpmLow", "resRhoPowRpmMid", "resRhoPowRpmHigh",
-    "resKneeKappaCool", "resKneeKappaHot",
+    "resWithinStepRhoHC", "resWithinStepFeat",
+    "resRhoPowRpmLow", "resRhoPowRpmMid",
     "resNsweepsRaw", "resNsweepsRemoved", "resWindowMs", "resWindowIntervalS",
     "resSweepsPerHold", "resRpmMinMeas", "resRpmMaxMeas",
     "resTempMinMeas", "resTempMaxMeas",
@@ -526,33 +525,20 @@ try:
 except (FileNotFoundError, OSError, KeyError) as exc:
     warn(f"shap agreement table unavailable ({exc})")
 
-# Knee of the 1-2 MHz broadband decay vs RPM, per temperature window
+# rho(sub-band power, RPM) for the retained AE bands (cool window) -- used in the
+# band-validation discussion. The former 1-2 MHz "knee" analysis (resKnee*,
+# resRhoPowRpmHigh) was removed together with that excluded band.
 try:
-    import importlib.util as _ilu2
-    _spec2 = _ilu2.spec_from_file_location("cs_kappa2", ROOT / "src" / "ceramicspeed" / "calculate_kappa.py")
-    _ck2 = _ilu2.module_from_spec(_spec2); _spec2.loader.exec_module(_ck2)
-    for tw, tmid, suffix in [("tw_45-55C", 50.0, "Cool"), ("tw_85-95C", 90.0, "Hot")]:
-        cs = _read_csv(OUTPUT_DIR / "10_band_mechanism" / tw / "tables" / "comb_strip.csv")
-        if cs is None:
-            continue
-        b = cs[(cs["band"] == "AE_1000-2000kHz") & (cs["rpm"] >= 60)].sort_values("rpm")
-        floor = b.nlargest(8, "rpm")["p_total"].median()
-        above = b[b["p_total"] > 2 * floor]
-        if above.empty:
-            continue
-        knee = float(above["rpm"].max())
-        if suffix == "Cool":
-            from scipy.stats import spearmanr as _sp
-            for band, key in [("AE_20-500kHz", "resRhoPowRpmLow"),
-                              ("AE_500-1000kHz", "resRhoPowRpmMid"),
-                              ("AE_1000-2000kHz", "resRhoPowRpmHigh")]:
-                bb = cs[(cs["band"] == band) & (cs["rpm"] >= 60)]
+    from scipy.stats import spearmanr as _sp
+    cs = _read_csv(OUTPUT_DIR / "10_band_mechanism" / "tw_45-55C" / "tables" / "comb_strip.csv")
+    if cs is not None:
+        for band, key in [("AE_20-500kHz", "resRhoPowRpmLow"),
+                          ("AE_500-1000kHz", "resRhoPowRpmMid")]:
+            bb = cs[(cs["band"] == band) & (cs["rpm"] >= 60)]
+            if len(bb) > 1:
                 macros[key] = f"{_sp(bb['rpm'], bb['p_total'])[0]:+.2f}"
-        macros[f"resKneeRpm{suffix}"] = f"{knee:.0f}"
-        macros[f"resKneeKappa{suffix}"] = fmt(_ck2.calculate_kappa(
-            rpm=knee, temp_c=tmid, d_pw=cfg["bearing"]["d_pw_mm"], nu_40=22.0, nu_100=4.1), 2)
-except Exception as exc:
-    warn(f"knee analysis unavailable ({exc})")
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"sub-band power-RPM correlations unavailable ({exc})")
 
 # ---------------------------------------------------------------------------
 # Write outputs

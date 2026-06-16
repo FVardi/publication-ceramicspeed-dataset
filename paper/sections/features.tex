@@ -64,16 +64,16 @@ and~\ref{tab:app_us_ranking}).
 
 \begin{table}[H]
 \centering
-\caption{Top 10 features by combined Spearman--Pearson rank score with $\kappa$,
-for the AE and the US signals. Features retained after Stage~2 redundancy reduction
-are marked with $^{\dagger}$.}
-\label{tab:raw_spearman}
 \small
 \IfFileExists{tables/table_top_features_tabular.tex}%
   {\input{tables/table_top_features_tabular.tex}}%
   {\IfFileExists{../outputs/07_paper_export/table_top_features_tabular.tex}%
     {\input{../outputs/07_paper_export/table_top_features_tabular.tex}}%
     {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_top\_features\_tabular.tex.}}}
+\caption{Top 10 features by combined Spearman--Pearson rank score with $\kappa$,
+for the AE and the US signals. Features retained after Stage~2 redundancy reduction
+are marked with $^{\dagger}$.}
+\label{tab:raw_spearman}
 \end{table}
 
 The top-ranked AE feature is \resTopAeFeat{} ($|\rho| = \resTopAeRho$), and the
@@ -86,7 +86,7 @@ frequency-distribution descriptors---mobility, centre and dominant frequency,
 complexity---rather than by raw amplitude: where the high-frequency energy sits and
 how peaked its spectrum is carry more monotonic information about $\kappa$ than its
 magnitude alone. For US, relevance instead concentrates in the low-frequency
-sub-bands ($\leq 20$~kHz) and is dominated by amplitude (RMS) features, with the
+sub-bands ($\leq 20$~kHz) to where it has been heterodyned and is dominated by amplitude (RMS) features, with the
 broadband and 0--20~kHz RMS terms heading the ranking. The channels also differ in
 strength: the best AE feature exceeds the best US feature by a wide margin in $|\rho|$
 (\resTopAeRho{} vs.\ \resTopUsRho), consistent with the AE sensor's more direct
