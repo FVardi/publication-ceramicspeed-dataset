@@ -15,6 +15,11 @@ Mohamed G.~A. Nassef, Mina Soliman, Belal~Galal Nassef, Mohamed~A. Daha, and Gal
 \newblock Impact of {Graphene} {Nano}-{Additives} to {Lithium} {Grease} on the {Dynamic} and {Tribological} {Behavior} of {Rolling} {Bearings}.
 \newblock {\em Lubricants}, 10(2):29, 2022.
 
+\bibitem{wakiru_review_2019}
+James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
+\newblock A review on lubricant condition monitoring information analysis for maintenance decision support.
+\newblock {\em Mechanical Systems and Signal Processing}, 118:108--132, 2019.
+
 \bibitem{wang_phm_2018}
 Dong Wang, Kwok-Leung Tsui, and Qiang Miao.
 \newblock Prognostics and health management: A review of vibration based bearing and gear health indicators.
@@ -24,36 +29,6 @@ Dong Wang, Kwok-Leung Tsui, and Qiang Miao.
 Fei Shang, Bo~Sun, and Dandan Cai.
 \newblock A comprehensive review of non-destructive methods for bearing lubricating oil film thickness measurement.
 \newblock {\em Industrial Lubrication and Tribology}, 76(3):441--451, 2024.
-
-\bibitem{marticorena_cage_2022}
-Mat\'{i}as Marticorena and Oscar Garc\'{i}a~Peyrano.
-\newblock Rolling bearing condition monitoring technique based on cage rotation analysis and acoustic emission.
-\newblock {\em Journal of Dynamics, Monitoring and Diagnostics}, 1:57--65, 2022.
-
-\bibitem{zhang_coupled_2026}
-Xuanrui Zhang, Dong Zhen, Guojin Feng, Xiaoxia Liang, Hao Zhang, and Fengshou Gu.
-\newblock A coupled vibration-acoustic emission model for roller bearings incorporating lubricant traction and sliding friction.
-\newblock {\em Tribology International}, 221:112013, September 2026.
-
-\bibitem{pang_smia_2024}
-Shan Pang.
-\newblock Stacked maximum independence autoencoders: A domain generalization approach for fault diagnosis under various working conditions.
-\newblock {\em Mechanical Systems and Signal Processing}, 208:111035, 2024.
-
-\bibitem{hua_dife_2025}
-Zehui Hua, Juanjuan Shi, and Patrick Dumond.
-\newblock Domain-invariant feature exploration for intelligent fault diagnosis under unseen and time-varying working conditions.
-\newblock {\em Mechanical Systems and Signal Processing}, 224:112193, 2025.
-
-\bibitem{jiang_mechanism_2025}
-Fei Jiang, Yicong Kuang, Tao Li, Shaohui Zhang, Zhaoqian Wu, Ke~Feng, and Weihua Li.
-\newblock Towards enhanced interpretability: A mechanism-driven domain adaptation model for bearing fault diagnosis across operating conditions.
-\newblock {\em Mechanical Systems and Signal Processing}, 225:112244, 2025.
-
-\bibitem{wakiru_review_2019}
-James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
-\newblock A review on lubricant condition monitoring information analysis for maintenance decision support.
-\newblock {\em Mechanical Systems and Signal Processing}, 118:108--132, 2019.
 
 \bibitem{cornel_condition_2021}
 Daniel Cornel, Francisco Guti{\'e}rrez~Guzm{\'a}n, Georg Jacobs, and Stephan Neumann.
@@ -65,20 +40,20 @@ Xinzhuo Zhang, Zhijun Ren, Kai Huang, Tantao Lin, Yongsheng Zhu, Hong Fu, and Ju
 \newblock An interpretable rolling-bearing lubrication-state diagnosis method based on multiscale residual and semantic consistency {CycleGAN}.
 \newblock {\em IEEE Transactions on Instrumentation and Measurement}, 75:3512116, 2026.
 
-\bibitem{sun_online_2021}
-Jiayi Sun, Liming Wang, Jianfeng Li, Fangyi Li, Jianyong Li, and Haiyang Lu.
-\newblock Online oil debris monitoring of rotating machinery: A detailed review of more than three decades.
-\newblock {\em Mechanical Systems and Signal Processing}, 149:107341, 2021.
+\bibitem{liu_combined_2021}
+Jing Liu, Y.~J. Xu, and Gang Pan.
+\newblock A combined acoustic and dynamic model of a defective ball bearing.
+\newblock {\em Journal of Sound and Vibration}, 501:116029, 2021.
+
+\bibitem{zhang_coupled_2026}
+Xuanrui Zhang, Dong Zhen, Guojin Feng, Xiaoxia Liang, Hao Zhang, and Fengshou Gu.
+\newblock A coupled vibration-acoustic emission model for roller bearings incorporating lubricant traction and sliding friction.
+\newblock {\em Tribology International}, 221:112013, September 2026.
 
 \bibitem{lineham_ultrasonic_2008}
 Jeremy Lineham.
 \newblock Ultrasonic probes for inspecting bearings.
 \newblock {\em World Pumps}, 2008(503):34--36, 2008.
-
-\bibitem{jakobsen_low_2024}
-Morten~Opprud Jakobsen.
-\newblock Low cost {MEMS} accelerometer and microphone based condition monitoring sensor, with {LoRa} and {Bluetooth} {Low} {Energy} radio.
-\newblock {\em HardwareX}, 18:e00525, 2024.
 
 \bibitem{miettinen_analysis_2001}
 J~Miettinen, P~Andersson, and V~Wikstr{\"o}m.
@@ -90,6 +65,11 @@ Takeo Yoshioka and Shigeo Shimizu.
 \newblock Monitoring of ball bearing operation under grease lubrication using a new compound diagnostic system detecting vibration and acoustic emission.
 \newblock {\em Tribology Transactions}, 52(6):725--730, 2009.
 
+\bibitem{hou_insitu_2025}
+Geng Hou and Liangchi Zhang.
+\newblock In-situ detection of lubrication status of bearings with acoustic emission monitoring.
+\newblock {\em Wear}, 571:205839, 2025.
+
 \bibitem{tandon_ae_2006}
 N.~Tandon, K.~M. Ramakrishna, and G.~S. Yadava.
 \newblock Condition monitoring of electric motor ball bearings for the detection of grease contaminants.
@@ -100,20 +80,15 @@ Cuiping Wang, Hongyuan Qi, Dongming Hou, Defu Han, and Jiangtian Yang.
 \newblock Fingerprint feature and dynamic threshold mechanism based on acoustic emission for bearing fault detection.
 \newblock {\em Mechanical Systems and Signal Processing}, 199:110496, 2023.
 
-\bibitem{hou_insitu_2025}
-Geng Hou and Liangchi Zhang.
-\newblock In-situ detection of lubrication status of bearings with acoustic emission monitoring.
-\newblock {\em Wear}, 571:205839, 2025.
-
 \bibitem{renhart_ae_2021}
 Philipp Renhart, Michael Maier, Christopher Strablegg, Florian Summer, Florian Gr{\"u}n, and Andreas Eder.
 \newblock Monitoring tribological events by acoustic emission measurements for bearing contacts.
 \newblock {\em Lubricants}, 9(11):109, 2021.
 
-\bibitem{liu_combined_2021}
-Jing Liu, Y.~J. Xu, and Gang Pan.
-\newblock A combined acoustic and dynamic model of a defective ball bearing.
-\newblock {\em Journal of Sound and Vibration}, 501:116029, 2021.
+\bibitem{marticorena_cage_2022}
+Mat\'{i}as Marticorena and Oscar Garc\'{i}a~Peyrano.
+\newblock Rolling bearing condition monitoring technique based on cage rotation analysis and acoustic emission.
+\newblock {\em Journal of Dynamics, Monitoring and Diagnostics}, 1:57--65, 2022.
 
 \bibitem{wang_advanced_2024}
 Ling Wang and Honor Powrie.
@@ -142,5 +117,10 @@ Bo~Hjorth.
 Claude Nadeau and Yoshua Bengio.
 \newblock Inference for the generalization error.
 \newblock {\em Machine Learning}, 52(3):239--281, 2003.
+
+\bibitem{jakobsen_low_2024}
+Morten~Opprud Jakobsen.
+\newblock Low cost {MEMS} accelerometer and microphone based condition monitoring sensor, with {LoRa} and {Bluetooth} {Low} {Energy} radio.
+\newblock {\em HardwareX}, 18:e00525, 2024.
 
 \end{thebibliography}
