@@ -3,7 +3,7 @@
 \label{sec:background}
 %% ============================================================================
 
-\subsection{Lubrication regimes and the viscosity ratio \texorpdfstring{$\kappa$}{\kappa}}
+\subsection{Lubrication regimes and the viscosity ratio $\kappa$}
 \label{subsec:kappa}
 
 Ball bearings operate in one of three lubrication regimes depending on whether the lubricant film is sufficient to fully separate the rolling surfaces. In the full-film elastohydrodynamic (EHL) regime the surfaces are completely separated and asperity contact is suppressed; in the mixed regime the film is partially formed and intermittent asperity contact occurs; in the boundary regime the film is inadequate and metal-to-metal contact dominates. The ISO~281 standard viscosity ratio $\kappa$ quantifies the adequacy of the lubricant viscosity as a continuous number, which is commonly related to the lubrication regimes with boundaries at $\kappa < 0.1$ (boundary), $0.1 \leq \kappa < 0.4$ (mixed),  $0.4 \leq \kappa < 1$ (mixed, moderate), and $\kappa \geq 1$ (full film) \cite{schaeffler_lubrication_2013,skf_viscosity_ratio}. The ISO~281 viscosity ratio is defined as
@@ -11,10 +11,7 @@ Ball bearings operate in one of three lubrication regimes depending on whether t
   \kappa(T, n, d_{pw}) = \frac{\nuop(T)}{\nureq(n,\, d_{pw})},
   \label{eq:kappa}
 \end{equation}
-where $\nuop(T)$ [\si{mm^2\,s^{-1}}] is the actual kinematic viscosity of the lubricant at
-operating temperature $T$, and $\nureq(n, d_{pw})$ is the minimum kinematic viscosity required for full
-EHL at the bearing's rotational speed $n$ [\si{rpm}] and pitch diameter $d_{pw}$
-[\si{mm}]~\cite{iso_281}. The reference viscosity is given by
+where $\nuop(T)$ [\si{mm^2\,s^{-1}}] is the actual kinematic viscosity of the lubricant at operating temperature $T$, and $\nureq(n, d_{pw})$ is the minimum kinematic viscosity required for full EHL at the bearing's rotational speed $n$ [\si{rpm}] and pitch diameter $d_{pw}$ [\si{mm}]~\cite{iso_281}. The reference viscosity is given by
 \begin{equation}
   \nureq(n, d_{pw}) = \begin{cases}
     45\,000\; n^{-0.83}\; d_{pw}^{-0.5} & n < \SI{1000}{rpm}, \\

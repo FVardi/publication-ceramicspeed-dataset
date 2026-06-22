@@ -3,10 +3,10 @@
 \label{sec:setup}
 %% ============================================================================
 
-\subsection{Test rig and bearing}
+\subsection{Test rig}
 \label{subsec:rig}
 
-The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, dynamic load rating \SI{14000}{N}) is driven by a Klee T712-2 0.55kW variable-frequency electric motor controlled through a variable-frequency drive (VFD), which is contolled by a PID-controller based upon measurements with a reflective tache sensor. Temperature is increased byu a heating element mounted on the bearing pillow bloack and controlled by an Omron E5CC PID controller based upon measurements from type K temperature sensors mounted on the outer ring of the bearing. The bearing is loaded radially by a static weight of 60kg and lubricated with 0.5ml \todo{Check that this is correct} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$ at 40\si{\celsius} and 100\si{\celsius}, respectively) \todo{Do we need NLGI cosistency grade?}. VFD switching frequency is nominally 5kHz, and the harmonic artifacts from this are sought filtered out \todo{Explain the process and expected outcome.}
+The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). A single deep-groove ball bearing (model SYJ25, bore \SI{25}{mm}, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, dynamic load rating \SI{14000}{N}) is driven by a Klee T712-2 0.55kW variable-frequency electric motor controlled through a variable-frequency drive (VFD), which is contolled by a PID-controller based upon measurements with a reflective tache sensor. Temperature is increased byu a heating element mounted on the bearing pillow bloack and controlled by an Omron E5CC PID controller based upon measurements from type K temperature sensors mounted on the outer ring of the bearing. The bearing is loaded radially by a static weight of 60kg and lubricated with 0.5ml \todo{Check that this is correct} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$ at 40\si{\celsius} and 100\si{\celsius}, respectively) \todo{Do we need NLGI cosistency grade?}. VFD switching frequency is nominally 5kHz, and the harmonic artifacts from this are sought filtered out \todo{Explain the filter and how effective it is expected to be.}
 
 \begin{figure}[H]
 \centering
@@ -32,28 +32,28 @@ The test rig is a custom-built bearing test stand at Aarhus University (Herning,
 \label{fig:test_rig}
 \end{figure}
 
-\subsection{Operating conditions}
+\subsection{Operating condition variation protocol}
 \label{subsec:ops}
 
-The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step. This staircase is repeated for each of 13 temperature blocks (40--100~\si{\celsius} in 5~\si{\celsius} increments). The block temperature set-point is changed between staircases rather than during the high-speed hold: after each downsweep the rig is held at the low-rpm bottom of the staircase ($\approx$100~rpm) while the housing is brought to the next set-point and allowed to stabilise thermally. The recorded telemetry contains no true standstill (RPM~$=0$) sweeps; the only near-stationary data is a single warm-up segment (37--43~\si{\celsius}) acquired before the first staircase, which is excluded from analysis (Section~\ref{subsec:sensors}).\todo{The original protocol described a 2-min RPM\,=\,0 standstill at each block start, but the telemetry shows the 12 set-point increases occurring at $\approx$140--365~rpm (mean $\approx$250~rpm). Confirm the inter-block thermal-stabilisation hold is at the low-rpm staircase bottom, not a true standstill.} The hold at the \SI{3000}{rpm} staircase peak is substantially longer than the ordinary 60-second steps (approximately 20~minutes), so this operating point is strongly over-represented in the data: it accounts for roughly a third of all sweeps.\todo{Confirm why the 3000~rpm peak is held for $\sim$20~min (the temperature set-point is not changed there).} The applied radial load is a static dead-weight, held constant throughout the experiment at approximately \SI{61}{kg} ($\approx\SI{600}{N}$).\todo{Load corrected from the erroneous ``2~N'': the telemetry channel \texttt{telem\_mass\_g} records a near-constant mass of 60.2--63.7~kg (mean 61.2~kg) across all sweeps, i.e.\ a radial load of $\approx$600~N. Confirm the dead-weight value and whether the $g = 9.81$~m/s\textsuperscript{2} conversion is correct (i.e.\ no lever-arm or mechanical ratio in the loading mechanism).} The total duration of the experiment is approximately 14 hours. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded \SI{40}{\celsius} floor (down to $\approx$\SI{33}{\celsius}), which we tentatively attribute to the inherent undershoot and instability of the temperature control rather than to any commanded set-point.\todo{Confirm cause of the sub-40\,\si{\celsius} excursions (controller undershoot / cooling during the low-rpm holds); author unsure.}
+The experiment follows a protocol which varies the operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This consists of a staircase sweep from 100 to 3000 RPM and back down to 100 RPM in steps of 100 RPM with a 60-second hold at each step. This staircase is repeated for each of 13 temperature blocks which increase from 40 to 100~\si{\celsius} in 5~\si{\celsius} increments. The block temperature set-point is changed between staircases of speed changes. After each rpm downsweep the rig is held at the low-rpm bottom of the staircase at $\approx$100~rpm while the housing is brought to the next set-point and allowed to stabilise thermally. The recorded telemetry contains no true standstill (RPM = 0) sweeps; the only near-stationary data is a single warm-up segment (37–43 ◦C) acquired before the first staircase, which is excluded from analysis. \todo{Consider whether this should be noted. Morten has commented that it is used for calibration, since the data is still validation data.} The hold at the \SI{3000}{rpm} staircase peak is substantially longer than the ordinary 60-second steps (approximately 20~minutes), so this operating point is over-represented in the data: it accounts for roughly a third of all sweeps.\todo{Confirm why the 3000~rpm peak is held for $\sim$20~min (the temperature set-point is not changed there).} The applied radial load is a static dead-weight, held constant throughout the experiment at approximately \SI{61}{kg} ($\approx\SI{600}{N}$). The total duration of the experiment is approximately 14 hours and the measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded \SI{40}{\celsius} floor (down to $\approx$\SI{33}{\celsius}), which is tentatively attributed to the inherent undershoot and instability of the temperature control rather than to any commanded set-point.
 
 The lubrication conditions in the bearing are not expected to change during the experiment in other ways than what is entailed by rpm and temperature and the effect of these upon the lubricant. It is not expected or assumed that any degradation, starvation or contamination of the lubricant happens.
 
-The operating conditions are controlled through \todo{How?}. The measured operating conditions space, distribution and time variation are seen in Figures~\ref{fig:op_conditions_distribution} and \ref{fig:op_conditions_timeseries}. The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther viscosity--temperature equation.
+Since the operating conditions are maintained through a control loop, they vary from the nominal conditions specied by the protocol. The measured operating conditions space and the distribution of calculated $\kappa$ values are seen in Figure~\ref{fig:op_conditions_distribution}, and the measured operating conditions over time, ordered by sampling windows, are seen in Figure~\ref{fig:op_conditions_timeseries}. The $\kappa$ value for each sweep is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-sweep measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther equation.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/eda_operating_conditions.png}
-\caption{Left: space of the measured operating conditions (RPM and temperature) during the experiment. Each point corresponds to a 20ms window of sampling at a given RPM and temperature. The colour of each point corresponds to the derived $\kappa$ value for that sweep, with warmer colours indicating higher $\kappa$ values. Right: distribution of the derived $\kappa$ values.}
+\caption{Left: scatterplot of the measured operating conditions (rpm and temperature) during the experiment. Each point corresponds to a 20ms segment of sampling at a given rpm and temperature. The colour of each point corresponds to the derived $\kappa$ value for that segment. Right: distribution of the derived $\kappa$ values.}
 \label{fig:op_conditions_distribution}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/eda_conditions_timeseries.png}
-\caption{Measured operating conditions (RPM and temperature) for each sweep during the experiment. Each point corresponds to a 20ms window of sampling at a given RPM and temperature. The colour of each point corresponds to the derived $\kappa$ value for that sweep, with warmer colours indicating higher $\kappa$ values.}
+\caption{Measured operating conditions (RPM and temperature) during the experiment, ordered chronoligically by aquisition. Each point corresponds to a 20ms segment of sampling at a given RPM and temperature. The colour of each point corresponds to the derived $\kappa$ value for that segment.}
 \label{fig:op_conditions_timeseries}
-\end{figure}\todo{Consider inverting the colors. Green should be better, right?}
+\end{figure}
 
 \subsection{Sensor configuration and data acquisition}
 \label{subsec:sensors}
@@ -61,24 +61,14 @@ The operating conditions are controlled through \todo{How?}. The measured operat
 Two sensors simultaneously acquire signals from the bearing housing through a shared oscilloscope which samples at a shared sample rate of \SI{12.5}{MHz}:
 
 \begin{description}
-  \item[Acoustic emission sensor:] A Kistler Piezotron Type~8152C1 wideband
-  piezoelectric AE sensor with integral impedance converter, bonded to the
-  bearing housing. The sensor is ground-isolated, rated to \SI{165}{\celsius},
-  and has a nominal $\pm10$~dB frequency range of 100--900~kHz (sensitivity
-  48~dB$_\text{ref}$ 1~V/(m/s)). Its output is conditioned by a Kistler
-  Type~5125C AE Piezotron coupler, which powers the sensor and applies a
-  Butterworth band-pass filter (\SI{50}{kHz} high-pass, \SI{1}{MHz} low-pass)
-  to the raw AE signal before it is digitised. This \emph{coupler} band-pass,
-  not the sensor element, sets the \SI{1}{MHz} upper analysis limit used
-  throughout the paper.
+  \item[Acoustic emission sensor:] A Kistler Piezotron Type~8152C1 wideband piezoelectric AE sensor bonded to the bearing housing. Its output is conditioned by a Kistler Type~5125C AE Piezotron coupler, which powers the sensor and applies a Butterworth band-pass filter from \SI{50}{kHz} to \SI{1}{MHz} to the raw AE signal before it is digitised. This coupler band-pass, sets the \SI{1}{MHz} upper analysis limit used throughout the paper.
   \item[Ultrasound sensor:]
   \item[Temperature sensor:]
   \item[RPM sensor:]
   \item[Load sensor:]
-\end{description}\todo{AE sensor/coupler bullets written from the Kistler datasheets in \texttt{docs/}. Remaining bullets (US probe, temperature, RPM, load) await collaborator input. Temperature via an Omron controller?}
-The shared sample rate and DAQ setup ensures that AE and US signals share timestamps.
+\end{description}
 
-\textbf{Acquisition windows (sweeps).}
+\subsubsection{Acquisition segments}
 Data are acquired as short windows rather than continuously: every
 $\sim$\resWindowIntervalS~s the oscilloscope captures a \resWindowMs~ms window
 ($N \approx 2.5 \times 10^{5}$ samples per channel) containing time-synchronous AE
