@@ -592,6 +592,28 @@ except ImportError:
 
 # %%
 # =============================================================================
+# Plot S2b — AE | US beeswarm 2-panel (composed from the per-model PNGs)
+# =============================================================================
+
+import matplotlib.image as _mpimg
+
+_ae_bw = SCRIPT_DIR / "shap_beeswarm_lightgbm_ae.png"
+_us_bw = SCRIPT_DIR / "shap_beeswarm_lightgbm_us.png"
+if _ae_bw.exists() and _us_bw.exists():
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    for ax, _png, _ttl in zip(axes, [_ae_bw, _us_bw], ["(a) AE", "(b) US"]):
+        ax.imshow(_mpimg.imread(_png))
+        ax.set_title(_ttl, fontsize=12, loc="left")
+        ax.axis("off")
+    fig.tight_layout()
+    fig.savefig(SCRIPT_DIR / "shap_beeswarm_ae_us.png", dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print("Saved: shap_beeswarm_ae_us.png")
+else:
+    print("Skipped S2b (per-model AE/US beeswarm PNGs not found)")
+
+# %%
+# =============================================================================
 # Plot S3 — SHAP sensor contribution (combined models)
 # =============================================================================
 
@@ -756,6 +778,70 @@ else:
 
 # %%
 # =============================================================================
+# Plot D4c — Marginal vs conditional correlation structure (from 09)
+# =============================================================================
+
+_cm_path = OUTPUT_DIR / "09_proxy_diagnostics" / "tables" / "cond_vs_marginal.csv"
+if _cm_path.exists():
+    R = pd.read_csv(_cm_path)
+    _ABBR = {"mobility": "mob", "complexity": "cplx", "spectral_skewness": "sp.skew",
+             "spectral_kurtosis": "sp.kurt", "spectral_bandwidth": "sp.bw", "skewness": "skew",
+             "kurtosis": "kurt", "crest_factor": "crest", "dominant_frequency": "domfreq",
+             "margin_factor": "margin", "shape_factor": "shape", "rms": "rms"}
+
+    def _short(name):
+        n = name.replace("AE_", "").replace("US_", "").replace("UL_", "")
+        band, _, stat = n.partition("__")
+        if not stat:
+            return _ABBR.get(band, band)
+        band = (band.replace("500-1000kHz", "0.5-1M").replace("1000-2000kHz", "1-2M")
+                    .replace("20-500kHz", "20-500k").replace("20-100kHz", "20-100k")
+                    .replace("10-20kHz", "10-20k").replace("0-10kHz", "0-10k"))
+        return f"{band} {_ABBR.get(stat, stat)}"
+
+    _STY = {"AE": dict(marker="o", color="#1f4e79", label="AE"),
+            "US": dict(marker="s", color="#c55a11", label="US")}
+    fig, axes = plt.subplots(1, 2, figsize=(13.5, 6.2), sharex=True, sharey=True)
+    for ax, (xc, yc, ttl, errs) in zip(axes, [
+            ("marg_temp", "marg_rpm", "Marginal correlation", None),
+            ("cond_temp", "cond_rpm", "Conditional (partition-based)",
+             ("cond_temp_lo", "cond_temp_hi", "cond_rpm_lo", "cond_rpm_hi"))]):
+        for sensor, st in _STY.items():
+            s = R[R["sensor"] == sensor]
+            if errs:
+                ax.errorbar(s[xc], s[yc],
+                            xerr=[s[xc] - s[errs[0]], s[errs[1]] - s[xc]],
+                            yerr=[s[yc] - s[errs[2]], s[errs[3]] - s[yc]],
+                            fmt="none", ecolor=st["color"], alpha=0.22, lw=0.8)
+            ax.scatter(s[xc], s[yc], marker=st["marker"], color=st["color"],
+                       s=50, edgecolor="k", lw=0.4, label=st["label"], zorder=3)
+        _texts = [ax.text(r[xc], r[yc], _short(r["feature"]), fontsize=5.6,
+                          color=_STY[r["sensor"]]["color"], zorder=4)
+                  for _, r in R.iterrows()]
+        try:
+            from adjustText import adjust_text
+            adjust_text(_texts, ax=ax, expand=(1.15, 1.4),
+                        arrowprops=dict(arrowstyle="-", color="0.5", lw=0.4))
+        except ImportError:
+            pass  # plain labels if adjustText not installed
+        ax.axhline(0, color="0.6", lw=0.8)
+        ax.axvline(0, color="0.6", lw=0.8)
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
+        ax.set_xlabel(r"Spearman $\rho$ with temperature")
+        ax.set_title(ttl)
+    axes[0].set_ylabel(r"Spearman $\rho$ with RPM (speed)")
+    axes[0].legend(loc="lower left")
+    fig.tight_layout()
+    fig_path = SCRIPT_DIR / "marginal_vs_conditional.png"
+    plt.savefig(fig_path, dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {fig_path.name}")
+else:
+    print("Skipped D4c (run scripts/09_proxy_diagnostics.py first)")
+
+# %%
+# =============================================================================
 # Plot D5 — Two-stage vs direct kappa prediction (from 09 + 04)
 # =============================================================================
 
@@ -810,7 +896,8 @@ if all(pp.exists() for pp in _vif_paths.values()):
         colors = [COLOR_BAR if r else "#bbbbbb" for r in v["retained"]]
         ax.bar(range(len(v)), v["vif"], color=colors)
         ax.set_yscale("log")
-        ax.axhline(10, color="#2c2c2c", ls="--", lw=1)
+        _vif_thresh = float(cfg.get("feature_selection", {}).get("vif_threshold", 5))
+        ax.axhline(_vif_thresh, color="#2c2c2c", ls="--", lw=1)
         ax.set_xticks(range(len(v)))
         ax.set_xticklabels([f.replace("__", "\n") for f in v["feature"]],
                            rotation=90, fontsize=5)
@@ -832,8 +919,10 @@ else:
 
 _tw_dirs = sorted(MECH_DIR.glob("tw_*")) if MECH_DIR.exists() else []
 if _tw_dirs:
+    # Validation figure (fig:band_power) shows only the retained AE bands; the
+    # >1 MHz (1--2 MHz) validation_extra_bands are excluded from feature
+    # extraction and modelling, so they are no longer plotted here.
     band_labels = [b["label"] for b in cfg["frequency_bands"]["AE"]]
-    band_labels += [b["label"] for b in cfg.get("validation_extra_bands", {}).get("AE", [])]
     _tw_colors = ["#4878CF", "#D65F5F", "#6ACC65"]
     fig, axes = plt.subplots(1, len(band_labels), figsize=(4.4 * len(band_labels), 3.8),
                              sharex=True)

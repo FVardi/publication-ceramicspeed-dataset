@@ -4,45 +4,129 @@
 %% ============================================================================
 
 % Importance of bearing lubrication
-Rolling element bearings are among the most prevalent components in industrial
-machinery, and their reliable operation depends critically on adequate lubrication.
-Lubrication failure---through starvation, viscosity degradation, or contamination---increases metal-to-metal asperity contact, accelerates surface fatigue and wear, raises operating temperature, and ultimately causes premature failure. Improper lubrication is estimated to account for between 30\% and 80\% of all rolling element bearing failures~\cite{jakobsen_detecting_2023,dai_situ_2024,nassef_impact_2022}.
+Rolling element bearings are used throughout industrial machinery, and how well
+they run depends heavily on whether they are properly lubricated. When
+lubrication fails---through starvation, degraded viscosity, or
+contamination---metal surfaces inside the bearing come into direct contact, wear
+accelerates, and the bearing eventually fails. Lubrication problems are
+estimated to cause between 30\% and 80\% of all rolling-bearing
+failures~\cite{jakobsen_detecting_2023,dai_situ_2024,nassef_impact_2022}.
 
-% Why LCM lags behind vibration-based CM
-Despite this, lubrication condition monitoring (LCM) has received far less attention
-than vibration-based fault detection and remaining-useful-life estimation, which are
-now mature and widely deployed~\cite{wang_phm_2018,shang_comprehensive_2024}.
-The lubrication signal is harder to exploit: its acoustic and vibratory signatures are weaker than the impulsive signatures of spalling or raceway cracks and are strongly entangled with speed and load, so operating-condition effects readily mask the lubrication-dependent component~\cite{marticorena_cage_2022,shang_comprehensive_2024,zhang_coupled_2026}. Within bearing fault diagnosis, this entanglement has motivated a substantial recent literature on diagnosis under varying and unseen working conditions~\cite{pang_smia_2024,hua_dife_2025,jiang_mechanism_2025}; for LCM the problem is sharper still, because the lubrication target itself is derived from the operating point---a confound this paper addresses with an explicit diagnostic decomposition (Section~\ref{subsec:confound}). Yet accurate online LCM would enable condition-based relubrication---applying lubricant when and in the quantity actually needed, rather than on fixed schedules that systematically under- and over-lubricate~\cite{wakiru_review_2019}.
+% Why LCM lags behind vibration-based CM, and why it is hard (incl. the confound)
+Despite this, monitoring the lubrication condition of a running bearing has
+received far less attention than monitoring it for mechanical faults. Vibration-based
+fault detection and remaining-useful-life estimation are mature, widely deployed
+technologies, across both vibration and acoustic-emission
+sensing~\cite{wang_phm_2018,shang_comprehensive_2024,wang_fingerprint_2023}.
+Lubrication condition monitoring (LCM) is harder, for two reasons. First, the
+acoustic and vibration signatures of a thinning oil film are weaker and less
+distinctive than the sharp impulses produced by a crack or a spall, and they are
+easily masked by changes in speed and load. This entanglement with the operating
+point is a recognised problem across bearing diagnostics generally---it has, for
+instance, motivated a substantial recent literature on fault diagnosis under
+varying and unseen working
+conditions~\cite{marticorena_cage_2022,shang_comprehensive_2024,zhang_coupled_2026,pang_smia_2024,hua_dife_2025,jiang_mechanism_2025}.
+Second, for lubrication specifically the problem is sharper still: the quantity
+to be estimated, the ISO~281 viscosity ratio $\kappa$ (introduced below), is
+itself a known function of speed and temperature. A model can therefore appear
+to predict lubrication condition while secretly just reading off the operating
+point---a confound this paper addresses directly with an explicit diagnostic
+decomposition (Section~\ref{subsec:confound}). Solving this is worthwhile: an LCM
+system that works would let lubricant be applied only when actually needed,
+instead of on a fixed schedule that systematically under- or
+over-lubricates~\cite{wakiru_review_2019}.
 
 % Limitations of conventional CM for LCM
-The dominant bearing-monitoring approach, vibration analysis, detects macroscopic faults such as raceway spalling and rolling-element damage through characteristic-frequency analysis, but is inherently insensitive to the subtle tribological changes of film formation and breakdown~\cite{shang_comprehensive_2024,cornel_condition_2021}. Temperature monitoring and oil analysis add complementary information but are indirect, subject to sampling delay, or require access to the lubricant reservoir, and none provides a direct, continuous, non-invasive indicator of the instantaneous lubrication regime under operating conditions~\cite{wakiru_review_2019,sun_online_2021}.
+Several existing sensing options each have their own limits. Classical vibration
+analysis looks for the stable, periodic signatures of structural damage such as
+raceway spalling, and is poorly matched to the gradual, non-periodic process of
+film formation and breakdown~\cite{shang_comprehensive_2024,cornel_condition_2021};
+recent data-driven methods do recover some lubrication-state information from
+vibration, typically from high-frequency broadband energy rather than from
+characteristic frequencies~\cite{zhang_interpretable_2026}. Oil analysis and
+temperature monitoring add complementary information, but both are indirect:
+they are delayed, or they require physical access to the lubricant reservoir,
+and neither directly tracks the instantaneous lubrication regime during
+operation~\cite{wakiru_review_2019,sun_online_2021}.
 
 % Passive AE and US as practical sensing routes (detail deferred to Background)
-Passive, non-invasive sensing, e.g. acoustic emission (AE) and passive ultrasound
-(US), is practically attractive for industrial LCM because it requires no bearing
-modification, no direct access to the lubricant, and can be retrofitted to bearings in service. AE captures the broadband stress waves emitted by asperity contact and microcrack events, while passive US underlies the threshold-based relubrication tools already in routine industrial use, in which the broadband ultrasonic level is compared against a baseline and relubrication is triggered once it rises by a set margin~\cite{lineham_ultrasonic_2008,jakobsen_detecting_2023,jakobsen_low_2024}. The physical origins of both signals are detailed in Section~\ref{sec:background}.
-Despite the practical maturity of threshold-based US and the demonstrated usefulness of AE, the two channels' signal-processing behaviour has not been characterised simultaneously within a single regression framework against a physics-grounded lubrication reference.
+Two passive, non-invasive techniques are practically attractive instead:
+acoustic emission (AE) and passive ultrasound (US). Neither requires modifying
+the bearing or accessing the lubricant, and both can be retrofitted to bearings
+already in service. AE captures the broadband stress waves released by asperity
+contact and microcracking; passive US underlies the threshold-based
+relubrication tools already used in industry, where a rise in broadband
+ultrasonic level above a baseline triggers
+relubrication~\cite{lineham_ultrasonic_2008,jakobsen_detecting_2023,jakobsen_low_2024}.
+Their physical origins are detailed in Section~\ref{sec:background}. Despite the
+practical maturity of threshold-based US and the demonstrated usefulness of AE,
+the two channels' signal-processing behaviour has not been characterised
+simultaneously within a single regression framework against a physics-grounded
+lubrication reference.
 
-% Literature review part A: AE sensitivity to lubrication regime
-The sensitivity of AE to lubrication regime is well established. Miettinen et
-al.~\cite{miettinen_analysis_2001} showed that AE pulse count and RMS distinguish
-boundary, mixed, and full-film regimes and respond to base-oil viscosity and thickener content in grease-lubricated bearings. Yoshioka and
-Shimizu~\cite{yoshioka_compound_2009} combined AE and vibration monitoring on a
-grease-lubricated deep-groove ball bearing using envelope demodulation and statistical AE parameters. Tandon et al.~\cite{tandon_ae_2006} found AE and shock-pulse sensors to outperform accelerometers for detecting grease contamination in a ball bearing---the scenario closest to the present study. More recently, Cornel et al.~\cite{cornel_condition_2021} showed that AE detects lubrication-sensitive surface damage such as micro-pitting and smearing up to eight hours earlier than vibration monitoring, Wang et al.~\cite{wang_fingerprint_2023} developed AE fingerprint features with dynamic thresholds for bearing fault detection, and Hou and Zhang~\cite{hou_insitu_2025} derived amplitude- and energy-centre features that classify lubrication status across speeds and viscosity levels, though without a continuous regression target, and with no variation of temperature.
-
-% Literature review part B: signal processing, physical models, and passive US
-On the signal-processing side, Renhart et al.~\cite{renhart_ae_2021} applied octave
-filter-bank decomposition with RMS--friction features to characterise AE tribological events, and Marticorena and Garc\'{i}a Peyrano~\cite{marticorena_cage_2022} showed that spectral correlation of AE resolves lubrication-regime changes under varying load, demonstrating that kinematic and acoustic features can partially decouple operating-condition confounds. The physical link between film adequacy and the AE signature has been formalised by Liu et al.~\cite{liu_combined_2021} and Zhang et al.~\cite{zhang_coupled_2026}, whose coupled vibration--AE models tie emission intensity and frequency content to EHL film thickness and the rate of asperity contact. For the passive-ultrasound channel, Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} showed that broadband acoustic features carry measurable information about the ISO~281 viscosity ratio $\kappa$.
+% Literature review: AE sensitivity to lubrication regime + signal-processing/physical models
+AE's sensitivity to lubrication regime is well established. AE features have
+been shown to distinguish boundary, mixed, and full-film regimes and to respond
+to base-oil viscosity and grease thickener content~\cite{miettinen_analysis_2001},
+to outperform accelerometers for detecting grease
+contamination~\cite{tandon_ae_2006}---the scenario closest to the present
+study---and, combined with vibration monitoring via envelope
+demodulation~\cite{yoshioka_compound_2009}, to detect lubrication-sensitive
+surface damage up to eight hours earlier than vibration
+alone~\cite{cornel_condition_2021}. On the signal-processing side, octave
+filter-bank and spectral-correlation features extracted from AE have been shown
+to track lubrication regime even as load
+varies~\cite{renhart_ae_2021,marticorena_cage_2022}, and physically grounded
+models now tie the AE signature directly to elastohydrodynamic film thickness
+and asperity-contact rate~\cite{liu_combined_2021,zhang_coupled_2026}. Hou and
+Zhang~\cite{hou_insitu_2025} derived amplitude- and energy-centre features that
+classify lubrication status across speeds and viscosity levels, though without
+a continuous regression target and with no variation of temperature. For the
+passive-ultrasound channel specifically, Jakobsen et
+al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024} showed that broadband
+acoustic features carry measurable information about $\kappa$---the target this
+paper also uses.
 
 % Kappa as a continuous, physics-grounded target
-A recurring limitation of data-driven LCM is its reliance on discrete fault labels or qualitative lubrication states rather than a physically interpretable, continuous target. The ISO~281 viscosity ratio $\kappa$ removes this limitation: it is the ratio of the lubricant's actual kinematic viscosity at operating temperature to the minimum viscosity required for full EHL film formation at the current speed and bearing geometry, mapping the instantaneous operating point to a standardised lubrication-adequacy index (Section~\ref{sec:background}). A model trained to predict $\kappa$ implicitly learns the joint dependence on speed, temperature, and lubricant properties, and its output is directly interpretable against established regime boundaries. Despite this, $\kappa$ has seldom been used as a regression objective in acoustic condition monitoring.
+Most data-driven LCM work, however, predicts discrete fault labels or
+qualitative lubrication states rather than a continuous, physically meaningful
+quantity~\cite{zhang_interpretable_2026}. The ISO~281 viscosity ratio $\kappa$
+avoids this limitation. It is the ratio between the lubricant's actual
+kinematic viscosity at the running temperature and the minimum viscosity
+required to form a full elastohydrodynamic (EHL) film at the current speed and
+bearing geometry, mapping the instantaneous operating point onto a standardised
+lubrication-adequacy index (Section~\ref{sec:background}). A model trained to
+predict $\kappa$ must implicitly capture the joint effect of speed, temperature,
+and lubricant properties, and its output can be read directly against
+established lubrication-regime boundaries. Despite this advantage, $\kappa$ has
+seldom been used as a regression target in acoustic condition monitoring.
 
 % Jakobsen relation and the consolidated gap
 The clearest precedent is the work of Jakobsen et
-al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024}, who established $\kappa$ regression for passive bearing acoustics, predicting $\kappa$ from low-cost MEMS microphone and accelerometer features using LASSO and neural networks. The present study adopts their $\kappa$ target and extends it in three respects: it adds a wideband AE channel, analysed to the sensor's 1~MHz specification, acquired simultaneously with the passive US channel, extracts frequency sub-band features from both signals, and tests whether the two modalities are complementary. This last point is an open question: AE--US complementarity is argued on physical grounds in reviews~\cite{shang_comprehensive_2024,wang_advanced_2024} but has not been quantified experimentally, and it carries direct practical weight, since a second sensor adds cost and complexity and is justified only if it supplies non-redundant information. No prior study has simultaneously acquired AE and passive US from a single ball bearing and quantitatively assessed their joint value for $\kappa$ regression.
+al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024}, who were first to regress
+$\kappa$ from passive bearing acoustics, using a low-cost MEMS microphone and
+accelerometer with LASSO and neural-network models. This study adopts their
+$\kappa$ target and extends it in three respects: it adds a wideband AE channel,
+analysed up to the \SI{1}{MHz} limit of the AE coupler's band-pass, acquired
+simultaneously with the passive US channel; it extracts frequency sub-band
+features from both signals; and it tests directly whether the two channels are
+complementary. That last question carries real practical weight---a second
+sensor adds cost and complexity and is justified only if it supplies
+non-redundant information---but it has so far only been argued on physical
+grounds in reviews~\cite{shang_comprehensive_2024,wang_advanced_2024}, never
+quantified experimentally. No prior study has simultaneously acquired AE and
+passive US from a single ball bearing and assessed their joint value for
+$\kappa$ regression.
 
 % Scope and generalizability
-This study deliberately fixes the bearing, lubricant, and load, varying only rotational speed and temperature. Holding the mechanical configuration constant isolates the lubrication-dependent acoustic response from the bearing-to-bearing variability and degradation processes that would otherwise confound it---a prerequisite for establishing whether AE and passive US carry $\kappa$-relevant information at all. The resulting limits on generalisation across bearing types, lubricants, and load regimes are genuine, but not addressed here.
+This study deliberately fixes the bearing, lubricant, and load, varying only
+rotational speed and temperature. Holding the mechanical configuration constant
+isolates the lubrication-dependent acoustic response from the bearing-to-bearing
+variability and degradation processes that would otherwise confound it---a
+necessary first step before asking whether AE and passive US carry
+$\kappa$-relevant information at all. The resulting limits on generalisation
+across bearing types, lubricants, and load regimes are genuine, but not
+addressed here.
 
 \subsection*{Contributions}
 
@@ -65,9 +149,9 @@ This paper makes the following contributions:
   contributing selected features to the combined model. AE outperforms US on the
   hold-out set, while fold-level inference between the single channels is
   inconclusive under group-respecting cross-validation.  \item \textbf{A leakage-aware, instrumentation-honest evaluation protocol.}
-  Recorded content above the AE sensor's 1~MHz specification---present despite an
-  acquisition low-pass at the same frequency, and of undetermined origin---is
-  characterised and excluded from analysis. Visit-grouped data splits remove the
+  Recorded content above the \SI{1}{MHz} low-pass of the AE coupler (Kistler
+  Type~5125C)---present in the digitised signal despite that hardware filter, and
+  of undetermined origin---is excluded from analysis. Visit-grouped data splits remove the
   near-duplicate leakage inherent to windowed acquisition of slowly varying
   protocols. Under matched random-split protocols, performance equals prior
   $\kappa$-regression work; the stricter visit-grouped figures are, to the
@@ -105,3 +189,23 @@ evaluation is shown in Figure~\ref{fig:pipeline_overview}.
     regression target.}
   \label{fig:pipeline_overview}
 \end{figure}
+
+
+
+
+\clearpage
+
+% Purpose of bearings
+Rolling element bearings are ubiquitous in industrial machinery for reducing friction in rotation elements compared to when using journal bearings. Bearings 
+% Problems with bearings
+In order to reduce friction and extend the lifetime of rolling bearings, they are supplied with lubrication. The operating properties and amount of wear from usage of bearings therefore heavily depends on the the lubrication conditions inside the bearing. Adequately lubricating bearing 
+% Lubrication importance
+% Previous lubrication condition studies
+% Problems with previous studies
+
+
+\begin{itemize}
+  \item Rolling element bearings are ubiquitous
+  \item Inqadequate lubrication 
+  \item LCM has received less attention although important
+\end{itemize}

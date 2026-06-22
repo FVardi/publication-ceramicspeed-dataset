@@ -1,18 +1,18 @@
 {
  "test_A_comb_strip": {
   "AE_20-500kHz": {
-   "rho_broad_rpm": 0.933,
-   "rho_line_rpm": 0.914,
-   "line_share_median": 0.344
+   "rho_broad_rpm": 0.912,
+   "rho_line_rpm": 0.898,
+   "line_share_median": 0.342
   },
   "AE_500-1000kHz": {
-   "rho_broad_rpm": 0.692,
-   "rho_line_rpm": 0.35,
-   "line_share_median": 0.239
+   "rho_broad_rpm": 0.685,
+   "rho_line_rpm": 0.263,
+   "line_share_median": 0.237
   },
   "AE_1000-2000kHz": {
-   "rho_broad_rpm": -0.784,
-   "rho_line_rpm": -0.765,
+   "rho_broad_rpm": -0.809,
+   "rho_line_rpm": -0.781,
    "line_share_median": 0.2
   }
  },
@@ -41,6 +41,68 @@
    "median_rho": 0.149,
    "median_abs": 0.149,
    "frac_negative": 0.091
+  }
+ },
+ "test_B_within_step_us": {
+  "US_0-10kHz__mobility": {
+   "median_rho": -0.794,
+   "median_abs": 0.794,
+   "frac_negative": 1.0
+  },
+  "US_10-20kHz__mobility": {
+   "median_rho": 0.779,
+   "median_abs": 0.779,
+   "frac_negative": 0.045
+  },
+  "US_10-20kHz__complexity": {
+   "median_rho": 0.609,
+   "median_abs": 0.609,
+   "frac_negative": 0.045
+  },
+  "complexity": {
+   "median_rho": 0.557,
+   "median_abs": 0.607,
+   "frac_negative": 0.136
+  },
+  "US_20-100kHz__complexity": {
+   "median_rho": -0.52,
+   "median_abs": 0.52,
+   "frac_negative": 0.818
+  },
+  "US_0-10kHz__kurtosis": {
+   "median_rho": -0.517,
+   "median_abs": 0.517,
+   "frac_negative": 0.909
+  },
+  "US_0-10kHz__dominant_frequency": {
+   "median_rho": -0.402,
+   "median_abs": 0.402,
+   "frac_negative": 0.864
+  },
+  "US_10-20kHz__crest_factor": {
+   "median_rho": -0.037,
+   "median_abs": 0.228,
+   "frac_negative": 0.545
+  },
+  "skewness": {
+   "median_rho": 0.174,
+   "median_abs": 0.197,
+   "frac_negative": 0.091
+  },
+  "US_10-20kHz__spectral_bandwidth": {
+   "median_rho": -0.019,
+   "median_abs": 0.102,
+   "frac_negative": 0.545
+  },
+  "US_20-100kHz__spectral_skewness": {
+   "median_rho": 0.072,
+   "median_abs": 0.083,
+   "frac_negative": 0.364
+  },
+  "US_20-100kHz__spectral_bandwidth": {
+   "median_rho": -0.072,
+   "median_abs": 0.082,
+   "frac_negative": 0.636
   }
  },
  "temp_window": [

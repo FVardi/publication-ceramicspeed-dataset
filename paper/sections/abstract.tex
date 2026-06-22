@@ -1,7 +1,7 @@
 \begin{abstract}
 Inadequate lubrication causes an estimated 30--80\% of rolling-element bearing
 failures, yet online, non-invasive lubrication condition monitoring (LCM) remains
-unsolved: lubrication-relevant signal content is weak and strongly confounded with
+an open challenge: lubrication-relevant signal content is weak and strongly confounded with
 operating conditions. This paper presents a controlled dual-channel study in which
 wideband acoustic emission (AE) and heterodyned passive ultrasound (US) are acquired
 simultaneously from a ball bearing across staircase speed sweeps
@@ -12,15 +12,13 @@ physics-grounded regression target. Because $\kappa$ is determined by the operat
 point, the central methodological question is what a feature--$\kappa$ regression
 actually senses: a two-stage decomposition shows that acoustically inferred
 operating points alone recover $R^2 = \resTwoStageRsq$ of the direct model's
-\resHOrsqLgbAe, while within-speed-step analysis isolates a genuine
-temperature-mediated lubrication channel (\resWithinStepFeat,
+\resHOrsqLgbAe, while within-speed-step analysis isolates a temperature-mediated channel beyond the operating-point proxy (\resWithinStepFeat,
 $\rho = \resWithinStepRhoHC$ at fixed drive state). Evaluation uses visit-grouped
 data splits that remove the near-duplicate leakage of windowed acquisition;
-recorded content above the AE sensor's 1~MHz specification is excluded from
+recorded content above the AE coupler's 1~MHz low-pass is excluded from
 analysis. Under this protocol, gradient boosting attains hold-out
 $R^2 = \resHOrsqLgbAe$ (AE) and \resHOrsqLgbUs{} (US); fusing the channels raises
 performance to \resHOrsqLgbComb{} ($\Delta\text{RMSE} = \resDrmseAeComb$,
-significant on all tests), answering the long-argued but previously untested
-question of AE--US complementarity. All results derive from repeated grouped
+significant on all tests), providing a direct test of the often-argued but rarely tested AE--US complementarity. All results derive from repeated grouped
 cross-validation with corrected significance tests.
 \end{abstract}

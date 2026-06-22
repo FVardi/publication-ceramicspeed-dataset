@@ -24,5 +24,6 @@
       "Bash(conda run -n base python -c \":*)",
       "Bash(.venv/Scripts/python -c ' *)"
     ]
-  }
+  },
+  "model": "claude-opus-4-8"
 }

@@ -83,7 +83,7 @@ p.add_argument("--temp-window", type=float, nargs=2, default=[45.0, 55.0],
 p.add_argument("--nperseg", type=int, default=1 << 16)
 p.add_argument("--median-kernel", type=int, default=31,
                help="median filter width in PSD bins (must span > line width, < comb spacing x2)")
-p.add_argument("--per-step", type=int, default=2, help="sweeps per RPM step in Test A")
+p.add_argument("--per-step", type=int, default=10, help="sweeps per RPM step in Test A")
 args, _ = p.parse_known_args()
 
 if args.output_dir:
@@ -253,7 +253,62 @@ ax.legend(fontsize=7); fig.tight_layout()
 fig.savefig(FIGURES_DIR / "within_step_rho.png", dpi=150)
 plt.close(fig)
 
+# =============================================================================
+# Test B (US): within-RPM-step temperature sensitivity, passive ultrasound
+# Same conditioning as the AE case, run over the retained UL features so the
+# figure is directly comparable to within_step_rho.png. Uses every available
+# sweep per step (no subsampling); the --per-step flag affects only Test A.
+# =============================================================================
+
+sel = json.loads((OUTPUT_DIR / "feature_selection.json").read_text().rstrip("\x00"))
+US_FEATURES = sel["UL"]["retained"]
+
+feat_us = pd.read_parquet(fp)
+meta_us = pd.read_parquet(mp)
+mask_us = (feat_us["sensor"] == "UL").values
+feat_us = feat_us[mask_us].reset_index(drop=True)
+meta_us = meta_us[mask_us].reset_index(drop=True)
+US_FEATURES = [c for c in US_FEATURES if c in feat_us.columns]
+
+df_us = feat_us[US_FEATURES].copy()
+df_us["rpm"], df_us["temp"] = meta_us["rpm"].values, meta_us["temperature_c"].values
+df_us = df_us[(df_us["rpm"] >= 60) & (df_us["rpm"] <= 3000)]
+df_us["step"] = (df_us["rpm"] / 100).round() * 100
+
+rows_us = []
+for step, sub in df_us.groupby("step"):
+    if sub["temp"].nunique() < 8 or len(sub) < 30:
+        continue
+    for c in US_FEATURES:
+        rho = spearmanr(sub[c], sub["temp"])[0]
+        rows_us.append({"step": step, "n": len(sub), "feature": c, "rho_temp": rho})
+ws_us = pd.DataFrame(rows_us)
+ws_us.to_csv(TABLES_DIR / "within_step_rho_us.csv", index=False)
+
+print("\nTest B (US) -- within-RPM-step Spearman(feature, temperature), median |rho| across steps:")
+statsB_us = {}
+med_us = ws_us.groupby("feature")["rho_temp"].agg(median_rho="median",
+                                                  median_abs=lambda s: s.abs().median(),
+                                                  frac_negative=lambda s: (s < 0).mean())
+for c, r in med_us.sort_values("median_abs", ascending=False).iterrows():
+    statsB_us[c] = {k: round(float(v), 3) for k, v in r.items()}
+    print(f"  {c:34s} median rho={r['median_rho']:+.2f}  median |rho|={r['median_abs']:.2f}  "
+          f"frac neg={r['frac_negative']:.0%}")
+n_us = int(ws_us.groupby("step")["n"].first().sum())
+print(f"  US within-step total sweeps: {n_us} over {ws_us['step'].nunique()} steps")
+
+fig, ax = plt.subplots(figsize=(9, 5))
+for c in US_FEATURES:
+    sub = ws_us[ws_us["feature"] == c]
+    ax.plot(sub["step"], sub["rho_temp"], marker="o", ms=3, lw=1, label=c)
+ax.axhline(0, color="k", lw=0.8)
+ax.set_xlabel("RPM step"); ax.set_ylabel(r"Spearman $\rho$(feature, temperature) within step")
+ax.legend(fontsize=6, ncol=2); fig.tight_layout()
+fig.savefig(FIGURES_DIR / "within_step_rho_us.png", dpi=150)
+plt.close(fig)
+
 (SCRIPT_DIR / "band_mechanism_stats.json").write_text(json.dumps(
     {"test_A_comb_strip": statsA, "test_B_within_step": statsB,
+     "test_B_within_step_us": statsB_us,
      "temp_window": [t_lo, t_hi], "data_file": DATA_FILE.name}, indent=1))
 print(f"\nWrote results to {SCRIPT_DIR}")

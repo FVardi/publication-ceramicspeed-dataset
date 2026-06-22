@@ -19,16 +19,18 @@ correlation with $\kappa$ across all sweeps. Features must satisfy both
 $|\rho| \geq 0.1$ and $|r| \geq 0.1$ to be retained, removing features carrying
 essentially no monotonic or linear information about the target.
 
-\textbf{Stage 2 -- redundancy.} Among the survivors, redundancy is reduced by a
-greedy pairwise procedure. Features are visited in order of increasing relevance
-($|\rho|$ with $\kappa$); whenever two features are inter-correlated at
-$|\rho| \geq 0.90$ and the candidate for removal also has a variance inflation
-factor $\text{VIF} \geq 10$, the member of the pair with the higher relevance is
-kept and the other is dropped. The VIF thus acts as a qualifier for pairwise
-removal rather than as a stand-alone criterion: no feature is removed for high VIF
-alone, and a retained feature may still exhibit $\text{VIF} > 10$ when its
-collinearity is distributed across several features rather than concentrated in a
-single partner.
+\textbf{Stage 2 -- redundancy.} Among the survivors, multicollinearity is reduced by
+iterative variance-inflation-factor (VIF) elimination. At each round the VIF of every
+remaining feature is computed; if any feature exceeds the threshold $\text{VIF} = 5$,
+the \emph{least $\kappa$-relevant} feature among those above the threshold (lowest
+$|\rho|$ with $\kappa$) is dropped, and all VIFs are recomputed on the reduced set.
+The procedure repeats until no remaining feature exceeds the threshold. Recomputing
+the VIFs each round addresses both pairwise and distributed (many-to-one)
+collinearity, while the relevance-based tie-break protects the strongest predictor in
+each collinear group: a highly inter-correlated feature is retained when it is the
+most $\kappa$-relevant member of its group, its less-relevant partners being removed
+in its place. By construction every retained feature has $\text{VIF} < 5$ on the final
+subset.
 
 Table~\ref{tab:selection_funnel} summarises the selection funnel.
 
@@ -62,23 +64,39 @@ and~\ref{tab:app_us_ranking}).
 
 \begin{table}[H]
 \centering
-\caption{Top 10 features by combined Spearman--Pearson rank score with $\kappa$,
-for the AE and the US signals. Features retained after Stage~2 redundancy reduction
-are marked with $^{\dagger}$.}
-\label{tab:raw_spearman}
 \small
 \IfFileExists{tables/table_top_features_tabular.tex}%
   {\input{tables/table_top_features_tabular.tex}}%
   {\IfFileExists{../outputs/07_paper_export/table_top_features_tabular.tex}%
     {\input{../outputs/07_paper_export/table_top_features_tabular.tex}}%
     {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_top\_features\_tabular.tex.}}}
+\caption{Top 10 features by combined Spearman--Pearson rank score with $\kappa$,
+for the AE and the US signals. Features retained after Stage~2 redundancy reduction
+are marked with $^{\dagger}$.}
+\label{tab:raw_spearman}
 \end{table}
 
 The top-ranked AE feature is \resTopAeFeat{} ($|\rho| = \resTopAeRho$), and the
 top-ranked US feature is \resTopUsFeat{} ($|\rho| = \resTopUsRho$).
-\todo{Interpret the final ranking: which sub-bands dominate for each channel;
-amplitude (RMS) vs.\ shape (complexity, bandwidth, skewness) features; AE vs.\ US
-correlation strength gap. Use \texttt{outputs/09\_proxy\_diagnostics/tables/feature\_oc\_correlations.csv} (per-feature $|\rho|$ with RPM, temperature, and $\kappa$) to label which top features are speed/amplitude proxies and which carry temperature-channel information.}
+
+Two patterns distinguish the channels. For AE, relevance concentrates in the
+500~kHz--1~MHz sub-band, which supplies five of the ten highest-ranked features
+(including the top-ranked mobility) and is led by spectral-shape and
+frequency-distribution descriptors---mobility, centre and dominant frequency,
+complexity---rather than by raw amplitude: where the high-frequency energy sits and
+how peaked its spectrum is carry more monotonic information about $\kappa$ than its
+magnitude alone. For US, relevance instead concentrates in the low-frequency
+sub-bands ($\leq 20$~kHz) to where it has been heterodyned and is dominated by amplitude (RMS) features, with the
+broadband and 0--20~kHz RMS terms heading the ranking. The channels also differ in
+strength: the best AE feature exceeds the best US feature by a wide margin in $|\rho|$
+(\resTopAeRho{} vs.\ \resTopUsRho), consistent with the AE sensor's more direct
+mechanical coupling to asperity-contact events. Cross-referencing the retained
+features against operating conditions (Section~\ref{subsec:confound}) shows that the
+most $\kappa$-relevant AE features are also those most strongly correlated with
+rotational speed, with one informative exception: the 20--500~kHz skewness feature is
+almost uncorrelated with speed yet carries the strongest temperature association of
+the retained set, anticipating the within-step temperature channel examined below.
+
 Broadband AE features rank lower than their sub-band counterparts, indicating that
 the frequency-specific content of the high-frequency AE signal carries more monotonic
 information about $\kappa$ than the full-band
@@ -86,24 +104,35 @@ aggregate~\cite{renhart_ae_2021, zhang_coupled_2026}.
 
 \subsection{Redundancy structure}
 \label{subsec:redundancy}
-Figure~\ref{fig:vif} shows the variance inflation factors of the Stage~1 survivors
-on a logarithmic axis. Highly inter-correlated pairs lose their less
-$\kappa$-relevant member in Stage~2 (Section~\ref{subsec:selection}); retained
-features above the $\text{VIF} = 10$ line are those whose collinearity is
-distributed across several features rather than concentrated in a single pairwise
-partner.
-\todo{One short paragraph: where the redundancy concentrates (within-band amplitude
-clusters; centre-frequency--bandwidth pairs), and note that because the candidate set
-is canonical (Section~\ref{sec:pipeline}), remaining correlations reflect genuine
-signal structure rather than definitional identities.}
+Figure~\ref{fig:vif} shows the variance inflation factors of the Stage~1 survivors,
+computed on the full survivor set, on a logarithmic axis. The values span several
+orders of magnitude. A feature plotted far above the threshold may still be retained:
+the iterative procedure (Section~\ref{subsec:selection}) removes its less
+$\kappa$-relevant collinear partners first, so its \emph{recomputed} VIF on the
+reduced set falls below the threshold even though its full-set value is large.
+
+The redundancy concentrates in the amplitude-ratio family. RMS, crest factor, margin
+factor, and shape factor are algebraically interrelated normalisations of the same
+waveform amplitude, and across sub-bands they form a tightly collinear cluster whose
+members carry the largest variance inflation factors---several orders of magnitude
+above the threshold. The iterative elimination therefore prunes this cluster most
+heavily, removing the duplicated band-copies and lower-relevance amplitude ratios
+until the surviving amplitude features are mutually non-collinear. A secondary, weaker
+cluster links the spectral-location descriptors (centre frequency, dominant frequency,
+bandwidth) within a band. By contrast, the distributional-shape features---skewness
+and spectral kurtosis---are close to mutually orthogonal and enter the retained set
+almost untouched. Because the candidate set is canonical (Section~\ref{sec:pipeline}),
+these collinearities reflect genuine shared structure---primarily the common amplitude
+scaling imposed by the operating point---rather than definitional identities among
+overlapping feature definitions.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{vif_log.png}
-\caption{Variance inflation factors of the Stage~1 survivors (logarithmic axis).
-Retained features in blue, removed features in grey; the dashed line marks the
-$\text{VIF} = 10$ qualifier used by the Stage~2 pairwise removal. Values are capped
-at $10^{6}$ for display.}
+\caption{Variance inflation factors of the Stage~1 survivors, computed on the full
+survivor set (logarithmic axis). Retained features in blue, removed features in grey;
+the dashed line marks the $\text{VIF} = 5$ threshold of the Stage~2 iterative
+elimination. Values are capped at $10^{6}$ for display.}
 \label{fig:vif}
 \end{figure}
 
@@ -111,9 +140,7 @@ at $10^{6}$ for display.}
 \label{subsec:confound}
 
 The raw correlation between signal features and $\kappa$ is partially driven by the
-shared dependence on rotational speed and temperature: RPM has a Spearman correlation
-of $\rho = \resRhoRpmKappa$ with $\kappa$ and temperature has
-$\rho = \resRhoTempKappa$.
+shared dependence on rotational speed and temperature.
 Higher RPM reduces the required viscosity $\nureq$ (Eq.~\eqref{eq:nu1}) and therefore
 increases $\kappa$, while simultaneously increasing signal energy through more
 frequent contact events per second. Higher temperature reduces the actual viscosity
@@ -129,46 +156,74 @@ by the operating point (Section~\ref{subsec:kappa}), a model given measured RPM 
 temperature directly would predict $\kappa$ near-perfectly by construction; the
 contribution of the acoustic features is to recover this information without
 tachometer or thermometer access.
-This proxy structure is quantified directly. A LightGBM regressor trained on the
-retained AE features predicts RPM with $R^2 = \resProxyRpmRsq$
-(RMSE \resProxyRpmRmse~rpm) and temperature with $R^2 = \resProxyTempRsq$
-(RMSE \resProxyTempRmse~\si{\celsius}) on the hold-out set. Feeding these predicted
-operating points through Eqs.~\eqref{eq:kappa}--\eqref{eq:nu1} yields a two-stage
-$\kappa$ estimate with $R^2 = \resTwoStageRsq$ (RMSE \resTwoStageRmse), nearly
-matching the direct features-to-$\kappa$ model ($R^2 = \resHOrsqLgbAe$,
-RMSE \resHOrmseLgbAe). The direct model is therefore well described as an acoustic
-operating-point soft sensor combined with the ISO~281 mapping, with only a marginal
-contribution beyond it.
 
-The features are not, however, mere speed trackers. Within a fixed staircase RPM
-step the drive state is approximately constant while the lubricant viscosity varies
-across the 13 temperature blocks; in this setting the strongest feature
-(1--2~MHz complexity) retains a median within-step Spearman correlation of
-$\resWithinStepRhoHC$ with temperature (negative in 91\% of steps, i.e.\ tracking
-$\kappa$; Figure~\ref{fig:within_step}), while remaining constant during the
-stationary heater-driven warm-up. The features therefore sense both $\kappa$
-channels---speed and temperature---through the rotating bearing, rather than
-reading either operating quantity directly.
+Marginally, the retained features correlate with $\kappa$ chiefly through this
+operating-point dependence. Rotational speed is the dominant
+axis---it has a Spearman correlation of $\rho = \resRhoRpmKappa$ with $\kappa$,
+against $\rho = \resRhoTempKappa$ for temperature---and a LightGBM regressor on
+the retained AE features recovers the operating point itself almost completely
+(RPM at $R^2 = \resProxyRpmRsq$, temperature at $R^2 = \resProxyTempRsq$).
+Passing these predicted conditions through Eqs.~\eqref{eq:kappa}--\eqref{eq:nu1}
+yields a two-stage $\kappa$ estimate ($R^2 = \resTwoStageRsq$) that nearly equals
+the direct features-to-$\kappa$ model ($R^2 = \resHOrsqLgbAe$), so virtually all
+of the marginal skill is attributable to acoustic operating-point proxying rather
+than to direct film sensing. This marginal view, however, is dominated by the
+speed sweep and conflates the two $\kappa$ channels. We therefore condition on
+each operating variable in turn, using the measured operating point: the
+within-RPM-step correlation with temperature (sweeps grouped into staircase steps
+of fixed speed) isolates the temperature response, while the
+within-temperature-block correlation with speed (sweeps grouped into
+2~\si{\celsius} blocks of measured temperature, within which the temperature
+standard deviation stays below 1~\si{\celsius}) isolates the speed response.
+Figure~\ref{fig:marg_cond} contrasts the marginal and conditional structure for
+every retained feature of both sensors. The speed axis is essentially unchanged
+by conditioning---the features genuinely track rotational speed---whereas the
+temperature axis spreads outward once speed is removed, uncovering a
+lubrication-state sensitivity that the marginal view masks; the strongest AE
+feature, \resWithinStepFeat, reaches a within-step correlation of
+$\rho = \resWithinStepRhoHC$ with temperature. The features are thus acoustic
+operating-point soft sensors that, beyond the proxy share, retain a genuine
+residual sensitivity to the lubrication state.
+
+The two sensors occupy distinct regions of this conditional plane. AE features
+cluster on the speed axis, whereas the passive-US channel resolves the
+temperature dependence more strongly and with mixed sign across its sub-bands
+(Figure~\ref{fig:marg_cond}, right). AE and US therefore capture the lubrication
+state through partly distinct channels rather than redundantly---the
+complementarity their fusion later exploits.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.8\textwidth]{within_step_rho.png}
-\caption{Within-RPM-step Spearman correlation between selected AE sub-band features
-and temperature. At fixed speed the drive state is constant, so non-zero
-correlations reflect sensitivity to the lubrication state rather than to the
-operating point.}
-\label{fig:within_step}
+\includegraphics[width=\textwidth]{marginal_vs_conditional.png}
+\caption{Marginal versus conditional rank-correlation structure of the retained
+AE (circles) and US (squares) features. Each point is one feature; the axes are
+the Spearman correlation with measured temperature ($x$) and rotational speed
+($y$). \emph{Left:} marginal correlations over all sweeps, dominated by the speed
+sweep. \emph{Right:} partition-based conditional correlations---within-RPM-step
+for the temperature axis and within-temperature-block for the speed axis---with
+whiskers showing the inter-quartile range across partitions. Conditioning leaves
+the speed axis essentially unchanged but spreads the features along the
+temperature axis, revealing lubrication-state sensitivity masked in the marginal
+view. AE features track speed; US features lean toward temperature.}
+\label{fig:marg_cond}
 \end{figure}
 
 \subsection{Low-dimensional structure and regime separability}
 \label{subsec:pca}
 
 Figure~\ref{fig:pca} shows the first two principal components of the retained AE and
-US feature sets coloured by $\kappa$ value. Visual inspection shows that some
-separability in this subspace is possible, confirming that the retained feature sets
-carry regime-relevant discriminative information.
-\todo{Regenerate the figure from the final run and describe the gradient/regime
-structure observed.}
+US feature sets coloured by $\kappa$ value. In the AE projection the $\kappa$ value
+varies smoothly across the plane rather than forming disjoint clusters: high-$\kappa$
+sweeps (well-separated films) concentrate in the upper-left lobe while low-$\kappa$
+sweeps fan out along a tail extending to large positive PC1, so the first two
+components---together capturing roughly two-thirds of the AE feature variance---already
+arrange the data along a continuous lubrication gradient. The US projection shows the
+same ordering more weakly: a single dense core carries a shallower $\kappa$ gradient
+and a detached low-$\kappa$ cluster sits apart from it, consistent with the lower
+predictive power of the US channel (Section~\ref{sec:modelling}). The continuity of the
+AE gradient, rather than sharp regime boundaries, mirrors the continuous nature of
+$\kappa$ and indicates that the retained features encode a graded film-thickness signal
+rather than a small number of discrete operating states.
 
 \begin{figure}[H]
 \centering

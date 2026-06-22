@@ -7,21 +7,20 @@
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/eda_waveforms.png}
-\caption{}
+\includegraphics[width=1\textwidth]{figures/eda_waveforms.png}
+\caption{Waveforms of AE and US signals from the same sweeps for different values of $\kappa$. AE shows clear pulses of energy from asperity contacts which modulate the signal afterwards. US shows a more regular, lower frequency, non-stationary waveform.}
 \label{fig:waveforms}
 \end{figure}
 
 
-Spectrograms of the raw signals, sorted according to $\kappa$, are shown in Figure~\ref{fig:spectrograms} to illustrate the frequency content and its variation with operating conditions.
+Spectrograms of the raw signals, ordered chronologically by sweep, are shown in Figure~\ref{fig:spectrograms} to illustrate the frequency content and its variation with operating conditions across the protocol.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/eda_spectrogram.png}
-\caption{Spectrograms of the raw AE and US signals across the operating conditions. Each column corresponds to a sweep, sorted by increasing $\kappa$ value from left to right. The colour indicates the magnitude of the signal in dB, with warmer colours indicating higher magnitudes.}
+\includegraphics[width=0.8\textwidth]{figures/eda_spectrogram_chronological.png}
+\caption{Spectrograms of the raw AE and US ordered by sweep number (chronological). The dashed lines show the sub-bands which are later used in feature generation. }
 \label{fig:spectrograms}
 \end{figure}
-
 
 \subsection{Sub-band decomposition}
 \label{subsec:filter_bands}
@@ -30,12 +29,11 @@ The AE and US signals are decomposed into frequency sub-bands prior to feature
 extraction, since the information on lubrication conditions contained in the signals
 is expected to be localised in sub-bands rather than wholly contained in the broadband
 signals~\cite{renhart_ae_2021, zhang_coupled_2026}. Adaptive decompositions such as symplectic geometry mode decomposition offer data-driven alternatives for isolating informative components~\cite{pan_sgmd_2019}; fixed, physically motivated bands are preferred here so that features remain directly comparable across sweeps and interpretable against the sensing physics.
-For the AE channel, three sub-bands are extracted in addition to the broadband signal:
-(i)~20--500~kHz, capturing the transition from audible to ultrasonic contact dynamics;
-(ii)~500~kHz--1~MHz, the primary stress-wave propagation band; and
-(iii)~1--2~MHz, covering high-frequency activity associated with film breakdown; the content of this band is validated in Section~\ref{subsec:band_validation} and its physical origin discussed in Section~\ref{subsec:disc_hf}. The US channel is first restricted to 0--20~kHz, consistent with the heterodyned
-baseband of the probe (Section~\ref{subsec:origins}), and two sub-bands
-(0--10~kHz and 10--20~kHz) are extracted in addition.
+For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz which contain bands of spectral energy which upon visual inspection of Figure~\ref{fig:spectrograms} vary with the operating conditions. Content above the
+\SI{1}{MHz} coupler low-pass (Section~\ref{subsec:sensors}) is excluded from the
+feature set. For the US channel, the signal spans the
+probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband (Section~\ref{subsec:origins}), and 20--100~kHz capturing the above-baseband content
+whose information value is assessed empirically.
 The sub-bands are summarised in Table~\ref{tab:subbands}.
 All decompositions use 5th-order Butterworth filters applied forward--backward
 (\texttt{sosfiltfilt}), giving zero phase distortion and a 10th-order effective
@@ -50,13 +48,13 @@ magnitude response.
 \toprule
 \textbf{Channel} & \textbf{Sub-band} & \textbf{Filter type} & \textbf{Frequency range} \\
 \midrule
-AE & Broadband  & --        & Full bandwidth   \\
+AE & Broadband  & --        & 0--1\,MHz        \\
 AE & Sub-band 1 & Band-pass & 20--500\,kHz     \\
 AE & Sub-band 2 & Band-pass & 500\,kHz--1\,MHz \\
-AE & Sub-band 3 & Band-pass & 1--2\,MHz        \\
-US & Broadband  & Low-pass  & 0--20\,kHz       \\
+US & Broadband  & Low-pass  & 0--100\,kHz      \\
 US & Sub-band 1 & Band-pass & 0--10\,kHz       \\
 US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
+US & Sub-band 3 & Band-pass & 20--100\,kHz     \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -65,94 +63,62 @@ US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
 \subsection{Sub-band signal validation}
 \label{subsec:band_validation}
 
-The sub-band interpretation rests on the assumption that the band content is
-bearing-generated. Because the VFD injects switching EMI---visible as a line comb
-at $\approx$4.7~kHz spacing and its multiples, matching the VFD switching
-frequency (Section~\ref{subsec:rig})---this assumption is verified rather than
-presumed. The validation works with \emph{total} band power: spectral
-redistribution conserves energy within a band, so changes in the comb's line
-shape with drive state cannot produce a net change in band power.
-
-Figure~\ref{fig:band_power} shows the total power of each AE band as a function
-of RPM within two fixed temperature windows, and the three bands behave
-qualitatively differently. The 20--500~kHz band rises monotonically with speed
-($\rho = \resRhoPowRpmLow$ at 45--55~\si{\celsius}), as expected for
-mechanically generated contact and rolling
-noise~\cite{miettinen_analysis_2001, zhang_coupled_2026}. The 500~kHz--1~MHz
-band rises only weakly ($\rho = \resRhoPowRpmMid$). The 1--2~MHz band is
-\emph{inversely} related to speed ($\rho = \resRhoPowRpmHigh$): its power
-falls with speed and reaches a common electronics floor near
-\resKneeRpmCool~rpm ($\kappa \approx \resKneeKappaCool$) at
-45--55~\si{\celsius}, but persists to \resKneeRpmHot~rpm
-($\kappa \approx \resKneeKappaHot$) at 85--95~\si{\celsius}, where the film
-forms later in the speed range. The high-frequency content thus disappears at a
-comparable lubrication state rather than at a comparable speed: it is
-rotation-generated and gated by the lubricant film, superimposed on the drive's
-EMI comb. The physical mechanism is discussed in Section~\ref{subsec:disc_hf}.
+The retained sub-bands carry bearing-generated content rather than drive EMI. The VFD injects a switching comb at $\approx$4.7~kHz and its harmonics (Section~\ref{subsec:rig}); these lie below the 20~kHz lower edge of the retained AE bands and so cannot masquerade as bearing signal within them. More directly, total band power rises with rotational speed in both bands---$\rho = \resRhoPowRpmLow$ for 20--500~kHz (at 45--55~\si{\celsius}) and $\rho = \resRhoPowRpmMid$ for 500~kHz--1~MHz (Figure~\ref{fig:band_power})---as expected for mechanically generated contact and rolling noise~\cite{miettinen_analysis_2001, zhang_coupled_2026}, rather than the fixed-frequency behaviour of an electromagnetic-interference source.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{band_power_vs_rpm.png}
-\caption{Total AE band power as a function of RPM at two fixed temperature
-windows. The 20--500~kHz band rises monotonically with speed; the 1--2~MHz band
-decays to a common electronics floor at a temperature-dependent speed,
-i.e.\ at a comparable lubrication state ($\kappa$) rather than a comparable
-RPM.}
+\includegraphics[width=0.7\textwidth]{band_power_vs_rpm.png}
+\caption{Total power of the two retained AE sub-bands as a function of RPM at fixed temperature windows. Both bands rise with speed, consistent with mechanically generated emission.}
 \label{fig:band_power}
 \end{figure}
 
 \subsection{Feature extraction}
 \label{subsec:features_extract}
 
-Features are computed from the voltage signal of each sweep--sensor pair, for the
-broadband signal and for each sub-band. In total 14 features are computed, comprising
-8 time-domain and 6 frequency-domain statistics,
-as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately canonical: commonly used companions such as standard deviation, variance, peak, impulse factor, and RMS frequency are exact transforms or products of the retained features (e.g.\ $\mathrm{std}=\mathrm{RMS}$ for zero-mean band-filtered signals; $\mathrm{peak}=\mathrm{crest}\times\mathrm{RMS}$; $\mathrm{impulse}=\mathrm{crest}\times\mathrm{shape}$; $f_{\mathrm{RMS}}^2 = f_c^2 + \sigma_w^2$) and are therefore omitted, so that no candidate feature is a deterministic function of another. All retained features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
+Features are computed from the voltage signal of each sweep--sensor pair, for the broadband signal and for each sub-band. In total 14 features are computed, comprising 8 time-domain and 6 frequency-domain statistics, as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately canonical: commonly used companions such as standard deviation, variance, peak, impulse factor, and RMS frequency are exact transforms or products of the retained features (e.g.\ $\mathrm{std}=\mathrm{RMS}$ for zero-mean band-filtered signals; $\mathrm{peak}=\mathrm{crest}\times\mathrm{RMS}$; $\mathrm{impulse}=\mathrm{crest}\times\mathrm{shape}$; and the RMS frequency satisfies $f_{\mathrm{RMS}}^2 = f_c^2 + \sigma_w^2$, where $f_c$ is the spectral centroid and $\sigma_w$ the spectral bandwidth) and are therefore omitted, so that no candidate feature is a deterministic function of another. The frequency-centroid information that RMS frequency would carry is instead represented by Hjorth mobility, its time-domain counterpart: $\text{mobility} = \sqrt{\operatorname{Var}(x')/\operatorname{Var}(x)}$ estimates the signal's mean frequency ($\text{mobility} \approx 2\pi f_{\mathrm{RMS}}$) from the variances of the signal and its time derivative $x'$. Because it is obtained from these time-domain variances rather than from the spectral moments, it is not an exact function of $f_c$ and $\sigma_w$, and is therefore retained as an independent feature. All retained features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
 
 \begin{table}[htbp]
-\caption{Time-domain features. Notation: $N$ signal length; $\bar{x}$ sample mean;
-  $\sigma$ population standard deviation; $x_{\text{peak}} = (\max x - \min x)/2$
-  half the peak-to-peak range.}
-\label{tab:features}
 \centering
 {\small\setstretch{1}%
 \begin{tabular}{@{} p{2.8cm} p{6.2cm} p{6.2cm} @{}}
 \toprule
 \textbf{Name} & \textbf{Formula} & \textbf{Description} \\
 \midrule
-RMS & $\sqrt{N^{-1}\sum_{n}x_n^2}$ & Root mean square amplitude. \\[3pt]
-Skewness & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^3$ & Third standardised central moment; amplitude asymmetry. \\[3pt]
-Kurtosis & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^4$ & Fourth standardised central moment; tail heaviness. \\[3pt]
-Crest factor & $x_{\text{peak}}/x_{\text{RMS}}$ & Peak-to-RMS ratio; sensitive to impulsive events. \\[3pt]
-Shape factor & $x_{\text{RMS}}\,/\,(N^{-1}\sum_n|x_n|)$ & Ratio of RMS to mean absolute value. \\[3pt]
-Margin factor & $x_{\text{peak}}\,/\,(N^{-1}\sum_n\sqrt{|x_n|})^2$ & Peak divided by squared mean square-root amplitude. \\[3pt]
-Hjorth mobility & $[\operatorname{Var}(x')/\operatorname{Var}(x)]^{1/2}$ & Square root of first-derivative to signal variance ratio; proportional to mean frequency. \\[3pt]
-Hjorth complexity & $M(x')/M(x)$ & Ratio of first-derivative mobility $M$ to signal mobility; bandwidth proxy. \\
+RMS & $\sqrt{N^{-1}\sum_{n}x_n^2}$ & Overall signal energy in the band; grows with the rate and intensity of contact activity. \\[3pt]
+Skewness & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^3$ & Asymmetry of the amplitude distribution; departs from zero when excursions are predominantly one-sided. \\[3pt]
+Kurtosis & $N^{-1}\sum_{n}[(x_n-\bar{x})/\sigma]^4$ & Impulsiveness; large for sparse, sharp transients and near~3 for Gaussian background noise. \\[3pt]
+Crest factor & $x_{\text{peak}}/x_{\text{RMS}}$ & Prominence of isolated peaks above the background level; elevated by sharp, intermittent events. \\[3pt]
+Shape factor & $x_{\text{RMS}}\,/\,(N^{-1}\sum_n|x_n|)$ & Waveform peakiness independent of amplitude; larger for spiky signals than for smooth, sinusoidal ones. \\[3pt]
+Margin factor & $x_{\text{peak}}\,/\,(N^{-1}\sum_n\sqrt{|x_n|})^2$ & Sensitivity to extreme excursions, weighting large peaks more strongly than the crest factor. \\[3pt]
+Hjorth mobility & $[\operatorname{Var}(x')/\operatorname{Var}(x)]^{1/2}$ & Mean (centroid) frequency of the signal; rises as energy shifts to higher frequencies within the band. \\[3pt]
+Hjorth complexity & $M(x')/M(x)$ & Spectral spread; increases as the signal departs from a single dominant frequency toward broadband content. \\
 \bottomrule
 \end{tabular}}
+\caption{Time-domain features. Notation: $N$ signal length; $\bar{x}$ sample mean; $\sigma$ population standard deviation; $x_{\text{peak}} = (\max x - \min x)/2$ half the peak-to-peak range.}
+\label{tab:features}
 \end{table}
 
 \begin{table}[htbp]
+\centering
+{\small\setstretch{1}%
+\begin{tabular}{@{} p{2.8cm} p{6.2cm} p{6.2cm} @{}}
+\toprule
+\textbf{Name} & \textbf{Formula} & \textbf{Description} \\
+\midrule
+Dominant frequency & $f_{\arg\max_k S_k^2}$ & Location of the strongest spectral peak; tracks the most energetic resonance or excitation in the band. \\[3pt]
+Centre frequency & $f_c = \sum_k f_k S_k\,/\,\Sigma S$ & Energy-weighted mean frequency; shifts as the balance between low- and high-frequency content changes. \\[3pt]
+Spectral bandwidth & $\sigma_w = \big(\sum_k(f_k-f_c)^2 S_k\,/\,\Sigma S\big)^{1/2}$ & Concentration of energy about the centroid; small for tonal signals, large for broadband activity. \\[3pt]
+Spectral skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(\sigma_w^3\,\Sigma S)$ & Direction of spectral asymmetry; indicates whether energy leans below or above the centroid. \\[3pt]
+Spectral kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(\sigma_w^4\,\Sigma S)$ & Tailedness of the spectrum; large when energy is spread out. \\[3pt]
+Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Tonal-versus-noise character; near~1 for broadband noise, near~0 for a pure tone. \\
+\bottomrule
+\end{tabular}}
 \caption{Frequency-domain features (companion to Table~\ref{tab:features}).
   Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding
   frequency; $\bar{S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \sum_k S_k$;
   $f_c = (\Sigma S)^{-1}\sum_k f_k S_k$;
   $\sigma_w = \big((\Sigma S)^{-1}\sum_k(f_k-f_c)^2 S_k\big)^{1/2}$.}
 \label{tab:features_freq}
-\centering
-{\small\setstretch{1}%
-\begin{tabular}{@{} p{2.8cm} p{6.2cm} p{6.2cm} @{}}
-\toprule
-\textbf{Name} & \textbf{Formula} & \textbf{Description} \\
-\midrule
-Dominant frequency & $f_{\arg\max_k S_k^2}$ & Frequency at which spectral power is maximum. \\[3pt]
-Centre frequency & $f_c = \sum_k f_k S_k\,/\,\Sigma S$ & Magnitude-weighted mean frequency (spectral centroid). \\[3pt]
-Spectral bandwidth & $\sigma_w = \big(\sum_k(f_k-f_c)^2 S_k\,/\,\Sigma S\big)^{1/2}$ & Magnitude-weighted spectral spread about the centroid. \\[3pt]
-Spectral skewness & $\sum_k(f_k-f_c)^3 S_k\,/\,(\sigma_w^3\,\Sigma S)$ & Standardised third weighted spectral moment; asymmetry of the spectral distribution. \\[3pt]
-Spectral kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(\sigma_w^4\,\Sigma S)$ & Standardised fourth weighted spectral moment; peakedness/tail weight of the spectral distribution. \\[3pt]
-Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Geometric-to-arithmetic mean ratio; 1 for white noise, 0 for a pure tone. \\
-\bottomrule
-\end{tabular}}
 \end{table}
 
 All frequency-domain features are computed from the one-sided FFT magnitude spectrum
@@ -165,6 +131,12 @@ information carried by RMS.
 \label{subsec:candidates}
 
 Extracting the 14-feature set independently for the broadband signal and each
-sub-band yields $14 \times 4 = \resNcandAe$~candidate AE features and
-$14 \times 3 = \resNcandUs$~candidate US features per sweep. Features are named by
-band and statistic (e.g.\ \texttt{AE\_1000-2000kHz\_\_complexity}); br
+sub-band yields $14 \times 3 = \resNcandAe$~candidate AE features (broadband plus two
+sub-bands) and $14 \times 4 = \resNcandUs$~candidate US features (broadband plus three
+sub-bands) per sweep. Features are named by band and statistic
+(e.g.\ \texttt{AE\_500-1000kHz\_\_mobility}); broadband features carry no band prefix.
+These two candidate sets, and their union (the combined AE+US set,
+$\resNcandAe + \resNcandUs$ features), define the three sensor configurations---AE-only,
+US-only, and combined---evaluated in Sections~\ref{sec:features}--\ref{sec:modelling}.
+The reduction of these candidate sets to compact, non-redundant subsets for modelling
+is described in Section~\ref{sec:features}.

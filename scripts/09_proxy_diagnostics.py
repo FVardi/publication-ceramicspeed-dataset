@@ -126,11 +126,19 @@ X, df, meta = X[valid].reset_index(drop=True), df[valid].reset_index(drop=True),
 
 rows = []
 for c in retained:
+    r_rpm = spearmanr(X[c], meta["rpm"])[0]
+    r_tmp = spearmanr(X[c], meta["temperature_c"])[0]
+    r_kap = spearmanr(X[c], meta["kappa"])[0]
     rows.append({
         "feature": c,
-        "rho_rpm": abs(spearmanr(X[c], meta["rpm"])[0]),
-        "rho_temp": abs(spearmanr(X[c], meta["temperature_c"])[0]),
-        "rho_kappa": abs(spearmanr(X[c], meta["kappa"])[0]),
+        # |rho| columns (unchanged schema for downstream tables / export)
+        "rho_rpm": abs(r_rpm),
+        "rho_temp": abs(r_tmp),
+        "rho_kappa": abs(r_kap),
+        # signed values for the proxy-map figure
+        "rho_rpm_signed": r_rpm,
+        "rho_temp_signed": r_tmp,
+        "rho_kappa_signed": r_kap,
     })
 corr_df = pd.DataFrame(rows).sort_values("rho_kappa", ascending=False)
 corr_df.to_csv(TABLES_DIR / "feature_oc_correlations.csv", index=False)
@@ -270,4 +278,147 @@ for ax, (pred, true, ttl, r2, rmse) in zip(axes, [
 axes[0].set_ylabel("predicted κ")
 fig.tight_layout()
 fig.savefig(FIGURES_DIR / "two_stage_vs_direct.png", dpi=150)
-print(f"\nWrote tables, stats, and figure to {SCRIPT_DIR}")
+
+# =============================================================================
+# 5. Figure: per-feature operating-point proxy map (one per sensor)
+#    x = signed Spearman with temperature, y = signed Spearman with RPM,
+#    colour = |Spearman| with kappa. Visualises Stage-1 (operating-point)
+#    proxy structure of the retained features -- NOT the within-step channel.
+# =============================================================================
+
+
+def _short(name: str) -> str:
+    """Compact feature label for annotation."""
+    return (name.replace("AE_", "").replace("UL_", "").replace("US_", "").replace("__", " ")
+                .replace("_", " ").replace("kHz", " kHz").strip())
+
+
+def per_feature_corr(feature_df, meta_df, cols):
+    """Signed + |.| Spearman of each feature with RPM / T / kappa."""
+    out = []
+    for c in cols:
+        r_rpm = spearmanr(feature_df[c], meta_df["rpm"])[0]
+        r_tmp = spearmanr(feature_df[c], meta_df["temperature_c"])[0]
+        r_kap = spearmanr(feature_df[c], meta_df["kappa"])[0]
+        out.append({
+            "feature": c,
+            "rho_rpm": abs(r_rpm), "rho_temp": abs(r_tmp), "rho_kappa": abs(r_kap),
+            "rho_rpm_signed": r_rpm, "rho_temp_signed": r_tmp, "rho_kappa_signed": r_kap,
+        })
+    return pd.DataFrame(out).sort_values("rho_kappa", ascending=False)
+
+
+def proxy_map_figure(cdf, sensor, fname):
+    """Scatter of signed rho(T) vs signed rho(RPM), coloured by |rho(kappa)|."""
+    fig2, ax = plt.subplots(figsize=(7.2, 6.4))
+    xs = cdf["rho_temp_signed"].values
+    ys = cdf["rho_rpm_signed"].values
+    cs = cdf["rho_kappa"].values  # |rho| with kappa drives colour
+    sc = ax.scatter(xs, ys, c=cs, cmap="viridis", vmin=0, vmax=1,
+                    s=70, edgecolor="k", linewidth=0.5, zorder=3)
+    ax.axhline(0, color="0.6", lw=0.8, zorder=1)
+    ax.axvline(0, color="0.6", lw=0.8, zorder=1)
+    # stagger label vertical offset to reduce overlap in the dense cluster
+    for i, (x, y, name) in enumerate(zip(xs, ys, cdf["feature"].values)):
+        dy = 4 if i % 2 == 0 else -9
+        ax.annotate(_short(name), (x, y), fontsize=7, xytext=(5, dy),
+                    textcoords="offset points", zorder=4)
+    ax.set_xlabel(r"signed Spearman $\rho$ with temperature")
+    ax.set_ylabel(r"signed Spearman $\rho$ with RPM (speed)")
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+    ax.set_title(f"Operating-point proxy map of retained {sensor} features")
+    cb = fig2.colorbar(sc, ax=ax)
+    cb.set_label(r"$|\rho|$ with $\kappa$")
+    fig2.tight_layout()
+    fig2.savefig(FIGURES_DIR / fname, dpi=150)
+    plt.close(fig2)
+
+
+# AE map reuses the corr_df already computed and saved above.
+proxy_map_figure(corr_df, "AE", "feature_proxy_map_ae.png")
+
+# US map: same retained-feature treatment, US (passive ultrasound = "UL") channel.
+us_retained = sel["UL"]["retained"]
+us_mask = (feat_df["sensor"] == "UL") & (meta_df["rpm"] <= RPM_MAX).values
+us_df = feat_df[us_mask].reset_index(drop=True)
+us_meta = meta_df[us_mask.values if hasattr(us_mask, "values") else us_mask].reset_index(drop=True)
+us_meta["kappa"] = us_meta.apply(
+    lambda r: calculate_kappa(
+        rpm=r["rpm"], temp_c=r["temperature_c"], d_pw=D_PW,
+        nu_40=r["viscosity_40c_cst"], nu_100=r["viscosity_100c_cst"],
+    ),
+    axis=1,
+)
+us_X = us_df[us_retained]
+us_valid = us_X.notna().all(axis=1)
+us_X, us_meta = us_X[us_valid].reset_index(drop=True), us_meta[us_valid].reset_index(drop=True)
+us_corr = per_feature_corr(us_X, us_meta, us_retained)
+us_corr.to_csv(TABLES_DIR / "feature_oc_correlations_us.csv", index=False)
+proxy_map_figure(us_corr, "US", "feature_proxy_map_us.png")
+print(f"US: {len(us_X)} sweeps, {len(us_retained)} retained features")
+
+# =============================================================================
+# 6. Marginal vs conditional (partition-based) correlation structure
+#    For both sensors, every retained feature:
+#      marginal     -- Spearman(feature, T) and (feature, RPM) over all sweeps
+#      conditional  -- within-RPM-step Spearman(feature, T)   [condition on speed]
+#                      within-temp-block Spearman(feature, RPM)[condition on temp]
+#    Temperature blocks are TBLOCK-wide bins on MEASURED temperature (spread
+#    reported, not assumed). Rendered by 06_plots.py Plot D4c.
+# =============================================================================
+
+TBLOCK = 2.0        # deg C, measured-temperature block width
+MIN_N_PART = 30
+MIN_LEVELS = 8
+
+
+def _partition_corr(d, feats, by, target, level_col):
+    out = {}
+    for c in feats:
+        rhos = []
+        for _, sub in d.groupby(by):
+            if sub[level_col].nunique() < MIN_LEVELS or len(sub) < MIN_N_PART:
+                continue
+            r = spearmanr(sub[c], sub[target])[0]
+            if np.isfinite(r):
+                rhos.append(r)
+        if rhos:
+            rhos = np.array(rhos)
+            out[c] = (np.median(rhos), np.percentile(rhos, 25), np.percentile(rhos, 75))
+    return out
+
+
+cond_rows = []
+for _sensor, _feats_all in (("AE", retained), ("UL", us_retained)):
+    _m = (feat_df["sensor"] == _sensor) & (meta_df["rpm"] <= RPM_MAX).values
+    _f = feat_df[_m].reset_index(drop=True)
+    _md = meta_df[_m.values if hasattr(_m, "values") else _m].reset_index(drop=True)
+    _feats = [c for c in _feats_all if c in _f.columns]
+    d = _f[_feats].copy()
+    d["rpm"] = _md["rpm"].values
+    d["temp"] = _md["temperature_c"].values
+    d = d[d["rpm"] >= 60].reset_index(drop=True)
+    d["rstep"] = (d["rpm"] / 100).round() * 100
+    d["tblock"] = (d["temp"] / TBLOCK).round() * TBLOCK
+    _tb = d.groupby("tblock").agg(n=("temp", "size"), tstd=("temp", "std"),
+                                  rsteps=("rstep", "nunique"))
+    _tb = _tb[(_tb["n"] >= MIN_N_PART) & (_tb["rsteps"] >= MIN_LEVELS)]
+    print(f"[{_sensor}] {len(_tb)} temp blocks; median within-block temp std "
+          f"{_tb['tstd'].median():.2f} C (max {_tb['tstd'].max():.2f} C)")
+    cond_t = _partition_corr(d, _feats, "rstep", "temp", "temp")
+    cond_r = _partition_corr(d, _feats, "tblock", "rpm", "rstep")
+    for c in _feats:
+        if c not in cond_t or c not in cond_r:
+            continue
+        cond_rows.append({
+            "sensor": "US" if _sensor == "UL" else _sensor, "feature": c,
+            "marg_temp": spearmanr(d[c], d["temp"])[0],
+            "marg_rpm": spearmanr(d[c], d["rpm"])[0],
+            "cond_temp": cond_t[c][0], "cond_temp_lo": cond_t[c][1], "cond_temp_hi": cond_t[c][2],
+            "cond_rpm": cond_r[c][0], "cond_rpm_lo": cond_r[c][1], "cond_rpm_hi": cond_r[c][2],
+        })
+pd.DataFrame(cond_rows).to_csv(TABLES_DIR / "cond_vs_marginal.csv", index=False)
+print(f"Wrote cond_vs_marginal.csv ({len(cond_rows)} features)")
+
+print(f"\nWrote tables, stats, and figures to {SCRIPT_DIR}")

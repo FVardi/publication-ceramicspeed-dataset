@@ -5,7 +5,7 @@
 \subsection{Experimental design}
 \label{subsec:modelling_design}
 \subsubsection{Data sets and splits}
-The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by sweep-level random sampling, stratified to preserve the $\kappa$ regime distribution. The hold-out set is withheld entirely from all model development steps and used only for final evaluation. The training set is further divided during nested cross-validation described in Section~\ref{subsec:nested_cv}.
+The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by a \emph{visit-grouped} split: sweeps are partitioned into groups corresponding to contiguous 60-second RPM holds (both sensor rows of a sweep kept together), and whole groups---rather than individual sweeps---are assigned to the training or hold-out set with \texttt{GroupShuffleSplit}. This prevents the near-duplicate windows of a single slowly-varying hold from straddling the train/test boundary, as a sweep-level random split would allow. The hold-out set is withheld entirely from all model development steps and used only for final evaluation. The training set is further divided during nested cross-validation described in Section~\ref{subsec:nested_cv}.
 \subsubsection{Model families}
 Three regression model families are evaluated for three sensor configurations,
 as summarised in Table~\ref{tab:model_families}.
@@ -18,10 +18,10 @@ as summarised in Table~\ref{tab:model_families}.
 \midrule
 Elastic Net &
   $\ell_1$+$\ell_2$ regularised linear model; $\ell_1$ promotes sparsity, $\ell_2$ stabilises correlated features. &
-  $\alpha$ (strength) and $\ell_1$ ratio; \texttt{ElasticNetCV} inner CV loop. \\[4pt]
+  $\alpha$ (9 values, $10^{-4}$--$10^{2}$) $\times$ $\ell_1$ ratio (6 values, $0.1$--$1.0$); \texttt{ElasticNetCV}, inner 5-fold. \\[4pt]
 Polynomial (deg.\ 2) &
   Augments linear model with all pairwise interaction terms; remains linear in parameters. &
-  Ridge penalty $\lambda$; \texttt{RidgeCV} within each outer fold. \\[4pt]
+  Ridge penalty $\lambda$ (15 log-spaced values, $10^{-3}$--$10^{4}$); \texttt{RidgeCV} (leave-one-out) within each outer fold. \\[4pt]
 LightGBM &
   Gradient-boosted trees; captures non-linear feature--$\kappa$ mappings and high-order interactions. &
   Learning rate, num.\ leaves, max.\ depth, min.\ child samples, $\ell_2$ reg.; Bayesian optimisation (Optuna TPE, 20~trials per outer fold). \\
@@ -30,50 +30,63 @@ LightGBM &
 \caption{Regression model families: rationale and hyperparameter tuning strategy.}
 \label{tab:model_families}
 \end{table}
-\todo{Add ElasticNetCV search grid values (number of $\alpha$ candidates and $\ell_1$ ratios tried).}
+
 
 \subsection{Repeated nested cross-validation}
 \label{subsec:nested_cv}
-To obtain stable performance estimates that properly account for the variance introduced by the train/validation split, the model evaluation uses a repeated nested $k$-fold cross-validation scheme. The outer loop is repeated $R = \resNrepeats$ times with independently re-seeded \resNfoldsCv-fold splits, yielding $R \times k = \resNouterScores$~outer RMSE scores per model--sensor combination. See Figure~\ref{fig:data_partition} for data partitions.
+To obtain stable performance estimates that properly account for the variance introduced by the train/validation split, the model evaluation uses a repeated nested $k$-fold cross-validation scheme. The outer loop is repeated $R = \resNrepeats$ times with independently re-seeded, group-respecting \resNfoldsCv-fold splits (the same hold-group structure as the hold-out split, so near-duplicate windows never straddle a fold boundary), yielding $R \times k = \resNouterScores$~outer RMSE scores per model--sensor combination. See Figure~\ref{fig:data_partition} for data partitions.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/nested_cv_splits.png}
 \caption{Data partitioning for the repeated nested cross-validation: an 80/20
-sweep-level hold-out split, with the training pool further divided into
-$R = \resNrepeats$ independently seeded \resNfoldsCv-fold outer splits and inner
-hyperparameter-selection folds.}
+group-level hold-out split (groups = 60-second RPM holds), with the training pool
+further divided into $R = \resNrepeats$ independently seeded, group-respecting
+\resNfoldsCv-fold outer splits and inner hyperparameter-selection folds.}
 \label{fig:data_partition}
 \end{figure}
 
 For LightGBM, each outer fold contains its own inner Optuna optimisation loop, ensuring that the reported outer scores are not contaminated by hyperparameter selection on the outer fold data.
-For the linear models, hyperparameter selection is handled by \texttt{ElasticNetCV} and \texttt{RidgeCV} within each outer training partition. \todo{Verify that this is correct}
+For the linear models, hyperparameter selection runs within each outer training partition: \texttt{ElasticNetCV} performs an inner 5-fold search over the $\alpha$/$\ell_1$-ratio grid, and \texttt{RidgeCV} a leave-one-out generalised cross-validation over the $\lambda$ grid; the selected hyperparameters are then refit on the full outer-training fold before the outer validation fold is scored. These inner resampling schemes are not group-aware, so near-duplicate sweeps from the same hold may render their hyperparameter scores mildly optimistic; this affects only the selected penalties, as final performance is scored on the visit-grouped outer folds.
 
 The \resNouterScores~outer scores form the empirical sampling distribution of RMSE for each model and are used directly in the significance tests described below.
 \subsection{Statistical significance testing}
 \label{subsec:sig_tests}
-Pairwise significance tests are conducted at two levels.
+Pairwise significance tests are conducted at two levels, with the batteries
+summarised in Table~\ref{tab:test_protocol}. \emph{Within-sensor} comparisons
+(architecture differences, e.g.\ Elastic Net vs.\ Polynomial on AE) ask which
+model generalises better and are assessed on the \resNouterScores~repeated
+nested-CV fold RMSEs. \emph{Cross-sensor} comparisons (the best model per sensor
+configuration, selected by lowest mean CV RMSE) are the study's focal claims and
+are assessed both on the CV fold RMSEs and on per-sample residuals from the
+common hold-out set. The Nadeau--Bengio corrected $t$-test~\cite{nadeau_inference_2003}
+gauges robustness across resampling partitions---correcting the paired $t$-test
+for the positive correlation induced by training-set overlap across folds---while
+the hold-out tests gauge the difference on held-out data and the bootstrap supplies
+an effect size. All $p$-values are Holm--Bonferroni-corrected within each family
+at $\alpha = 0.05$; where CV and hold-out evidence diverge, both are reported.
 
-\textbf{Level 1 --- Within-sensor comparisons (architecture differences).}
-For pairs of models trained on the same sensor configuration (e.g., Elastic Net vs.\
-Polynomial on AE), the corrected repeated $k$-fold $t$-test of Nadeau and
-Bengio~\cite{nadeau_inference_2003} is applied to the \resNouterScores~paired RMSE scores.
-This test corrects the standard paired $t$-test for the positive correlation induced by
-shared training data across repeated folds.
-Multiple within-sensor comparisons are adjusted by the Holm--Bonferroni step-down
-procedure at $\alpha = 0.05$.
-
-\textbf{Level 2 --- Cross-sensor comparisons (best per sensor configuration).}
-For the best model from each sensor configuration (selected by lowest mean CV RMSE),
-pairwise differences on the common hold-out set are assessed by:
-\begin{itemize}
-  \item The Wilcoxon signed-rank test on paired residuals (non-parametric);
-  \item The modified Diebold--Mariano test for equal
-    predictive accuracy under squared-error loss;
-  \item A bootstrap $\Delta$RMSE 95\% confidence interval (10\,000 resamples with
-    replacement).
-\end{itemize}
-Cross-sensor $p$-values are also corrected by Holm--Bonferroni.
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+Test & Unit of analysis & Within-sensor & Cross-sensor \\
+\midrule
+Nadeau--Bengio corrected $t$-test & nested-CV fold RMSEs & \checkmark & \checkmark \\
+Wilcoxon signed-rank & hold-out per-sample residuals & --- & \checkmark \\
+Diebold--Mariano & hold-out per-sample residuals & --- & \checkmark \\
+Bootstrap $\Delta$RMSE 95\% CI & hold-out residuals (10\,000 resamples) & --- & \checkmark \\
+\bottomrule
+\end{tabular}
+\caption{Significance-testing protocol. Within-sensor comparisons (model
+architectures) use the corrected repeated-CV $t$-test on fold scores; cross-sensor
+comparisons (sensor and fusion contrasts) additionally use hold-out residual tests
+and a bootstrap effect-size interval. All $p$-values are Holm--Bonferroni-corrected
+within each family; divergences between CV and hold-out evidence are reported in
+full.}
+\label{tab:test_protocol}
+\end{table}
 
 \subsection{Results}
 \label{subsec:modelling_results}
@@ -98,33 +111,55 @@ On a target range of $[\resKappaMin,\, \resKappaMax]$ with mean~\resKappaMean, t
 RMSE of approximately \resRelRmsePctLgbAe\% of the mean target value.
 Linear and polynomial models on AE features achieve $R^2 = \resHOrsqPolyAe$--$\resHOrsqEnetAe$,
 confirming a non-linear feature--$\kappa$ mapping that gradient boosting exploits
-more effectively.
+more effectively. The within-sensor corrected repeated nested-CV $t$-test
+(Table~\ref{tab:test_protocol}) confirms this gap is significant: LightGBM
+outperforms both linear families on AE (vs.\ Elastic Net $p = \resPcvLgbEnetAe$,
+vs.\ Polynomial $p = \resPcvLgbPolyAe$; Holm-corrected), whereas the two linear
+families are statistically indistinguishable.
 
 \textbf{Sensor comparison.}
 AE features substantially outperform US features across all model families.
-The LightGBM AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$) is confirmed as highly significant
-(Nadeau--Bengio $p = \resPcvAeUs$; Wilcoxon $p = \resPwxAeUs$; $\Delta\text{RMSE} = \resDrmseAeUs$,
-95\%~CI [\resDrmseLoAeUs, \resDrmseHiAeUs]).
+The LightGBM AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$) is large and unambiguous on the hold-out set, although the corrected repeated nested-CV $t$-test does not reach significance; we report both (Table~\ref{tab:inference}).
 This reflects the richer frequency content and more direct physical sensitivity of
 the AE sensor to asperity contact events.
 
 \textbf{Sensor fusion.}
 LightGBM on the combined AE+US feature set achieves $R^2 = \resHOrsqLgbComb$
 ($\Delta R^2 = \resDrsqLgbCombAe$ over the AE-only result of \resHOrsqLgbAe).
-The within-CV corrected $t$-test gives $p = \resPcvAeComb$; on the hold-out set,
-Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano $p = \resPdmAeComb$, and the bootstrap
-$\Delta\text{RMSE} = \resDrmseAeComb$ with 95\%~CI $[\resDrmseLoAeComb,\, \resDrmseHiAeComb]$.
-For the linear models, the combined feature set performs similarly to AE alone
+The gain is significant under both the corrected repeated nested-CV $t$-test and all hold-out tests (Table~\ref{tab:inference}).
+For the linear models, the combined feature set performs better than AE alone
 (Elastic Net: $R^2$ \resHOrsqEnetComb{} vs.\ \resHOrsqEnetAe; Polynomial:
 \resHOrsqPolyComb{} vs.\ \resHOrsqPolyAe).
-The fusion gain is small in absolute terms but consistent across all four tests, indicating that the US channel contributes a modest amount of non-redundant information.
+Although the absolute $R^2$ gain is modest, this is a relative RMSE reduction of about \resRelRmseRedCombAe\% over AE alone, consistent across all four tests, indicating that the US channel contributes genuine, statistically robust non-redundant information.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+Comparison & Nadeau--Bengio $p$ & Wilcoxon $p$ & Diebold--Mariano $p$ & $\Delta$RMSE [95\% CI] \\
+\midrule
+AE vs.\ US       & $\resPcvAeUs$   & $\resPwxAeUs$   & $\resPdmAeUs$   & $\resDrmseAeUs$~[$\resDrmseLoAeUs$, $\resDrmseHiAeUs$] \\
+AE vs.\ Combined & $\resPcvAeComb$ & $\resPwxAeComb$ & $\resPdmAeComb$ & $\resDrmseAeComb$~[$\resDrmseLoAeComb$, $\resDrmseHiAeComb$] \\
+US vs.\ Combined & $\resPcvUsComb$ & $\resPwxUsComb$ & $\resPdmUsComb$ & $\resDrmseUsComb$~[$\resDrmseLoUsComb$, $\resDrmseHiUsComb$] \\
+\bottomrule
+\end{tabular}
+\caption{Cross-sensor inference for the best model per configuration (LightGBM). The
+Nadeau--Bengio corrected $t$-test is computed on the repeated nested-CV fold RMSEs;
+the Wilcoxon, Diebold--Mariano, and bootstrap $\Delta$RMSE interval on the common
+hold-out residuals. All $p$-values are Holm--Bonferroni-corrected within each family.
+The AE--US row illustrates the divergence noted in the text: the gap is decisive on
+the hold-out tests yet not significant under the corrected repeated-CV $t$-test
+($p = \resPcvAeUs$), hence treated as inconclusive at the fold level.}
+\label{tab:inference}
+\end{table}
 
 \textbf{Model consistency.}
 The close agreement between nested CV RMSE and hold-out RMSE across all models
 indicates stable generalisation with no evidence of significant overfitting.
 
-Figure~\ref{fig:pred_vs_actual} shows predicted vs.\ actual $\kappa$ for the hold-out
-set for all model families under the AE-only configuration.
+Figure~\ref{fig:pred_vs_actual} shows predicted vs.\ actual $\kappa$ on the hold-out
+set for all model families and sensor configurations, coloured by RPM.
 
 \begin{figure}[H]
 \centering
@@ -132,46 +167,58 @@ set for all model families under the AE-only configuration.
 \caption{Predicted vs.\ actual $\kappa$ on the hold-out test set for all model families and sensor configurations, colored according to RPM. The dashed diagonal indicates perfect prediction. Residual spread increases in the mixed lubrication regime ($0.5 \leq \kappa < 1.0$). }
 \label{fig:pred_vs_actual}
 \end{figure}
-\todo{Update visual interpretation of the figure after new results.}
+
+Across the grid, predictions track the diagonal most closely for LightGBM---tightest
+in the AE and combined configurations---whereas the Elastic Net and polynomial
+families systematically under-predict at high $\kappa$, their points bowing below the
+diagonal. For every model the residual spread widens in the mixed-lubrication regime
+($0.5 \leq \kappa < 1.0$) and toward the under-represented full-film range
+($\kappa > 1$); the RPM colouring reflects the operating-point dependence of $\kappa$
+(Section~\ref{subsec:confound}).
+
 \textbf{SHAP-based feature importance.}
 SHAP (SHapley Additive exPlanations) values computed via TreeExplainer identify
-which AE sub-band features drive the $\kappa$ predictions.
-The dominant contributor by a large margin is \textit{1--2~MHz complexity}
-(mean $|\text{SHAP}| = 0.168$), followed by \textit{500~kHz--1~MHz centre frequency}
-(0.078) and \textit{1--2~MHz mobility} (0.044).
-The 1--2~MHz complexity feature ranks \emph{first} for all three model types, and the
-500~kHz--1~MHz centre frequency also appears in all three top-10s (cross-model
-agreement, Table~\ref{tab:shap_agree}), making 1--2~MHz complexity the most robust
-single predictor of $\kappa$ in the dataset.\todo{SHAP numbers are hand-typed from
-shap\_importance\_lightgbm\_ae.csv; consider adding them to 07\_paper\_export.}
-Figure~\ref{fig:shap} shows the full importance ranking.
+which features drive the $\kappa$ predictions for each sensor
+(Figure~\ref{fig:shap}). For the AE LightGBM model the dominant contributor by a
+large margin is \textit{\resShapTopFeat} (mean $|\text{SHAP}| = \resShapTopVal$),
+followed by \textit{\resShapSecondFeat} (\resShapSecondVal) and
+\textit{\resShapThirdFeat} (\resShapThirdVal); this 500~kHz--1~MHz mobility feature
+ranks \emph{first} for both LightGBM and the polynomial model and third for Elastic
+Net, the most robust single AE predictor across model families. The US model is led
+instead by \textit{\resShapTopFeatUs} (\resShapTopValUs), then
+\textit{\resShapSecondFeatUs} (\resShapSecondValUs) and \textit{\resShapThirdFeatUs}
+(\resShapThirdValUs). The two channels thus rely on distinct features whose operating-condition leanings
+differ---the dominant AE feature is speed-tracking, whereas the dominant US feature
+is the temperature-leaning 10--20~kHz mobility (Figure~\ref{fig:marg_cond})---so SHAP
+is consistent with their separate-channel structure. (The US band labels
+refer to the probe's heterodyned audio baseband, not raw acoustic frequencies, so the
+contrast is one of operating-condition channel rather than frequency.)
+Cross-model agreement for both sensors is summarised in Table~\ref{tab:shap_agree}.
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & \textbf{LightGBM} & \textbf{Models in top 10} \\
-\midrule
-1--2~MHz complexity          & 1 & 1 & 1 & 3 \\
-500k--1~MHz centre freq.     & 7 & 8 & 2 & 3 \\
-Broadband spectral flatness  & 2 & -- & 5 & 2 \\
-1--2~MHz mobility            & 3 & -- & 3 & 2 \\
-500k--1~MHz RMS              & 5 & -- & 9 & 2 \\
-1--2~MHz dominant freq.      & 6 & -- & 8 & 2 \\
-500k--1~MHz dominant freq.   & -- & 5 & 6 & 2 \\
-\bottomrule
-\end{tabular}
-\caption{Cross-model SHAP agreement for AE features: features appearing in the
-top~10 by mean $|\text{SHAP}|$ for more than one model type.}
+\IfFileExists{tables/table_shap_agreement_tabular.tex}%
+  {\input{tables/table_shap_agreement_tabular.tex}}%
+  {\IfFileExists{../outputs/07_paper_export/table_shap_agreement_tabular.tex}%
+    {\input{../outputs/07_paper_export/table_shap_agreement_tabular.tex}}%
+    {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_shap\_agreement\_tabular.tex.}}}
+\caption{Cross-model SHAP agreement, grouped by sensor: base features that rank among
+the \resShapTopK\ most important (by mean $|\text{SHAP}|$) for at least two of the
+three model families. Polynomial ranks are positions in the full expanded-term
+importance list (interaction and squared terms included); only base features are
+tabulated.}
 \label{tab:shap_agree}
 \end{table}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{shap_beeswarm_lightgbm_ae.png}
-\caption{SHAP feature importance (mean $|\text{SHAP value}|$) for the LightGBM model
-trained on AE features. Features from frequency sub-bands are prefixed with the band
-label (e.g., \texttt{AE\_20-500kHz\_}).}
+\includegraphics[width=\textwidth]{shap_beeswarm_ae_us.png}
+\caption{SHAP beeswarm of per-sample feature contributions for the LightGBM model on
+(a)~AE and (b)~US features; features are ordered by mean $|\text{SHAP value}|$ and
+coloured by feature value. The dominant AE feature (500~kHz--1~MHz mobility) tracks
+speed, whereas the dominant US feature (10--20~kHz mobility, on the probe's
+heterodyned baseband) is temperature-leaning---mirroring the operating-condition
+channel separation of Figure~\ref{fig:marg_cond}.}
 \label{fig:shap}
 \end{figure}

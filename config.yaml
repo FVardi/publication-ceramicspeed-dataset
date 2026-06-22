@@ -19,6 +19,11 @@ machines:
     paths:
       input_dir:  "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"
       output_dir: "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/outputs/"
+  favn:
+    home: "C:/Users/favn"
+    paths:
+      input_dir:  "C:/Users/favn/Documents/Repos/publication-ceramicspeed-dataset/data/"
+      output_dir: "C:/Users/favn/Documents/Repos/publication-ceramicspeed-dataset/outputs/"
 
 paths:  # fallback if no machine matched
   input_dir:  "C:/Users/Bruger/Documents/Repos/publication-ceramicspeed-dataset/data/"
@@ -130,7 +135,7 @@ feature_selection:
 # =============================================================================
 
 evaluation:
-  shap_top_k: 10  # Number of top features per model for cross-model SHAP agreement tables
+  shap_top_k: 5  # Number of top features per model for cross-model SHAP agreement tables
 
 # =============================================================================
 # Modelling

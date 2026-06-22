@@ -23,6 +23,7 @@ dependencies = [
     "matplotlib",
     "plotly",
     "lightgbm",
+    "optuna",
 ]
 
 [project.optional-dependencies]

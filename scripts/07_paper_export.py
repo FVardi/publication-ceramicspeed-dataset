@@ -165,18 +165,22 @@ for name in (
     "resNsweeps", "resNtrain", "resNholdout",
     "resKappaMin", "resKappaMax", "resKappaMean",
     "resTopAeFeat", "resTopAeRho", "resTopUsFeat", "resTopUsRho",
-    "resDrsqLgbAeUs", "resDrsqLgbCombAe", "resRelRmsePctLgbAe",
+    "resDrsqLgbAeUs", "resDrsqLgbCombAe", "resRelRmsePctLgbAe", "resRelRmseRedCombAe",
     "resRhoRpmKappa", "resRhoTempKappa",
     "resNrepeats", "resNouterScores", "resNfoldsCv",
     "resProxyRpmRsq", "resProxyRpmRmse", "resProxyTempRsq", "resProxyTempRmse",
     "resTwoStageRsq", "resTwoStageRmse",
     "resSnrLowDb", "resSnrMidDb", "resSnrHighDb",
-    "resWithinStepRhoHC", "resWithinStepFeat", "resKneeRpmCool", "resKneeRpmHot",
-    "resRhoPowRpmLow", "resRhoPowRpmMid", "resRhoPowRpmHigh",
-    "resKneeKappaCool", "resKneeKappaHot",
+    "resWithinStepRhoHC", "resWithinStepFeat",
+    "resRhoPowRpmLow", "resRhoPowRpmMid",
     "resNsweepsRaw", "resNsweepsRemoved", "resWindowMs", "resWindowIntervalS",
     "resSweepsPerHold", "resRpmMinMeas", "resRpmMaxMeas",
     "resTempMinMeas", "resTempMaxMeas",
+    "resShapTopFeat", "resShapTopVal", "resShapSecondFeat", "resShapSecondVal",
+    "resShapThirdFeat", "resShapThirdVal",
+    "resShapTopFeatUs", "resShapTopValUs", "resShapSecondFeatUs", "resShapSecondValUs",
+    "resShapThirdFeatUs", "resShapThirdValUs", "resShapTopK",
+    "resPcvLgbEnetAe", "resPcvLgbPolyAe",
 ):
     macros[name] = MISSING
 
@@ -295,6 +299,24 @@ if ct is not None:
         macros["resNholdout"] = fmt_int(r["n_common_sweeps"])
 else:
     warn(f"{ct_path} missing -- significance tests unavailable")
+
+# ---------------------------------------------------------------------------
+# 2b. Within-feature-set significance (AE architecture comparisons)
+#     Focal contrast: LightGBM vs each linear family on AE (Nadeau-Bengio).
+# ---------------------------------------------------------------------------
+
+wt_path = OUTPUT_DIR / "05_holdout_tests" / "tables" / "stat_tests_within_featureset.csv"
+wt = _read_csv(wt_path)
+if wt is not None:
+    wt = wt.dropna(subset=["model_a"])
+    _wpairs = {(r["model_a"], r["model_b"]): r["cv_p_value"] for _, r in wt.iterrows()}
+    for _lin, _key in (("ElasticNet", "Enet"), ("Polynomial", "Poly")):
+        _p = _wpairs.get((f"{_lin}_AE", "LightGBM_AE"),
+                         _wpairs.get(("LightGBM_AE", f"{_lin}_AE")))
+        if _p is not None:
+            macros[f"resPcvLgb{_key}Ae"] = fmt_p(_p)
+else:
+    warn(f"{wt_path} missing -- within-feature-set tests unavailable")
 
 # ---------------------------------------------------------------------------
 # 3. Feature counts and rankings
@@ -427,6 +449,11 @@ try:
 except Exception as exc:
     warn(f"parquet-based statistics unavailable ({exc})")
 
+# Relative hold-out RMSE reduction of the fused model over AE alone (headline %).
+if macros["resHOrmseLgbAe"] != MISSING and macros["resHOrmseLgbComb"] != MISSING:
+    _rae, _rcb = float(macros["resHOrmseLgbAe"]), float(macros["resHOrmseLgbComb"])
+    macros["resRelRmseRedCombAe"] = f"{100 * (_rae - _rcb) / _rae:.0f}"
+
 # ---------------------------------------------------------------------------
 # 5. Diagnostics: proxy models (09) and band validation/mechanism (08, 10)
 # ---------------------------------------------------------------------------
@@ -463,33 +490,104 @@ try:
 except (FileNotFoundError, OSError, KeyError) as exc:
     warn(f"band_mechanism_stats.json unavailable ({exc})")
 
-# Knee of the 1-2 MHz broadband decay vs RPM, per temperature window
+# ---------------------------------------------------------------------------
+# 5b. SHAP importances (LightGBM, AE) -- top contributors quoted in the prose
+# ---------------------------------------------------------------------------
 try:
-    import importlib.util as _ilu2
-    _spec2 = _ilu2.spec_from_file_location("cs_kappa2", ROOT / "src" / "ceramicspeed" / "calculate_kappa.py")
-    _ck2 = _ilu2.module_from_spec(_spec2); _spec2.loader.exec_module(_ck2)
-    for tw, tmid, suffix in [("tw_45-55C", 50.0, "Cool"), ("tw_85-95C", 90.0, "Hot")]:
-        cs = _read_csv(OUTPUT_DIR / "10_band_mechanism" / tw / "tables" / "comb_strip.csv")
-        if cs is None:
-            continue
-        b = cs[(cs["band"] == "AE_1000-2000kHz") & (cs["rpm"] >= 60)].sort_values("rpm")
-        floor = b.nlargest(8, "rpm")["p_total"].median()
-        above = b[b["p_total"] > 2 * floor]
-        if above.empty:
-            continue
-        knee = float(above["rpm"].max())
-        if suffix == "Cool":
-            from scipy.stats import spearmanr as _sp
-            for band, key in [("AE_20-500kHz", "resRhoPowRpmLow"),
-                              ("AE_500-1000kHz", "resRhoPowRpmMid"),
-                              ("AE_1000-2000kHz", "resRhoPowRpmHigh")]:
-                bb = cs[(cs["band"] == band) & (cs["rpm"] >= 60)]
+    shap_imp = pd.read_csv(
+        OUTPUT_DIR / "04_modelling" / "shap" / "shap_importance_lightgbm_ae.csv",
+        index_col=0,
+    ).sort_values("mean_abs_shap", ascending=False)
+    for rank, key in ((0, "Top"), (1, "Second"), (2, "Third")):
+        macros[f"resShap{key}Feat"] = pretty_feature(str(shap_imp.index[rank]))
+        macros[f"resShap{key}Val"] = fmt(float(shap_imp["mean_abs_shap"].iloc[rank]))
+    print(f"SHAP top-3 (LightGBM AE): {shap_imp.index[0]}="
+          f"{shap_imp['mean_abs_shap'].iloc[0]:.3f}")
+except (FileNotFoundError, OSError, KeyError, IndexError) as exc:
+    warn(f"shap importance unavailable ({exc})")
+
+# US counterpart -- top contributors of the LightGBM US model (parallel to AE).
+try:
+    shap_imp_us = pd.read_csv(
+        OUTPUT_DIR / "04_modelling" / "shap" / "shap_importance_lightgbm_us.csv",
+        index_col=0,
+    ).sort_values("mean_abs_shap", ascending=False)
+    for rank, key in ((0, "Top"), (1, "Second"), (2, "Third")):
+        macros[f"resShap{key}FeatUs"] = pretty_feature(str(shap_imp_us.index[rank]))
+        macros[f"resShap{key}ValUs"] = fmt(float(shap_imp_us["mean_abs_shap"].iloc[rank]))
+    print(f"SHAP top-3 (LightGBM US): {shap_imp_us.index[0]}="
+          f"{shap_imp_us['mean_abs_shap'].iloc[0]:.3f}")
+except (FileNotFoundError, OSError, KeyError, IndexError) as exc:
+    warn(f"shap importance (US) unavailable ({exc})")
+
+# Cross-model SHAP agreement table (tab:shap_agree): base features that fall in the
+# top-k by mean |SHAP| of more than one model. Ranks are positions in each model's
+# full importance list -- for the polynomial that list includes interaction and
+# squared terms, so a base feature's rank reflects competition with those terms.
+table_shap_body = ""
+try:
+    _topk = int(cfg.get("evaluation", {}).get("shap_top_k", 10))
+    macros["resShapTopK"] = str(_topk)
+    _shap_dir = OUTPUT_DIR / "04_modelling" / "shap"
+    _models = (("ElasticNet", "elasticnet"), ("Polynomial", "polynomial"), ("LightGBM", "lightgbm"))
+
+    def _is_base(f: str) -> bool:  # exclude interaction (" ") and squared ("^") terms
+        return (" " not in f) and ("^" not in f)
+
+    def _disp_feat(f: str) -> str:
+        return pretty_feature(f) if "__" in f else "Broadband " + FEAT_DISPLAY.get(f, f)
+
+    def _agreement_rows(suffix: str):
+        _ranks: dict[str, dict[str, int]] = {}
+        for _disp, _key in _models:
+            _imp = pd.read_csv(_shap_dir / f"shap_importance_{_key}_{suffix}.csv", index_col=0)
+            _imp = _imp.sort_values("mean_abs_shap", ascending=False)
+            _ranks[_disp] = {str(f): i + 1 for i, f in enumerate(_imp.index)}
+        _agg: dict[str, dict[str, int]] = {}
+        for _disp, _ in _models:
+            for _feat, _rk in _ranks[_disp].items():
+                if _rk <= _topk and _is_base(_feat):
+                    _agg.setdefault(_feat, {})[_disp] = _rk
+        _rows = [(f, mr) for f, mr in _agg.items() if len(mr) >= 2]
+        _rows.sort(key=lambda it: (-len(it[1]), sum(it[1].values()),
+                                   it[1].get("LightGBM", 99), it[0]))
+        return _rows
+
+    # Merged AE+US table: one block per sensor under an emphasised subheader.
+    _lines = [
+        r"\begin{tabular}{lcccc}", r"\toprule",
+        r"\textbf{Feature} & \textbf{ElasticNet} & \textbf{Polynomial} & "
+        rf"\textbf{{LightGBM}} & \textbf{{In top {_topk}}} \\",
+    ]
+    _total = 0
+    for _sdisp, _suffix in (("AE", "ae"), ("US", "us")):
+        _rows = _agreement_rows(_suffix)
+        _total += len(_rows)
+        _lines.append(r"\midrule")
+        _lines.append(rf"\multicolumn{{5}}{{l}}{{\emph{{{_sdisp}}}}} \\")
+        for _feat, _mr in _rows:
+            _e, _p, _l = (_mr.get(m, "--") for m in ("ElasticNet", "Polynomial", "LightGBM"))
+            _lines.append(rf"\quad {_disp_feat(_feat)} & {_e} & {_p} & {_l} & {len(_mr)} \\")
+    _lines += [r"\bottomrule", r"\end{tabular}"]
+    table_shap_body = "\n".join(_lines)
+    print(f"SHAP agreement table (AE+US): {_total} features (top-{_topk})")
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"shap agreement table unavailable ({exc})")
+
+# rho(sub-band power, RPM) for the retained AE bands (cool window) -- used in the
+# band-validation discussion. The former 1-2 MHz "knee" analysis (resKnee*,
+# resRhoPowRpmHigh) was removed together with that excluded band.
+try:
+    from scipy.stats import spearmanr as _sp
+    cs = _read_csv(OUTPUT_DIR / "10_band_mechanism" / "tw_45-55C" / "tables" / "comb_strip.csv")
+    if cs is not None:
+        for band, key in [("AE_20-500kHz", "resRhoPowRpmLow"),
+                          ("AE_500-1000kHz", "resRhoPowRpmMid")]:
+            bb = cs[(cs["band"] == band) & (cs["rpm"] >= 60)]
+            if len(bb) > 1:
                 macros[key] = f"{_sp(bb['rpm'], bb['p_total'])[0]:+.2f}"
-        macros[f"resKneeRpm{suffix}"] = f"{knee:.0f}"
-        macros[f"resKneeKappa{suffix}"] = fmt(_ck2.calculate_kappa(
-            rpm=knee, temp_c=tmid, d_pw=cfg["bearing"]["d_pw_mm"], nu_40=22.0, nu_100=4.1), 2)
-except Exception as exc:
-    warn(f"knee analysis unavailable ({exc})")
+except (FileNotFoundError, OSError, KeyError) as exc:
+    warn(f"sub-band power-RPM correlations unavailable ({exc})")
 
 # ---------------------------------------------------------------------------
 # Write outputs
@@ -512,6 +610,8 @@ if table_models_body:
     files["table_models_tabular.tex"] = header + table_models_body + "\n"
 if table_top_feats_body:
     files["table_top_features_tabular.tex"] = header + table_top_feats_body + "\n"
+if table_shap_body:
+    files["table_shap_agreement_tabular.tex"] = header + table_shap_body + "\n"
 
 # Refresh the appendix ranking-table copies so the paper compiles without outputs/
 for _n in ("ae", "us"):

@@ -6,7 +6,8 @@ Spectral heatmap: frequency (y-axis) vs. sweep index sorted by κ (x-axis).
 Each column is the Welch PSD of one sweep.  Sweeps are sorted by κ so the
 plot shows how spectral content shifts across lubrication regimes.
 
-  AE  : full bandwidth, 0 – Nyquist (~6.25 MHz at 12.5 MHz sample rate)
+  AE  : 0 – 2 MHz (display truncated; content above the 1 MHz coupler
+        low-pass is excluded from analysis)
   US  : 0 – 100 kHz; dedicated high-resolution nperseg for the narrow band
 
 White dashed lines mark the sub-band boundaries used in feature extraction.
@@ -73,10 +74,11 @@ US_NPERSEG   = 65_536          # ~190 Hz resolution @ 12.5 MHz
 NOVERLAP_FRAC = 0.5
 
 # Display limits
+AE_F_MAX_HZ = 2_000_000.0      # truncate AE heatmap at this frequency
 US_F_MAX_HZ = 100_000.0        # truncate US heatmap at this frequency
 
 # Sub-band boundary overlays (must match config.yaml / tab:subbands in paper)
-AE_BAND_EDGES_KHZ = [20.0, 500.0, 1_000.0, 2_000.0]
+AE_BAND_EDGES_KHZ = [20.0, 500.0, 1_000.0]
 US_BAND_EDGES_KHZ = [10.0, 20.0]
 
 # %%
@@ -223,6 +225,13 @@ else:
 # Plot — one figure sorted by κ, one in chronological (sweep-number) order
 # =============================================================================
 
+# Truncate the AE heatmap at AE_F_MAX_HZ (display only): content above the
+# 1 MHz coupler low-pass is excluded from analysis, so the AE spectrogram is
+# shown to 2 MHz rather than to the full Nyquist range.
+_ae_mask = f_ae <= AE_F_MAX_HZ
+f_ae = f_ae[_ae_mask]
+mat_ae_db = mat_ae_db[:, _ae_mask]
+
 CMAP = "inferno"
 
 
@@ -255,7 +264,7 @@ def _render(order_ae, order_us, xlabels_ae, xlabels_us, xlabel, suptitle, outnam
     ax_ae.legend(fontsize=7, loc="upper right", framealpha=0.5)
     ax_ae.set_ylabel("Frequency  [MHz]", fontsize=9)
     ax_ae.set_title(
-        f"AE — spectral heatmap  ({n_ae} sweeps, full bandwidth 0–{f_ae_mhz[-1]:.2f} MHz)",
+        f"AE — spectral heatmap  ({n_ae} sweeps, 0–{f_ae_mhz[-1]:.2f} MHz)",
         fontsize=10,
     )
     _xticks(ax_ae, xlabels_ae, n_ae)

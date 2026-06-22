@@ -1,0 +1,21 @@
+,mean_abs_shap
+crest_factor,0.33755852048625695
+spectral_mean,0.25693596213597536
+kurtosis,0.24814563824837155
+spectral_mean crest_factor,0.1990125611787544
+spectral_mean kurtosis,0.1485243230420753
+skewness,0.05858645773462695
+kurtosis crest_factor,0.04522316747047856
+spectral_mean skewness,0.03666535933699678
+dominant_frequency^2,0.03363388919965871
+dominant_frequency,0.019810342527070715
+spectral_mean^2,0.017625722143969173
+kurtosis^2,0.015552244211843211
+dominant_frequency crest_factor,0.012578209636672805
+crest_factor skewness,0.004073585999293239
+crest_factor^2,0.003850319669607801
+skewness^2,0.002984862266716376
+spectral_mean dominant_frequency,0.002801089988982044
+kurtosis dominant_frequency,0.0017776327102520598
+kurtosis skewness,0.001034714644533682
+dominant_frequency skewness,0.0007308045346594742

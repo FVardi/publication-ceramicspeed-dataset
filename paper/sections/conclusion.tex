@@ -9,29 +9,17 @@ non-invasive lubrication condition monitoring of a ball bearing.
 The main findings are as follows:
 
 \begin{enumerate}
-  \item \textbf{AE sub-band features are strong predictors of $\kappa$.}
-    LightGBM on \resNretAe{} retained AE features achieves hold-out $R^2 = \resHOrsqLgbAe$, RMSE~$= \resHOrmseLgbAe$~$\kappa$-units. The 1--2~MHz complexity feature is the dominant SHAP contributor, ranked first for all three model types, identifying the high-frequency AE sub-band as the most informative frequency range for lubrication regime prediction.
-  \item \textbf{Sensor fusion yields a small but consistently significant gain.}
+  \item \textbf{AE sub-band features are predictors of $\kappa$.}
+    LightGBM on \resNretAe{} retained AE features achieves hold-out $R^2 = \resHOrsqLgbAe$, RMSE~$= \resHOrmseLgbAe$~$\kappa$-units. The \resTopAeFeat{} feature is the dominant SHAP contributor and the most robust single predictor across model families---ranked first for the LightGBM and polynomial models (third for Elastic Net)---identifying the upper AE sub-band (500~kHz--1~MHz) as the most informative frequency range for lubrication-regime prediction.
+  \item \textbf{Sensor fusion yields consistently significant gain.}
     The LightGBM combined model achieves $R^2 = \resHOrsqLgbComb$ ($\Delta R^2 = \resDrsqLgbCombAe$ over AE alone); within-CV corrected $t$-test $p = \resPcvAeComb$; hold-out tests: Wilcoxon $p = \resPwxAeComb$, Diebold--Mariano $p = \resPdmAeComb$, bootstrap 95\%~CI $[\resDrmseLoAeComb,\, \resDrmseHiAeComb]$ excluding zero. The heterodyned US channel thus supplies a modest amount of non-redundant information, though its \resNretUs{} retained features are individually weaker than the AE features.
-  \item \textbf{AE strongly and significantly outperforms the US channel.}
-    The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$ for LightGBM) is confirmed highly significant by all test statistics, reflecting the fundamental bandwidth limitation of the heterodyned US probe.
+  \item \textbf{AE outperforms the US channel.}
+    The AE--US gap ($\Delta R^2 = \resDrsqLgbAeUs$ for LightGBM) is significant on the hold-out tests (Wilcoxon $p = \resPwxAeUs$), although the corrected repeated-CV $t$-test does not reach significance ($p = \resPcvAeUs$); we therefore report both. The gap might reflect the bandwidth limitation of the heterodyned US probe.
+  \item \textbf{AE and US features are informative about lubrication conditions through different paths.}
+  The AE features are mainly informative on rotational speed, while US features are more informative on temperature. This decomposition and complementarity may help guide the development of data-driven multi-modal LCM methods.
   \item \textbf{Rigorous evaluation via repeated nested cross-validation.}
-    The \resNouterScores{} outer RMSE scores per model provide stable, conservative performance
-    estimates; corrected significance tests confirm that all pairwise model differences within each sensor configuration are significant after Holm--Bonferroni correction, with LightGBM strongest throughout.
-  \item \textbf{The $\kappa$ regression framework is workable for passive
-    non-invasive LCM, with a quantified caveat.} Most of the headline performance is
-    recoverable from acoustically inferred operating points alone
-    ($R^2 = \resTwoStageRsq$ via the two-stage decomposition), so the framework is
-    best understood as an acoustic operating-point soft sensor combined with the
-    ISO~281 mapping; the within-speed-step analysis nevertheless confirms a genuine,
-    temperature-mediated film channel beyond the operating-point proxy.
+    The \resNouterScores{} outer RMSE scores per model provide stable, conservative performance estimates; corrected significance tests confirm that LightGBM significantly outperforms both linear families within each sensor configuration (Holm--Bonferroni corrected), while the two linear families are statistically indistinguishable.
+  \item \textbf{The $\kappa$ regression framework is workable for passive non-invasive LCM, with a quantified caveat.} Most of the headline performance is recoverable from acoustically inferred operating points alone ($R^2 = \resTwoStageRsq$ via the two-stage decomposition), so the framework is best understood as an acoustic operating-point soft sensor combined with the ISO~281 mapping; the within-speed-step analysis nevertheless reveals a temperature-mediated channel beyond the operating-point proxy.
 \end{enumerate}
 
-Future work should address the identified limitations by: validating the
-model-derived $\kappa$ reference against an independent film-thickness proxy,
-using slipring-based conductance measurements on the same test rig (data
-collection ongoing); acquiring wideband passive ultrasound to replace the
-heterodyned probe; validating across multiple independent sessions, bearing types,
-and lubricants; investigating temporal autocorrelation and its effect on hold-out
-validity; and developing physically motivated sub-band ratio features that are
-explicitly designed to be robust to operating-condition variation.
+Future work should address the identified limitations by: validating the model-derived $\kappa$ reference against an independent film-thickness proxy; acquiring wideband passive ultrasound to replace the heterodyned probe; validating across multiple independent sessions, bearing types, and lubricants; running bearings for longer to degrade the lubrication conditions through other means than nominal operating conditions for a more realistic data-set; and developing physically motivated sub-band ratio features that are explicitly designed to be robust to operating-condition variation.
