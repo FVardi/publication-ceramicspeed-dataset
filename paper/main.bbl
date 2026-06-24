@@ -1,20 +1,5 @@
 \begin{thebibliography}{10}
 
-\bibitem{jakobsen_detecting_2023}
-Morten~Opprud Jakobsen, Eskild~Sune Herskind, Christian~Fischer Pedersen, and Mikael~Bergholz Knudsen.
-\newblock Detecting insufficient lubrication in rolling bearings, using a low cost {MEMS} microphone to measure vibrations.
-\newblock {\em Mechanical Systems and Signal Processing}, 200:110553, 2023.
-
-\bibitem{dai_situ_2024}
-Wei Dai.
-\newblock In {Situ} {Measurement} of {Grease} {Capacitive} {Film} {Thickness} in {Bearings}: {A} {Review}.
-\newblock {\em Lubricants}, 12(10):329, 2024.
-
-\bibitem{nassef_impact_2022}
-Mohamed G.~A. Nassef, Mina Soliman, Belal~Galal Nassef, Mohamed~A. Daha, and Galal~A. Nassef.
-\newblock Impact of {Graphene} {Nano}-{Additives} to {Lithium} {Grease} on the {Dynamic} and {Tribological} {Behavior} of {Rolling} {Bearings}.
-\newblock {\em Lubricants}, 10(2):29, 2022.
-
 \bibitem{wakiru_review_2019}
 James~M. Wakiru, Liliane Pintelon, Peter~N. Muchiri, and Peter~K. Chemweno.
 \newblock A review on lubricant condition monitoring information analysis for maintenance decision support.
@@ -25,20 +10,35 @@ Dong Wang, Kwok-Leung Tsui, and Qiang Miao.
 \newblock Prognostics and health management: A review of vibration based bearing and gear health indicators.
 \newblock {\em IEEE Access}, 6:665--676, 2018.
 
-\bibitem{shang_comprehensive_2024}
-Fei Shang, Bo~Sun, and Dandan Cai.
-\newblock A comprehensive review of non-destructive methods for bearing lubricating oil film thickness measurement.
-\newblock {\em Industrial Lubrication and Tribology}, 76(3):441--451, 2024.
-
-\bibitem{cornel_condition_2021}
-Daniel Cornel, Francisco Guti{\'e}rrez~Guzm{\'a}n, Georg Jacobs, and Stephan Neumann.
-\newblock Condition monitoring of roller bearings using acoustic emission.
-\newblock {\em Wind Energy Science}, 6(2):367--376, 2021.
+\bibitem{zhang_graph_2024}
+Xinzhuo Zhang, Xuhua Zhang, Linbo Zhu, Chuang Gao, Bo~Ning, and Yongsheng Zhu.
+\newblock A graph-data-based monitoring method of bearing lubrication using multi-sensor.
+\newblock {\em Lubricants}, 12(6):229, 2024.
 
 \bibitem{zhang_interpretable_2026}
 Xinzhuo Zhang, Zhijun Ren, Kai Huang, Tantao Lin, Yongsheng Zhu, Hong Fu, and Jun Hong.
 \newblock An interpretable rolling-bearing lubrication-state diagnosis method based on multiscale residual and semantic consistency {CycleGAN}.
 \newblock {\em IEEE Transactions on Instrumentation and Measurement}, 75:3512116, 2026.
+
+\bibitem{jiang_mechanism_2025}
+Fei Jiang, Yicong Kuang, Tao Li, Shaohui Zhang, Zhaoqian Wu, Ke~Feng, and Weihua Li.
+\newblock Towards enhanced interpretability: A mechanism-driven domain adaptation model for bearing fault diagnosis across operating conditions.
+\newblock {\em Mechanical Systems and Signal Processing}, 225:112244, 2025.
+
+\bibitem{sun_online_2021}
+Jiayi Sun, Liming Wang, Jianfeng Li, Fangyi Li, Jianyong Li, and Haiyang Lu.
+\newblock Online oil debris monitoring of rotating machinery: A detailed review of more than three decades.
+\newblock {\em Mechanical Systems and Signal Processing}, 149:107341, 2021.
+
+\bibitem{dai_situ_2024}
+Wei Dai.
+\newblock In {Situ} {Measurement} of {Grease} {Capacitive} {Film} {Thickness} in {Bearings}: {A} {Review}.
+\newblock {\em Lubricants}, 12(10):329, 2024.
+
+\bibitem{shang_comprehensive_2024}
+Fei Shang, Bo~Sun, and Dandan Cai.
+\newblock A comprehensive review of non-destructive methods for bearing lubricating oil film thickness measurement.
+\newblock {\em Industrial Lubrication and Tribology}, 76(3):441--451, 2024.
 
 \bibitem{liu_combined_2021}
 Jing Liu, Y.~J. Xu, and Gang Pan.
@@ -75,6 +75,11 @@ N.~Tandon, K.~M. Ramakrishna, and G.~S. Yadava.
 \newblock Condition monitoring of electric motor ball bearings for the detection of grease contaminants.
 \newblock {\em Tribology International}, 40:29--36, 2007.
 
+\bibitem{cornel_condition_2021}
+Daniel Cornel, Francisco Guti{\'e}rrez~Guzm{\'a}n, Georg Jacobs, and Stephan Neumann.
+\newblock Condition monitoring of roller bearings using acoustic emission.
+\newblock {\em Wind Energy Science}, 6(2):367--376, 2021.
+
 \bibitem{wang_fingerprint_2023}
 Cuiping Wang, Hongyuan Qi, Dongming Hou, Defu Han, and Jiangtian Yang.
 \newblock Fingerprint feature and dynamic threshold mechanism based on acoustic emission for bearing fault detection.
@@ -84,6 +89,11 @@ Cuiping Wang, Hongyuan Qi, Dongming Hou, Defu Han, and Jiangtian Yang.
 Philipp Renhart, Michael Maier, Christopher Strablegg, Florian Summer, Florian Gr{\"u}n, and Andreas Eder.
 \newblock Monitoring tribological events by acoustic emission measurements for bearing contacts.
 \newblock {\em Lubricants}, 9(11):109, 2021.
+
+\bibitem{jakobsen_detecting_2023}
+Morten~Opprud Jakobsen, Eskild~Sune Herskind, Christian~Fischer Pedersen, and Mikael~Bergholz Knudsen.
+\newblock Detecting insufficient lubrication in rolling bearings, using a low cost {MEMS} microphone to measure vibrations.
+\newblock {\em Mechanical Systems and Signal Processing}, 200:110553, 2023.
 
 \bibitem{marticorena_cage_2022}
 Mat\'{i}as Marticorena and Oscar Garc\'{i}a~Peyrano.
@@ -118,11 +128,6 @@ Ling Wang and Honor Powrie.
 Haiyang Pan, Yu~Yang, Xin Li, Jinde Zheng, and Junsheng Cheng.
 \newblock Symplectic geometry mode decomposition and its application to rotating machinery compound fault diagnosis.
 \newblock {\em Mechanical Systems and Signal Processing}, 114:189--211, 2019.
-
-\bibitem{zhang_graph_2024}
-Xinzhuo Zhang, Xuhua Zhang, Linbo Zhu, Chuang Gao, Bo~Ning, and Yongsheng Zhu.
-\newblock A graph-data-based monitoring method of bearing lubrication using multi-sensor.
-\newblock {\em Lubricants}, 12(6):229, 2024.
 
 \bibitem{hjorth_eeg_1970}
 Bo~Hjorth.
