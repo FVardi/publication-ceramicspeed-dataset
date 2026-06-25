@@ -6,7 +6,7 @@
 \subsection{Test rig}
 \label{subsec:rig}
 
-The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). The rig is used for conducting experiments under conditions, where rotational speed, load, temperature, and lubricant amount can be controlled.
+The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). The rig is used for conducting experiments under conditions, where rotational speed, load, temperature, and lubricant amount can be controlled. \todo{Should there be more general motivation for this?}
 
 \begin{description}
   \item[\textbf{Bearing:}] a deep-groove ball bearing of model SYJ25 with \SI{25}{mm} bore width, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, and dynamic load rating \SI{14000}{N}.
@@ -14,8 +14,9 @@ The test rig is a custom-built bearing test stand at Aarhus University (Herning,
   \item[\textbf{Temperature:}] temperature is increased by a heating element mounted on the bearing pillow block and controlled by an Omron E5CC PID controller based on measurements from a type K temperature sensor mounted on the outer ring of the bearing.
   \item[\textbf{Load:}] the bearing is loaded radially by a static weight of 60kg, and the actual load is measured by an FN2114 pedal load cell.
   \item[\textbf{Lubricant:}] the bearing is lubricated with 0.5ml \todo{Check that this is correct} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$ at 40\si{\celsius} and 100\si{\celsius}, respectively) \todo{Do we need NLGI cosistency grade?}.
-  \item[\textbf{Acoustic emission sensor:}] A Kistler Piezotron Type~8152C1 wideband piezoelectric AE sensor bonded to the bearing housing. Its output is conditioned by a Kistler Type~5125C AE Piezotron coupler, which powers the sensor and applies a Butterworth band-pass filter from \SI{50}{kHz} to \SI{1}{MHz} to the raw AE signal before it is digitised. This coupler band-pass, sets the \SI{1}{MHz} upper analysis limit used throughout the paper.
-  \item[\textbf{Ultrasound sensor:}]
+  \item[\textbf{Acoustic emission sensor:}] a Kistler Piezotron Type~8152C1 wideband piezoelectric AE sensor bonded to the bearing housing\todo{How is it mounted?}. Its output is conditioned by a Kistler Type~5125C AE Piezotron coupler, which powers the sensor and applies a Butterworth band-pass filter from \SI{50}{kHz} to \SI{1}{MHz} to the raw AE signal before it is digitised. This coupler band-pass, sets the \SI{1}{MHz} upper analysis limit used throughout the paper.
+  \item[\textbf{Ultrasound sensor:}] a UE Systems Ultra-trak 750 sensor \todo{How is it mounted?} \todo{Check if the signal is actually heterodyned.}.
+  \item[\textbf{Oscilloscope:}] an Agilent MSO2024, sampling the AE and US signals at a frequency of 12.5MHz.
 \end{description}
 
 The test rig can be seen in Figure~\ref{fig:test_rig}.
@@ -44,7 +45,7 @@ The test rig can be seen in Figure~\ref{fig:test_rig}.
 \label{fig:test_rig}
 \end{figure}\todo{Update figure according to kappa thresholds}
 
-\subsection{Operating condition variation protocol}
+\subsection{Test protocol}
 \label{subsec:ops}
 
 The experiment follows a protocol which varies the nominal operating conditions through changes in rotational speed (RPM) and housing temperature (\si{\celsius}). This causes the viscosity ratio $\kappa$ of the bearing in the test rig to vary under controlled loading and bearing geometry.

@@ -1,0 +1,11 @@
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Should there be more general motivation for this?}{10}{section*.4}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Explain the filter and how effective it is expected to be.}{11}{section*.5}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that this is correct}{11}{section*.6}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Do we need NLGI cosistency grade?}{11}{section*.7}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{11}{section*.8}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{11}{section*.9}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check if the signal is actually heterodyned.}{11}{section*.10}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update figure according to kappa thresholds}{11}{section*.12}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Confirm why the 3000~rpm peak is held for $\sim $20~min (the temperature set-point is not changed there).}{12}{section*.13}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{37}{section*.38}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{38}{section*.40}%
