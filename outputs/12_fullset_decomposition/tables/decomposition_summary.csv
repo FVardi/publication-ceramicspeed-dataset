@@ -1,0 +1,4 @@
+channel,n_features,n_holdout,r2_rpm,r2_temp,r2_two_stage_kappa,r2_direct_kappa,softsense_share,residual_direct_minus_twostage
+AE,36,1326,0.9545,0.7879,0.8851,0.8895,0.995,0.0044
+US,35,1326,0.9359,0.8923,0.8092,0.81,0.999,0.0008
+Combined,71,1326,0.9665,0.8956,0.9212,0.9229,0.998,0.0017

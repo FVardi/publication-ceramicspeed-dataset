@@ -1,0 +1,324 @@
+"""
+12_fullset_decomposition.py
+===========================
+Operating-point decomposition + marginal/conditional correlation structure,
+computed on the FULL candidate feature sets (no selection gate) under the
+simplified leak-free protocol (acquisition-grouped 80/20 split).
+
+Why
+---
+kappa is a deterministic function of (RPM, T) at fixed oil/geometry, so any
+features -> kappa model can, at best, infer the operating point. This script
+quantifies how much of each channel's kappa-regression performance is
+operating-point soft-sensing:
+
+  Part A -- decomposition (per channel AE / US / Combined, full features):
+    * features -> RPM            (R2: how well the channel soft-senses speed)
+    * features -> temperature    (R2: how well it soft-senses temperature)
+    * two-stage  features -> (RPM_hat, T_hat) -> ISO 281 -> kappa   (R2)
+    * direct     features -> kappa  (R2)
+    The two-stage R2 is the share of kappa prediction reachable purely by
+    inferring the operating point; direct - two_stage is the residual beyond
+    explicit operating-point inference.
+
+  Part B -- marginal vs conditional correlations (per channel, full features):
+    * marginal     : Spearman(feature, RPM) and (feature, T) over all sweeps
+    * conditional  : within-RPM-step Spearman(feature, T)   [speed held]
+                     within-temp-block Spearman(feature, RPM)[temp held]
+    Answers: are each channel's features correlated with RPM, temperature, or
+    both? Saved as a table + per-channel proxy maps.
+
+Usage
+-----
+    python scripts/12_fullset_decomposition.py
+"""
+
+# %%
+import json
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
+
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from scipy.stats import spearmanr
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.metrics import r2_score, mean_squared_error
+import lightgbm as lgb
+
+from ceramicspeed.loading import load_parquet_pair
+from ceramicspeed.cleaning import filter_by_metadata
+from ceramicspeed.calculate_kappa import calculate_kappa
+from ceramicspeed.config import load_config, get_output_dir
+
+cfg = load_config()
+OUTPUT_DIR = get_output_dir(cfg)
+SCRIPT_DIR = OUTPUT_DIR / "12_fullset_decomposition"
+TABLES_DIR = SCRIPT_DIR / "tables"
+FIGURES_DIR = SCRIPT_DIR / "figures"
+for d in (SCRIPT_DIR, TABLES_DIR, FIGURES_DIR):
+    d.mkdir(parents=True, exist_ok=True)
+
+D_PW = cfg["bearing"]["d_pw_mm"]
+RPM_MAX = cfg["filters"]["rpm_max"]
+RANDOM_STATE = cfg.get("random_state", 42)
+model_cfg = cfg.get("modelling", {})
+TEST_SIZE = model_cfg.get("test_size", 0.2)
+GROUPED_SPLIT = bool(model_cfg.get("grouped_split", True))
+_SENSOR_LABEL = {"UL": "US"}
+
+# %%
+# =============================================================================
+# Load + filter + kappa
+# =============================================================================
+raw_feat, raw_meta = load_parquet_pair(OUTPUT_DIR)
+with open(OUTPUT_DIR / "feature_selection.json") as fh:
+    feature_selection = json.load(fh)
+
+df, metadata = filter_by_metadata(raw_feat, raw_meta, rpm_max=RPM_MAX)
+df = df.reset_index(drop=True)
+metadata = metadata.reset_index(drop=True)
+metadata["kappa"] = metadata.apply(
+    lambda r: calculate_kappa(rpm=r["rpm"], temp_c=r["temperature_c"], d_pw=D_PW,
+                              nu_40=r["viscosity_40c_cst"], nu_100=r["viscosity_100c_cst"]),
+    axis=1,
+)
+NU40 = float(metadata["viscosity_40c_cst"].iloc[0])
+NU100 = float(metadata["viscosity_100c_cst"].iloc[0])
+
+
+# %%
+# =============================================================================
+# Grouped 80/20 split (identical to 04/11)
+# =============================================================================
+def _derive_hold_groups(meta_df):
+    sweep_no = meta_df["sweep"].str.split("_").str[1].astype(int).values
+    files = meta_df["file"].values
+    step = np.round(meta_df["rpm"].values / 100.0)
+    order = np.lexsort((sweep_no, files))
+    gid = np.empty(len(meta_df), dtype=int)
+    g, prev = 0, None
+    for pos in order:
+        key = (files[pos], step[pos])
+        if prev is None or key != prev:
+            g += 1
+        gid[pos] = g
+        prev = key
+    return gid
+
+
+sweep_keys = df[["file", "sweep"]].drop_duplicates().reset_index(drop=True)
+hold_groups = _derive_hold_groups(metadata)
+_key_first = pd.DataFrame({"file": df["file"], "sweep": df["sweep"], "g": hold_groups}
+                          ).drop_duplicates(["file", "sweep"])
+_gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+train_idx, _ = next(_gss.split(np.arange(len(sweep_keys)), groups=_key_first["g"].values))
+train_sweeps = set(zip(sweep_keys.iloc[train_idx]["file"], sweep_keys.iloc[train_idx]["sweep"]))
+in_train = df.apply(lambda r: (r["file"], r["sweep"]) in train_sweeps, axis=1).values
+
+
+# %%
+# =============================================================================
+# Build full-feature keyed frames per sensor (+ combined), renamed like 04/11
+# =============================================================================
+def _rename(c, label):
+    return c if (c in ("kappa", "rpm", "temp") or c.startswith(f"{label}_")) else f"{label}__{c}"
+
+
+def _keyed(sensor, all_cols, label, mask_train):
+    m = (df["sensor"] == sensor) & (in_train == mask_train)
+    X = df.loc[m, ["file", "sweep"] + all_cols].reset_index(drop=True)
+    md = metadata.loc[m, ["kappa", "rpm", "temperature_c"]].reset_index(drop=True)
+    X["kappa"] = md["kappa"].values
+    X["rpm"] = md["rpm"].values
+    X["temp"] = md["temperature_c"].values
+    X = X[X[all_cols].notna().all(axis=1)].set_index(["file", "sweep"])
+    return X.rename(columns=lambda c: _rename(c, label))
+
+
+keyed = {}  # (sensor, is_train) -> frame ; sensor in {AE, UL}
+cols_renamed = {}
+for sensor, info in feature_selection.items():
+    label = _SENSOR_LABEL.get(sensor, sensor)
+    all_cols = info["all_columns"]
+    cols_renamed[sensor] = [_rename(c, label) for c in all_cols]
+    keyed[(sensor, True)] = _keyed(sensor, all_cols, label, True)
+    keyed[(sensor, False)] = _keyed(sensor, all_cols, label, False)
+
+
+def _combined(is_train):
+    ae, us = keyed[("AE", is_train)], keyed[("UL", is_train)]
+    fae = [c for c in ae.columns if c not in ("kappa", "rpm", "temp")]
+    fus = [c for c in us.columns if c not in ("kappa", "rpm", "temp")]
+    return ae[fae + ["kappa", "rpm", "temp"]].join(us[fus], how="inner")
+
+
+frames_train = {"AE": keyed[("AE", True)], "US": keyed[("UL", True)],
+                "Combined": _combined(True)}
+frames_test = {"AE": keyed[("AE", False)], "US": keyed[("UL", False)],
+               "Combined": _combined(False)}
+feat_cols = {
+    "AE": cols_renamed["AE"],
+    "US": cols_renamed["UL"],
+    "Combined": cols_renamed["AE"] + cols_renamed["UL"],
+}
+
+
+# %%
+# =============================================================================
+# PART A -- operating-point decomposition
+# =============================================================================
+def _fit_lgbm(Xtr, ytr, Xte):
+    m = lgb.LGBMRegressor(n_estimators=400, learning_rate=0.05, num_leaves=63,
+                          random_state=RANDOM_STATE, verbose=-1)
+    m.fit(Xtr, ytr)
+    return m.predict(Xte)
+
+
+print("Operating-point decomposition (full feature sets):\n")
+dec_rows = []
+for chan in ("AE", "US", "Combined"):
+    tr, te = frames_train[chan], frames_test[chan]
+    cols = feat_cols[chan]
+    Xtr, Xte = tr[cols], te[cols]
+
+    rpm_hat = _fit_lgbm(Xtr, tr["rpm"].values, Xte)
+    tmp_hat = _fit_lgbm(Xtr, tr["temp"].values, Xte)
+    kap_hat = _fit_lgbm(Xtr, tr["kappa"].values, Xte)
+
+    two_stage = np.array([
+        calculate_kappa(rpm=max(float(r), 1.0), temp_c=float(t), d_pw=D_PW,
+                        nu_40=NU40, nu_100=NU100)
+        for r, t in zip(rpm_hat, tmp_hat)
+    ])
+
+    y_te = te["kappa"].values
+    r2_rpm = r2_score(te["rpm"].values, rpm_hat)
+    r2_tmp = r2_score(te["temp"].values, tmp_hat)
+    r2_two = r2_score(y_te, two_stage)
+    r2_dir = r2_score(y_te, kap_hat)
+
+    dec_rows.append({
+        "channel": chan, "n_features": len(cols), "n_holdout": len(y_te),
+        "r2_rpm": round(r2_rpm, 4), "r2_temp": round(r2_tmp, 4),
+        "r2_two_stage_kappa": round(r2_two, 4), "r2_direct_kappa": round(r2_dir, 4),
+        "softsense_share": round(r2_two / r2_dir, 3) if r2_dir > 0 else np.nan,
+        "residual_direct_minus_twostage": round(r2_dir - r2_two, 4),
+    })
+    print(f"  {chan:9s}  RPM R2={r2_rpm:.3f}  T R2={r2_tmp:.3f}  "
+          f"two-stage kappa R2={r2_two:.3f}  direct kappa R2={r2_dir:.3f}")
+
+dec = pd.DataFrame(dec_rows)
+dec.to_csv(TABLES_DIR / "decomposition_summary.csv", index=False)
+print(f"\nSaved: {TABLES_DIR / 'decomposition_summary.csv'}")
+
+
+# %%
+# =============================================================================
+# PART B -- marginal vs conditional correlations (full features, all sweeps)
+# =============================================================================
+TBLOCK = 2.0
+MIN_N_PART = 30
+MIN_LEVELS = 8
+
+
+def _partition_corr(d, feats, by, target, level_col):
+    """Per-feature within-partition Spearman: returns (median, q25, q75)."""
+    out = {}
+    for c in feats:
+        rhos = []
+        for _, sub in d.groupby(by):
+            if sub[level_col].nunique() < MIN_LEVELS or len(sub) < MIN_N_PART:
+                continue
+            r = spearmanr(sub[c], sub[target])[0]
+            if np.isfinite(r):
+                rhos.append(r)
+        if rhos:
+            rhos = np.array(rhos)
+            out[c] = (float(np.median(rhos)),
+                      float(np.percentile(rhos, 25)),
+                      float(np.percentile(rhos, 75)))
+    return out
+
+
+def _short(name):
+    return (name.replace("AE__", "").replace("US__", "").replace("AE_", "")
+                .replace("US_", "").replace("__", " ").replace("_", " ").strip())
+
+
+cond_rows = []
+for sensor, label in (("AE", "AE"), ("UL", "US")):
+    all_cols = feature_selection[sensor]["all_columns"]
+    ren = [_rename(c, label) for c in all_cols]
+    m = df["sensor"] == sensor
+    d = df.loc[m, all_cols].reset_index(drop=True)
+    d.columns = ren
+    d["rpm"] = metadata.loc[m, "rpm"].values
+    d["temp"] = metadata.loc[m, "temperature_c"].values
+    d["kappa"] = metadata.loc[m, "kappa"].values
+    d = d[d[ren].notna().all(axis=1)]
+    d = d[d["rpm"] >= 60].reset_index(drop=True)
+    d["rstep"] = (d["rpm"] / 100).round() * 100
+    d["tblock"] = (d["temp"] / TBLOCK).round() * TBLOCK
+
+    cond_t = _partition_corr(d, ren, "rstep", "temp", "temp")
+    cond_r = _partition_corr(d, ren, "tblock", "rpm", "rstep")
+    for c in ren:
+        ct = cond_t.get(c, (np.nan, np.nan, np.nan))
+        cr = cond_r.get(c, (np.nan, np.nan, np.nan))
+        cond_rows.append({
+            "sensor": label, "feature": c,
+            "marg_rpm": spearmanr(d[c], d["rpm"])[0],
+            "marg_temp": spearmanr(d[c], d["temp"])[0],
+            "marg_kappa": spearmanr(d[c], d["kappa"])[0],
+            "cond_rpm": cr[0], "cond_rpm_lo": cr[1], "cond_rpm_hi": cr[2],
+            "cond_temp": ct[0], "cond_temp_lo": ct[1], "cond_temp_hi": ct[2],
+        })
+    print(f"[{label}] marginal/conditional over {len(d)} sweeps, {len(ren)} features")
+
+cm = pd.DataFrame(cond_rows)
+cm.to_csv(TABLES_DIR / "cond_vs_marginal_full.csv", index=False)
+print(f"Saved: {TABLES_DIR / 'cond_vs_marginal_full.csv'}")
+
+
+# %%
+# =============================================================================
+# PART B figures -- proxy map per channel: marginal rho(RPM) vs rho(T),
+# coloured by |rho(kappa)|. Shows whether features track speed, temp, or both.
+# =============================================================================
+for label in ("AE", "US"):
+    sub = cm[cm["sensor"] == label]
+    fig, ax = plt.subplots(figsize=(7.4, 6.6))
+    sc = ax.scatter(sub["marg_temp"], sub["marg_rpm"], c=sub["marg_kappa"].abs(),
+                    cmap="viridis", vmin=0, vmax=1, s=70, edgecolor="k", linewidth=0.5, zorder=3)
+    ax.axhline(0, color="0.6", lw=0.8); ax.axvline(0, color="0.6", lw=0.8)
+    for i, (_, row) in enumerate(sub.iterrows()):
+        dy = 4 if i % 2 == 0 else -9
+        ax.annotate(_short(row["feature"]), (row["marg_temp"], row["marg_rpm"]),
+                    fontsize=6.5, xytext=(5, dy), textcoords="offset points", zorder=4)
+    ax.set_xlabel(r"marginal Spearman $\rho$ with temperature")
+    ax.set_ylabel(r"marginal Spearman $\rho$ with RPM (speed)")
+    ax.set_xlim(-1, 1); ax.set_ylim(-1, 1)
+    ax.set_title(f"Operating-point proxy map -- all {label} candidate features")
+    cb = fig.colorbar(sc, ax=ax); cb.set_label(r"$|\rho|$ with $\kappa$")
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / f"proxy_map_full_{label.lower()}.png", dpi=150)
+    plt.close(fig)
+    print(f"Saved: proxy_map_full_{label.lower()}.png")
+
+# Quadrant summary: how many features track speed-only / temp-only / both
+print("\nFeature operating-point coupling (|marginal rho| >= 0.3):")
+for label in ("AE", "US"):
+    sub = cm[cm["sensor"] == label]
+    spd = sub["marg_rpm"].abs() >= 0.3
+    tmp = sub["marg_temp"].abs() >= 0.3
+    print(f"  {label}: speed-only={int((spd & ~tmp).sum())}  "
+          f"temp-only={int((~spd & tmp).sum())}  "
+          f"both={int((spd & tmp).sum())}  neither={int((~spd & ~tmp).sum())}  "
+          f"(of {len(sub)})")
+
+if __name__ == "__main__":
+    print("\n12_fullset_decomposition complete.")

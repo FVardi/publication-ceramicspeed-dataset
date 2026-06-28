@@ -1,0 +1,7 @@
+model,target,full,selected,delta(full-selected)
+ElasticNet,AE,0.6212,0.4906,0.1306
+ElasticNet,Combined,0.74,0.5932,0.1468
+ElasticNet,US,0.6008,0.4627,0.1381
+LightGBM,AE,0.8868,0.8312,0.0556
+LightGBM,Combined,0.9265,0.9097,0.0168
+LightGBM,US,0.8153,0.6471,0.1682

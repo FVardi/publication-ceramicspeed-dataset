@@ -42,6 +42,8 @@ __all__ = [
     "variance_inflation_factors",
     "identify_redundant_features",
     "reduce_redundant_features",
+    "reduce_redundant_features_iterative",
+    "select_features",
     "pca_transform",
 ]
 
@@ -333,6 +335,43 @@ def reduce_redundant_features_iterative(
         cols.remove(drop)
 
     return [c for c in df.columns if c in set(cols)]
+
+
+def select_features(
+    X: pd.DataFrame,
+    y: np.ndarray | pd.Series,
+    corr_min: float = 0.1,
+    vif_threshold: float = 5.0,
+) -> list[str]:
+    """Two-stage feature selection, callable on a *training* partition only.
+
+    Stage 1 (relevance): keep features whose absolute Spearman ``|rho|`` **and**
+    Pearson ``|r|`` correlation with the target both reach *corr_min*.
+    Stage 2 (redundancy): iterative VIF elimination via
+    :func:`reduce_redundant_features_iterative`, dropping the least
+    target-relevant feature among those above *vif_threshold* and recomputing.
+
+    This is the same procedure as ``02_feature_analysis.py`` but packaged so it
+    can be run inside a train/validation split. Pass **only training rows** so
+    the held-out data never influences which features are selected — calling it
+    on the full dataset re-introduces the selection leakage it exists to avoid.
+
+    Returns
+    -------
+    list[str]
+        Retained feature names, in original column order.
+    """
+    rho = spearman_correlation(X, y)["rho"].abs()
+    r = pearson_correlation(X, y)["r"].abs()
+    keep = [
+        c for c in X.columns
+        if rho.get(c, 0.0) >= corr_min and r.get(c, 0.0) >= corr_min
+    ]
+    if len(keep) <= 1:
+        return keep
+    return reduce_redundant_features_iterative(
+        X[keep], y, vif_threshold=vif_threshold
+    )
 
 
 def reduce_redundant_features(

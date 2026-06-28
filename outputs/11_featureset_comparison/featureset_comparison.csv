@@ -1,0 +1,13 @@
+model,target,feature_set,n_features,n_train,n_test,cv_r2_grouped,holdout_r2,holdout_mae,holdout_rmse
+ElasticNet,AE,selected,11,7222,1326,0.5952,0.4906,0.1517,0.1916
+LightGBM,AE,selected,11,7222,1326,0.8676,0.8312,0.0828,0.1103
+ElasticNet,US,selected,12,7222,1326,0.5864,0.4627,0.1491,0.1968
+LightGBM,US,selected,12,7222,1326,0.7788,0.6471,0.1051,0.1595
+ElasticNet,Combined,selected,23,7222,1326,0.7074,0.5932,0.1341,0.1712
+LightGBM,Combined,selected,23,7222,1326,0.9187,0.9097,0.0555,0.0807
+ElasticNet,AE,full,36,7222,1326,0.6958,0.6212,0.1272,0.1652
+LightGBM,AE,full,36,7222,1326,0.9083,0.8868,0.0671,0.0903
+ElasticNet,US,full,35,7222,1326,0.7205,0.6008,0.131,0.1696
+LightGBM,US,full,35,7222,1326,0.849,0.8153,0.0751,0.1154
+ElasticNet,Combined,full,71,7222,1326,0.7949,0.74,0.1078,0.1369
+LightGBM,Combined,full,71,7222,1326,0.9315,0.9265,0.0514,0.0728
