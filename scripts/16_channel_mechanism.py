@@ -157,19 +157,17 @@ print("Saved: coupling_by_type.png")
 # =============================================================================
 # Part B -- SHAP on features->RPM and features->temperature, per channel
 # =============================================================================
-import json
+from ceramicspeed.cleaning import true_candidate_columns
 
 raw_feat, raw_meta = load_parquet_pair(OUTPUT_DIR)
-with open(OUTPUT_DIR / "feature_selection.json") as fh:
-    feature_selection = json.load(fh)
 df, metadata = filter_by_metadata(raw_feat, raw_meta, rpm_max=RPM_MAX)
 df = df.reset_index(drop=True); metadata = metadata.reset_index(drop=True)
 
 _SENSOR_LABEL = {"UL": "US"}
 shap_rows = []
-for sensor, info in feature_selection.items():
+for sensor in ("AE", "UL"):
     label = _SENSOR_LABEL.get(sensor, sensor)
-    all_cols = info["all_columns"]
+    all_cols = true_candidate_columns(raw_feat, raw_meta, sensor, RPM_MAX)
     m = df["sensor"] == sensor
     X = df.loc[m, all_cols].reset_index(drop=True)
     valid = X.notna().all(axis=1)

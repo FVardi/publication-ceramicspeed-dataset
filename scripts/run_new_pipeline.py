@@ -36,11 +36,17 @@ HERE = Path(__file__).parent
 
 STEPS = [
     ("Feature-set comparison (full vs selected; ElasticNet + LightGBM)",
-     ["11_featureset_comparison.py", "--lightgbm"]),
+     ["11_featureset_comparison.py"]),
     ("Operating-point decomposition + marginal/conditional correlations",
      ["12_fullset_decomposition.py"]),
     ("Group-paired Diebold-Mariano tests (complementarity, full vs selected)",
      ["13_group_paired_tests.py"]),
+    ("Presentation figures + tables",
+     ["14_new_method_figures.py"]),
+    ("Channel mechanism (sub-band/feature-type coupling + SHAP)",
+     ["16_channel_mechanism.py"]),
+    ("Per-feature operating-condition correlation table",
+     ["17_feature_oc_table.py"]),
 ]
 
 

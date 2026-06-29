@@ -2,8 +2,8 @@
 12_fullset_decomposition.py
 ===========================
 Operating-point decomposition + marginal/conditional correlation structure,
-computed on the FULL candidate feature sets (no selection gate) under the
-simplified leak-free protocol (acquisition-grouped 80/20 split).
+computed on the FULL candidate feature sets (no selection gate), aligned to
+the same leak-free protocol as 11_featureset_comparison.py.
 
 Why
 ---
@@ -19,22 +19,36 @@ operating-point soft-sensing:
     * direct     features -> kappa  (R2)
     The two-stage R2 is the share of kappa prediction reachable purely by
     inferring the operating point; direct - two_stage is the residual beyond
-    explicit operating-point inference.
+    explicit operating-point inference. By default this is computed via
+    pooled GroupKFold (operating-point-merged groups) over the whole dataset,
+    matching 11_featureset_comparison.py -- see that script's docstring for
+    why (single-split noise, operating-point-twin leakage). Use
+    --single-split / --allow-twin-split to deviate, for comparison.
 
   Part B -- marginal vs conditional correlations (per channel, full features):
     * marginal     : Spearman(feature, RPM) and (feature, T) over all sweeps
     * conditional  : within-RPM-step Spearman(feature, T)   [speed held]
                      within-temp-block Spearman(feature, RPM)[temp held]
     Answers: are each channel's features correlated with RPM, temperature, or
-    both? Saved as a table + per-channel proxy maps.
+    both? Saved as a table + per-channel proxy maps. This is purely
+    descriptive (uses all data, no train/test split), so it is unaffected by
+    --single-split / --allow-twin-split.
+
+Candidate features are derived fresh via target-independent cleaning (see
+ceramicspeed.cleaning.true_candidate_columns) rather than reusing
+feature_selection.json's "all_columns", for the same reason as
+11_featureset_comparison.py: that field is captured *after* a whole-dataset
+correlation filter against kappa and is not actually the full candidate set.
 
 Usage
 -----
     python scripts/12_fullset_decomposition.py
+    python scripts/12_fullset_decomposition.py --single-split
+    python scripts/12_fullset_decomposition.py --allow-twin-split
 """
 
 # %%
-import json
+import argparse
 import sys
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -45,16 +59,37 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
-from sklearn.model_selection import GroupShuffleSplit
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from sklearn.metrics import r2_score
 import lightgbm as lgb
 
 from ceramicspeed.loading import load_parquet_pair
-from ceramicspeed.cleaning import filter_by_metadata
+from ceramicspeed.cleaning import filter_by_metadata, true_candidate_columns
 from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.config import load_config, get_output_dir
+from ceramicspeed.grouping import derive_hold_groups, merge_twin_groups
 
-cfg = load_config()
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=str, default=None)
+    parser.add_argument("--single-split", action="store_true",
+                        help="Use a single 80/20 GroupShuffleSplit instead of the "
+                             "default pooled GroupKFold over the whole dataset.")
+    parser.add_argument("--n-folds", type=int, default=None,
+                        help="Number of folds for the default pooled GroupKFold "
+                             "(default: modelling.cv_n_splits from config, or 5).")
+    parser.add_argument("--allow-twin-split", action="store_true",
+                        help="Do not merge operating-point twin holds before "
+                             "splitting/CV (see 11_featureset_comparison.py).")
+    parser.add_argument("--rpm-bin-width", type=float, default=100.0)
+    parser.add_argument("--temp-bin-width", type=float, default=1.0)
+    args, _ = parser.parse_known_args()
+    return args
+
+
+args = parse_args()
+cfg = load_config(args.config)
 OUTPUT_DIR = get_output_dir(cfg)
 SCRIPT_DIR = OUTPUT_DIR / "12_fullset_decomposition"
 TABLES_DIR = SCRIPT_DIR / "tables"
@@ -68,15 +103,28 @@ RANDOM_STATE = cfg.get("random_state", 42)
 model_cfg = cfg.get("modelling", {})
 TEST_SIZE = model_cfg.get("test_size", 0.2)
 GROUPED_SPLIT = bool(model_cfg.get("grouped_split", True))
+N_FOLDS = args.n_folds or model_cfg.get("cv_n_splits", 5)
 _SENSOR_LABEL = {"UL": "US"}
+
+_suffix_parts = []
+if args.single_split:
+    _suffix_parts.append("singlesplit")
+if args.allow_twin_split:
+    _suffix_parts.append("twinsplit")
+_suffix = "" if not _suffix_parts else "_" + "_".join(_suffix_parts)
 
 # %%
 # =============================================================================
 # Load + filter + kappa
 # =============================================================================
 raw_feat, raw_meta = load_parquet_pair(OUTPUT_DIR)
-with open(OUTPUT_DIR / "feature_selection.json") as fh:
-    feature_selection = json.load(fh)
+
+true_all_columns = {
+    sensor: true_candidate_columns(raw_feat, raw_meta, sensor, RPM_MAX)
+    for sensor in ("AE", "UL")
+}
+print(f"True candidate columns (target-independent cleaning only): "
+      f"AE={len(true_all_columns['AE'])}, UL={len(true_all_columns['UL'])}")
 
 df, metadata = filter_by_metadata(raw_feat, raw_meta, rpm_max=RPM_MAX)
 df = df.reset_index(drop=True)
@@ -92,46 +140,35 @@ NU100 = float(metadata["viscosity_100c_cst"].iloc[0])
 
 # %%
 # =============================================================================
-# Grouped 80/20 split (identical to 04/11)
+# Acquisition-hold groups, merged into operating-point groups by default
 # =============================================================================
-def _derive_hold_groups(meta_df):
-    sweep_no = meta_df["sweep"].str.split("_").str[1].astype(int).values
-    files = meta_df["file"].values
-    step = np.round(meta_df["rpm"].values / 100.0)
-    order = np.lexsort((sweep_no, files))
-    gid = np.empty(len(meta_df), dtype=int)
-    g, prev = 0, None
-    for pos in order:
-        key = (files[pos], step[pos])
-        if prev is None or key != prev:
-            g += 1
-        gid[pos] = g
-        prev = key
-    return gid
-
+hold_groups = derive_hold_groups(metadata)
+if not args.allow_twin_split:
+    hold_groups = merge_twin_groups(
+        metadata, hold_groups,
+        rpm_bin_width=args.rpm_bin_width, temp_bin_width=args.temp_bin_width,
+    )
 
 sweep_keys = df[["file", "sweep"]].drop_duplicates().reset_index(drop=True)
-hold_groups = _derive_hold_groups(metadata)
-_key_first = pd.DataFrame({"file": df["file"], "sweep": df["sweep"], "g": hold_groups}
-                          ).drop_duplicates(["file", "sweep"])
-_gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
-train_idx, _ = next(_gss.split(np.arange(len(sweep_keys)), groups=_key_first["g"].values))
-train_sweeps = set(zip(sweep_keys.iloc[train_idx]["file"], sweep_keys.iloc[train_idx]["sweep"]))
-in_train = df.apply(lambda r: (r["file"], r["sweep"]) in train_sweeps, axis=1).values
+_key_first = pd.DataFrame(
+    {"file": df["file"], "sweep": df["sweep"], "g": hold_groups}
+).drop_duplicates(["file", "sweep"]).reset_index(drop=True)
+assert len(_key_first) == len(sweep_keys)
+N_HOLD_GROUPS = _key_first["g"].nunique()
 
 
 # %%
 # =============================================================================
-# Build full-feature keyed frames per sensor (+ combined), renamed like 04/11
+# Build full-feature keyed frames per sensor (+ combined), renamed like 11
 # =============================================================================
 def _rename(c, label):
     return c if (c in ("kappa", "rpm", "temp") or c.startswith(f"{label}_")) else f"{label}__{c}"
 
 
-def _keyed(sensor, all_cols, label, mask_train):
-    m = (df["sensor"] == sensor) & (in_train == mask_train)
-    X = df.loc[m, ["file", "sweep"] + all_cols].reset_index(drop=True)
-    md = metadata.loc[m, ["kappa", "rpm", "temperature_c"]].reset_index(drop=True)
+def _keyed(df_src, meta_src, sensor, all_cols, label):
+    mask = df_src["sensor"] == sensor
+    X = df_src.loc[mask, ["file", "sweep"] + all_cols].reset_index(drop=True)
+    md = meta_src.loc[mask, ["kappa", "rpm", "temperature_c"]].reset_index(drop=True)
     X["kappa"] = md["kappa"].values
     X["rpm"] = md["rpm"].values
     X["temp"] = md["temperature_c"].values
@@ -139,37 +176,26 @@ def _keyed(sensor, all_cols, label, mask_train):
     return X.rename(columns=lambda c: _rename(c, label))
 
 
-keyed = {}  # (sensor, is_train) -> frame ; sensor in {AE, UL}
-cols_renamed = {}
-for sensor, info in feature_selection.items():
-    label = _SENSOR_LABEL.get(sensor, sensor)
-    all_cols = info["all_columns"]
-    cols_renamed[sensor] = [_rename(c, label) for c in all_cols]
-    keyed[(sensor, True)] = _keyed(sensor, all_cols, label, True)
-    keyed[(sensor, False)] = _keyed(sensor, all_cols, label, False)
-
-
-def _combined(is_train):
-    ae, us = keyed[("AE", is_train)], keyed[("UL", is_train)]
+def _combined(keyed):
+    ae, us = keyed["AE"], keyed["UL"]
     fae = [c for c in ae.columns if c not in ("kappa", "rpm", "temp")]
     fus = [c for c in us.columns if c not in ("kappa", "rpm", "temp")]
     return ae[fae + ["kappa", "rpm", "temp"]].join(us[fus], how="inner")
 
 
-frames_train = {"AE": keyed[("AE", True)], "US": keyed[("UL", True)],
-                "Combined": _combined(True)}
-frames_test = {"AE": keyed[("AE", False)], "US": keyed[("UL", False)],
-               "Combined": _combined(False)}
+cols_renamed = {
+    sensor: [_rename(c, _SENSOR_LABEL.get(sensor, sensor)) for c in all_cols]
+    for sensor, all_cols in true_all_columns.items()
+}
 feat_cols = {
-    "AE": cols_renamed["AE"],
-    "US": cols_renamed["UL"],
+    "AE": cols_renamed["AE"], "US": cols_renamed["UL"],
     "Combined": cols_renamed["AE"] + cols_renamed["UL"],
 }
 
 
 # %%
 # =============================================================================
-# PART A -- operating-point decomposition
+# PART A -- operating-point decomposition (pooled GroupKFold by default)
 # =============================================================================
 def _fit_lgbm(Xtr, ytr, Xte):
     m = lgb.LGBMRegressor(n_estimators=400, learning_rate=0.05, num_leaves=63,
@@ -178,31 +204,83 @@ def _fit_lgbm(Xtr, ytr, Xte):
     return m.predict(Xte)
 
 
-print("Operating-point decomposition (full feature sets):\n")
+def run_split(train_sweep_idx, test_sweep_idx, fold_id):
+    """Fit features->RPM, features->temp, features->kappa per channel on the
+    given train rows, predict on the held-out test rows. Returns a dict of
+    per-channel held-out prediction DataFrames."""
+    train_sweeps = set(
+        zip(sweep_keys.iloc[train_sweep_idx]["file"], sweep_keys.iloc[train_sweep_idx]["sweep"]))
+    row_in_train = df.apply(lambda r: (r["file"], r["sweep"]) in train_sweeps, axis=1).values
+
+    keyed_train, keyed_test = {}, {}
+    for sensor, all_cols in true_all_columns.items():
+        label = _SENSOR_LABEL.get(sensor, sensor)
+        keyed_train[sensor] = _keyed(df[row_in_train], metadata[row_in_train], sensor, all_cols, label)
+        keyed_test[sensor] = _keyed(df[~row_in_train], metadata[~row_in_train], sensor, all_cols, label)
+
+    frames_train = {"AE": keyed_train["AE"], "US": keyed_train["UL"], "Combined": _combined(keyed_train)}
+    frames_test = {"AE": keyed_test["AE"], "US": keyed_test["UL"], "Combined": _combined(keyed_test)}
+
+    out = {}
+    for chan in ("AE", "US", "Combined"):
+        tr, te = frames_train[chan], frames_test[chan]
+        cols = feat_cols[chan]
+        Xtr, Xte = tr[cols], te[cols]
+
+        rpm_hat = _fit_lgbm(Xtr, tr["rpm"].values, Xte)
+        tmp_hat = _fit_lgbm(Xtr, tr["temp"].values, Xte)
+        kap_hat = _fit_lgbm(Xtr, tr["kappa"].values, Xte)
+        two_stage = np.array([
+            calculate_kappa(rpm=max(float(r), 1.0), temp_c=float(t), d_pw=D_PW,
+                            nu_40=NU40, nu_100=NU100)
+            for r, t in zip(rpm_hat, tmp_hat)
+        ])
+
+        pred = te.index.to_frame(index=False)
+        pred["fold"] = fold_id
+        pred["rpm_true"], pred["rpm_pred"] = te["rpm"].values, rpm_hat
+        pred["temp_true"], pred["temp_pred"] = te["temp"].values, tmp_hat
+        pred["kappa_true"], pred["kappa_pred"] = te["kappa"].values, kap_hat
+        pred["kappa_two_stage"] = two_stage
+        out[chan] = pred
+    return out
+
+
+pooled_by_chan: dict[str, list] = {"AE": [], "US": [], "Combined": []}
+
+if not args.single_split:
+    print(f"\nPooled GroupKFold (k={N_FOLDS}) over {N_HOLD_GROUPS} hold groups "
+          f"for the operating-point decomposition.\n")
+    gkf = GroupKFold(n_splits=N_FOLDS)
+    for fold_id, (train_idx, test_idx) in enumerate(
+        gkf.split(np.arange(len(sweep_keys)), groups=_key_first["g"].values)
+    ):
+        for chan, pred in run_split(train_idx, test_idx, fold_id).items():
+            pooled_by_chan[chan].append(pred)
+else:
+    if GROUPED_SPLIT:
+        gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+        train_idx, test_idx = next(gss.split(np.arange(len(sweep_keys)), groups=_key_first["g"].values))
+    else:
+        from sklearn.model_selection import train_test_split
+        train_idx, test_idx = train_test_split(
+            np.arange(len(sweep_keys)), test_size=TEST_SIZE, random_state=RANDOM_STATE, shuffle=True)
+    for chan, pred in run_split(train_idx, test_idx, fold_id=0).items():
+        pooled_by_chan[chan].append(pred)
+
+print("Operating-point decomposition (full feature sets, pooled held-out predictions):\n")
 dec_rows = []
 for chan in ("AE", "US", "Combined"):
-    tr, te = frames_train[chan], frames_test[chan]
-    cols = feat_cols[chan]
-    Xtr, Xte = tr[cols], te[cols]
+    pooled = pd.concat(pooled_by_chan[chan], ignore_index=True)
+    pooled.to_csv(TABLES_DIR / f"decomposition_predictions{_suffix}_{chan}.csv", index=False)
 
-    rpm_hat = _fit_lgbm(Xtr, tr["rpm"].values, Xte)
-    tmp_hat = _fit_lgbm(Xtr, tr["temp"].values, Xte)
-    kap_hat = _fit_lgbm(Xtr, tr["kappa"].values, Xte)
-
-    two_stage = np.array([
-        calculate_kappa(rpm=max(float(r), 1.0), temp_c=float(t), d_pw=D_PW,
-                        nu_40=NU40, nu_100=NU100)
-        for r, t in zip(rpm_hat, tmp_hat)
-    ])
-
-    y_te = te["kappa"].values
-    r2_rpm = r2_score(te["rpm"].values, rpm_hat)
-    r2_tmp = r2_score(te["temp"].values, tmp_hat)
-    r2_two = r2_score(y_te, two_stage)
-    r2_dir = r2_score(y_te, kap_hat)
+    r2_rpm = r2_score(pooled["rpm_true"], pooled["rpm_pred"])
+    r2_tmp = r2_score(pooled["temp_true"], pooled["temp_pred"])
+    r2_two = r2_score(pooled["kappa_true"], pooled["kappa_two_stage"])
+    r2_dir = r2_score(pooled["kappa_true"], pooled["kappa_pred"])
 
     dec_rows.append({
-        "channel": chan, "n_features": len(cols), "n_holdout": len(y_te),
+        "channel": chan, "n_features": len(feat_cols[chan]), "n_holdout": len(pooled),
         "r2_rpm": round(r2_rpm, 4), "r2_temp": round(r2_tmp, 4),
         "r2_two_stage_kappa": round(r2_two, 4), "r2_direct_kappa": round(r2_dir, 4),
         "softsense_share": round(r2_two / r2_dir, 3) if r2_dir > 0 else np.nan,
@@ -212,13 +290,15 @@ for chan in ("AE", "US", "Combined"):
           f"two-stage kappa R2={r2_two:.3f}  direct kappa R2={r2_dir:.3f}")
 
 dec = pd.DataFrame(dec_rows)
-dec.to_csv(TABLES_DIR / "decomposition_summary.csv", index=False)
-print(f"\nSaved: {TABLES_DIR / 'decomposition_summary.csv'}")
+dec.to_csv(TABLES_DIR / f"decomposition_summary{_suffix}.csv", index=False)
+print(f"\nSaved: {TABLES_DIR / f'decomposition_summary{_suffix}.csv'}")
 
 
 # %%
 # =============================================================================
 # PART B -- marginal vs conditional correlations (full features, all sweeps)
+# Descriptive only (uses all data, no split) -- unaffected by --single-split /
+# --allow-twin-split, so always saved under the plain (no-suffix) name.
 # =============================================================================
 TBLOCK = 2.0
 MIN_N_PART = 30
@@ -251,7 +331,7 @@ def _short(name):
 
 cond_rows = []
 for sensor, label in (("AE", "AE"), ("UL", "US")):
-    all_cols = feature_selection[sensor]["all_columns"]
+    all_cols = true_all_columns[sensor]
     ren = [_rename(c, label) for c in all_cols]
     m = df["sensor"] == sensor
     d = df.loc[m, all_cols].reset_index(drop=True)

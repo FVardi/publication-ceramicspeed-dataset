@@ -691,3 +691,25 @@ def clean_features(
     )
 
     return df, metadata, report
+
+
+def true_candidate_columns(
+    feat_df: pd.DataFrame,
+    meta_df: pd.DataFrame,
+    sensor: str,
+    rpm_max: float | None,
+) -> list[str]:
+    """The genuinely full, target-independent candidate feature set for one
+    sensor: only NaN/Inf handling, constant-column removal, and the RPM
+    filter -- none of it informed by the regression target.
+
+    Do not substitute a feature_selection.json "all_columns" field for this:
+    if that field was captured *after* a whole-dataset correlation filter
+    against the target, it is not actually the full candidate set and is not
+    safe to call "full" in a leak-free comparison.
+    """
+    mask = feat_df["sensor"] == sensor
+    f = feat_df.loc[mask].reset_index(drop=True).dropna(axis=1, how="all")
+    m = meta_df.loc[mask].reset_index(drop=True)
+    cleaned, _, _ = clean_features(f, m, rpm_max=rpm_max, nan_strategy="drop", drop_constant=True)
+    return [c for c in cleaned.columns if c not in ("file", "sweep", "sensor")]

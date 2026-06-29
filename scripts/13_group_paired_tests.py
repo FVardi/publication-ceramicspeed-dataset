@@ -13,19 +13,25 @@ for two questions:
      full vs selected (per model, per target).
 
 The test unit must be the acquisition-hold GROUP, not the window: windows within
-a hold are near-duplicates, so a window-level test treats ~1326 correlated
-points as independent and grossly overstates significance. We therefore average
-the squared-error differential within each of the 138 holdout groups and apply
-the Harvey et al. (1997) corrected Diebold-Mariano t-test to the 138 group means.
-The naive window-level p-value is reported alongside to make the inflation
-explicit.
+a hold are near-duplicates, so a window-level test treats correlated points as
+independent and grossly overstates significance. We therefore average the
+squared-error differential within each holdout group and apply the Harvey et
+al. (1997) corrected Diebold-Mariano t-test to the group means. The naive
+window-level p-value is reported alongside to make the inflation explicit.
 
 Sign convention: d = e_A^2 - e_B^2, so a NEGATIVE mean differential means model A
 has lower squared error (A is better).
 
+By default, reads the predictions produced by 11_featureset_comparison.py's
+default (recommended) protocol: pooled GroupKFold, operating-point-merged
+groups. Pass --single-split and/or --allow-twin-split to match whichever
+non-default predictions 11_featureset_comparison.py was run with.
+
 Usage
 -----
     python scripts/13_group_paired_tests.py
+    python scripts/13_group_paired_tests.py --single-split
+    python scripts/13_group_paired_tests.py --allow-twin-split
 """
 
 import argparse
@@ -43,6 +49,14 @@ from ceramicspeed.evaluation import diebold_mariano_test  # window-level referen
 
 _p = argparse.ArgumentParser()
 _p.add_argument("--config", type=str, default=None)
+_p.add_argument("--single-split", action="store_true",
+                help="Read predictions from 11_featureset_comparison.py "
+                     "--single-split (single 80/20 holdout) instead of the "
+                     "default pooled GroupKFold predictions.")
+_p.add_argument("--allow-twin-split", action="store_true",
+                help="Read predictions from 11_featureset_comparison.py "
+                     "--allow-twin-split (operating-point twins not merged) "
+                     "instead of the default twin-merged predictions.")
 _args, _ = _p.parse_known_args()
 cfg = load_config(_args.config)
 OUTPUT_DIR = get_output_dir(cfg)
@@ -50,9 +64,18 @@ PRED_DIR = OUTPUT_DIR / "11_featureset_comparison" / "predictions"
 SCRIPT_DIR = OUTPUT_DIR / "13_group_paired_tests"
 SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
 
+_in_suffix_parts = []
+if _args.single_split:
+    _in_suffix_parts.append("singlesplit")
+if _args.allow_twin_split:
+    _in_suffix_parts.append("twinsplit")
+_in_suffix = "" if not _in_suffix_parts else "_" + "_".join(_in_suffix_parts)
+
+_PREFIX = ("holdout_pooled" if not _args.single_split else "holdout") + _in_suffix
+
 
 def _load(model, target, mode):
-    return pd.read_csv(PRED_DIR / f"holdout_{model}_{target}_{mode}.csv")
+    return pd.read_csv(PRED_DIR / f"{_PREFIX}_{model}_{target}_{mode}.csv")
 
 
 def _harvey_dm(d_group: np.ndarray, alternative: str = "two-sided"):
@@ -114,8 +137,10 @@ for model in MODELS:
             r = {"model": model, "feature_set": mode, "contrast": f"Combined vs {single}", **r}
             comp_rows.append(r)
 
+_out_suffix = _in_suffix
+
 comp = pd.DataFrame(comp_rows)
-comp.to_csv(SCRIPT_DIR / "complementarity_tests.csv", index=False)
+comp.to_csv(SCRIPT_DIR / f"complementarity_tests{_out_suffix}.csv", index=False)
 
 # --- B. Full vs selected: same model + target -------------------------------
 fs_rows = []
@@ -129,7 +154,7 @@ for model in MODELS:
         fs_rows.append(r)
 
 fs = pd.DataFrame(fs_rows)
-fs.to_csv(SCRIPT_DIR / "full_vs_selected_tests.csv", index=False)
+fs.to_csv(SCRIPT_DIR / f"full_vs_selected_tests{_out_suffix}.csv", index=False)
 
 # --- Report -----------------------------------------------------------------
 _cols_comp = ["model", "feature_set", "contrast", "n_groups",
@@ -147,8 +172,8 @@ print("B. FULL vs SELECTED  (negative dMSE = full better)")
 print("=" * 90)
 print(fs[_cols_fs].to_string(index=False))
 
-print(f"\nSaved: {SCRIPT_DIR / 'complementarity_tests.csv'}")
-print(f"Saved: {SCRIPT_DIR / 'full_vs_selected_tests.csv'}")
+print(f"\nSaved: {SCRIPT_DIR / f'complementarity_tests{_out_suffix}.csv'}")
+print(f"Saved: {SCRIPT_DIR / f'full_vs_selected_tests{_out_suffix}.csv'}")
 
 if __name__ == "__main__":
     print("\n13_group_paired_tests complete.")

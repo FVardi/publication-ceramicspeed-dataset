@@ -9,9 +9,13 @@ Produces (outputs/14_new_method_figures/):
   comparison_table.png            rendered model x feature-set summary table
   holdout_r2_bars.png             holdout R2 bar chart (full vs selected)
   cv_vs_holdout_r2.png            CV(grouped) vs holdout R2, all configs
-  predvactual_<model>_<split>.png 2x3 predicted-vs-actual grids (rows full/
-                                  selected, cols AE/US/Combined), coloured by RPM
+  predvactual_<model>.png         2x3 predicted-vs-actual grids (rows full/
+                                  selected, cols AE/US/Combined), coloured by
+                                  RPM, over the pooled held-out predictions
   marginal_vs_conditional_full.png  paper-style 2-panel figure, ALL features
+
+Reads the DEFAULT (pooled GroupKFold, operating-point-merged) outputs of
+11_featureset_comparison.py. Run that (and 12_fullset_decomposition.py) first.
 
 Usage
 -----
@@ -112,14 +116,16 @@ print("Saved: cv_vs_holdout_r2.png")
 # =============================================================================
 # 2. Predicted-vs-actual grids (CV + holdout), coloured by RPM
 # =============================================================================
-def _pred_grid(split):
-    prefix = "cv" if split == "cv" else "holdout"
+def _pred_grid():
+    """Predicted-vs-actual grid over the pooled held-out predictions (every
+    group held out exactly once across all folds, by a model that never saw
+    it during selection/tuning/training)."""
     for model in MODELS:
         fig, axes = plt.subplots(2, 3, figsize=(15, 9.5), sharex=True, sharey=True)
         for r, mode in enumerate(MODES):
             for c, target in enumerate(TARGETS):
                 ax = axes[r][c]
-                fp = PRED_DIR / f"{prefix}_{model}_{target}_{mode}.csv"
+                fp = PRED_DIR / f"holdout_pooled_{model}_{target}_{mode}.csv"
                 if not fp.exists():
                     ax.set_visible(False); continue
                 d = pd.read_csv(fp)
@@ -135,16 +141,14 @@ def _pred_grid(split):
                 if r == 1:
                     ax.set_xlabel("true κ")
         fig.colorbar(sc, ax=axes, label="RPM", shrink=0.6, pad=0.01)
-        ttl = "out-of-fold CV" if split == "cv" else "holdout"
-        fig.suptitle(f"{model} — predicted vs true κ ({ttl})", fontsize=13)
-        fig.savefig(FIG_DIR / f"predvactual_{model.lower()}_{split}.png",
+        fig.suptitle(f"{model} — predicted vs true κ (pooled held-out)", fontsize=13)
+        fig.savefig(FIG_DIR / f"predvactual_{model.lower()}.png",
                     dpi=DPI, bbox_inches="tight")
         plt.close()
-        print(f"Saved: predvactual_{model.lower()}_{split}.png")
+        print(f"Saved: predvactual_{model.lower()}.png")
 
 
-_pred_grid("holdout")
-_pred_grid("cv")
+_pred_grid()
 
 
 # %%

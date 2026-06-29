@@ -5,6 +5,8 @@
 
 \subsection{Waveforms and spectrograms}
 
+The waveforms of four different segments for both of the AE and US channels are seen in Figure~\ref{fig:waveforms}, and the spectrograms of all segments over time are seen in Figure~\ref{fig:spectrograms}. AE and US qualitatively display clearly different waveforms and frequency content in all segments. AE in general contains spectral energy from 0Hz to 1MHz as expected from the AE sensor and band-pass filter applied during data acquisition. Significant signal energy is, however, present at frequencies above 1MHz during low-speed segments. No physical interpretation is applied to this, and the content above 1MHz is excluded from all subsequent analysis.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/eda_waveforms.png}
@@ -12,32 +14,17 @@
 \label{fig:waveforms}
 \end{figure}
 
-
-Spectrograms of the raw signals, ordered chronologically by sweep, are shown in Figure~\ref{fig:spectrograms} to illustrate the frequency content and its variation with operating conditions across the protocol.
-
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/eda_spectrogram_chronological.png}
-\caption{Spectrograms of the raw AE and US ordered by sweep number (chronological). The dashed lines show the sub-bands which are later used in feature generation. }
+\caption{Spectrograms of the raw AE and US ordered by sweep number (chronological). PSD is calculated with Welch's method, Hann windows, 50\% overlap, and }
 \label{fig:spectrograms}
 \end{figure}
 
 \subsection{Sub-band decomposition}
 \label{subsec:filter_bands}
 
-The AE and US signals are decomposed into frequency sub-bands prior to feature
-extraction, since the information on lubrication conditions contained in the signals
-is expected to be localised in sub-bands rather than wholly contained in the broadband
-signals~\cite{renhart_ae_2021, zhang_coupled_2026}. Adaptive decompositions such as symplectic geometry mode decomposition offer data-driven alternatives for isolating informative components~\cite{pan_sgmd_2019}; fixed, physically motivated bands are preferred here so that features remain directly comparable across sweeps and interpretable against the sensing physics.
-For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz which contain bands of spectral energy which upon visual inspection of Figure~\ref{fig:spectrograms} vary with the operating conditions. Content above the
-\SI{1}{MHz} coupler low-pass (Section~\ref{subsec:sensors}) is excluded from the
-feature set. For the US channel, the signal spans the
-probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband (Section~\ref{subsec:origins}), and 20--100~kHz capturing the above-baseband content
-whose information value is assessed empirically.
-The sub-bands are summarised in Table~\ref{tab:subbands}.
-All decompositions use 5th-order Butterworth filters applied forward--backward
-(\texttt{sosfiltfilt}), giving zero phase distortion and a 10th-order effective
-magnitude response.
+The AE and US signals are decomposed into frequency sub-bands prior to feature extraction, since the information on lubrication conditions contained in the signals is expected to be localised in sub-bands rather than in broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}. For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz which contain bands of spectral energy which upon visual inspection of Figure~\ref{fig:spectrograms} vary with the operating conditions. Content above the \SI{1}{MHz} coupler low-pass is excluded from the feature set. For the US channel, the signal spans the probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband, and 20--100~kHz capturing the above-baseband content whose information value is assessed empirically. The sub-bands are summarised in Table~\ref{tab:subbands}. All decompositions use 5th-order Butterworth filters applied forward--backward giving zero phase distortion and a 10th-order effective magnitude response.
 
 \begin{table}[htbp]
 \caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
@@ -58,19 +45,6 @@ US & Sub-band 3 & Band-pass & 20--100\,kHz     \\
 \bottomrule
 \end{tabular}}
 \end{table}
-
-
-\subsection{Sub-band signal validation}
-\label{subsec:band_validation}
-
-The retained sub-bands carry bearing-generated content rather than drive EMI. The VFD injects a switching comb at $\approx$4.7~kHz and its harmonics (Section~\ref{subsec:rig}); these lie below the 20~kHz lower edge of the retained AE bands and so cannot masquerade as bearing signal within them. More directly, total band power rises with rotational speed in both bands---$\rho = \resRhoPowRpmLow$ for 20--500~kHz (at 45--55~\si{\celsius}) and $\rho = \resRhoPowRpmMid$ for 500~kHz--1~MHz (Figure~\ref{fig:band_power})---as expected for mechanically generated contact and rolling noise~\cite{miettinen_analysis_2001, zhang_coupled_2026}, rather than the fixed-frequency behaviour of an electromagnetic-interference source.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.7\textwidth]{band_power_vs_rpm.png}
-\caption{Total power of the two retained AE sub-bands as a function of RPM at fixed temperature windows. Both bands rise with speed, consistent with mechanically generated emission.}
-\label{fig:band_power}
-\end{figure}
 
 \subsection{Feature extraction}
 \label{subsec:features_extract}

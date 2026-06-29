@@ -1,9 +1,9 @@
 model,feature_set,contrast,A,B,n_windows,n_groups,mean_dMSE(A-B),dm_stat,p_group,p_window_naive,better
-ElasticNet,full,Combined vs AE,ElasticNet_Combined_full,ElasticNet_AE_full,1326,138,-0.01272,-4.062,0.0001,0.0,ElasticNet_Combined_full
-ElasticNet,full,Combined vs US,ElasticNet_Combined_full,ElasticNet_US_full,1326,138,-0.01075,-3.692,0.0003,0.0,ElasticNet_Combined_full
-ElasticNet,selected,Combined vs AE,ElasticNet_Combined_selected,ElasticNet_AE_selected,1326,138,-0.01029,-2.72,0.0074,0.0,ElasticNet_Combined_selected
-ElasticNet,selected,Combined vs US,ElasticNet_Combined_selected,ElasticNet_US_selected,1326,138,-0.01023,-2.755,0.0067,0.0,ElasticNet_Combined_selected
-LightGBM,full,Combined vs AE,LightGBM_Combined_full,LightGBM_AE_full,1326,138,-0.00145,-1.495,0.1371,0.0,LightGBM_Combined_full
-LightGBM,full,Combined vs US,LightGBM_Combined_full,LightGBM_US_full,1326,138,-0.00936,-3.171,0.0019,0.0,LightGBM_Combined_full
-LightGBM,selected,Combined vs AE,LightGBM_Combined_selected,LightGBM_AE_selected,1326,138,-0.00247,-0.982,0.328,0.0,LightGBM_Combined_selected
-LightGBM,selected,Combined vs US,LightGBM_Combined_selected,LightGBM_US_selected,1326,138,-0.01941,-5.453,0.0,0.0,LightGBM_Combined_selected
+ElasticNet,full,Combined vs AE,ElasticNet_Combined_full,ElasticNet_AE_full,8548,522,-0.01558,-11.008,0.0,0.0,ElasticNet_Combined_full
+ElasticNet,full,Combined vs US,ElasticNet_Combined_full,ElasticNet_US_full,8548,522,-0.00464,-4.659,0.0,0.0,ElasticNet_Combined_full
+ElasticNet,selected,Combined vs AE,ElasticNet_Combined_selected,ElasticNet_AE_selected,8548,522,-0.02013,-10.19,0.0,0.0,ElasticNet_Combined_selected
+ElasticNet,selected,Combined vs US,ElasticNet_Combined_selected,ElasticNet_US_selected,8548,522,-0.00846,-4.676,0.0,0.0,ElasticNet_Combined_selected
+LightGBM,full,Combined vs AE,LightGBM_Combined_full,LightGBM_AE_full,8548,522,-0.00289,-5.628,0.0,0.0,LightGBM_Combined_full
+LightGBM,full,Combined vs US,LightGBM_Combined_full,LightGBM_US_full,8548,522,-0.00693,-7.612,0.0,0.0,LightGBM_Combined_full
+LightGBM,selected,Combined vs AE,LightGBM_Combined_selected,LightGBM_AE_selected,8548,522,-0.00577,-8.378,0.0,0.0,LightGBM_Combined_selected
+LightGBM,selected,Combined vs US,LightGBM_Combined_selected,LightGBM_US_selected,8548,522,-0.01979,-9.694,0.0,0.0,LightGBM_Combined_selected
