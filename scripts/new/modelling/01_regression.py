@@ -1,7 +1,13 @@
 """
 11_featureset_comparison.py
 ===========================
-Leak-free protocol + full-vs-selected feature-set comparison.
+Leak-free kappa-regression on the FULL candidate feature set.
+
+NOTE: the VIF-"selected" feature set was removed (2026-06-29) -- the pipeline
+now models the full candidate set only (ElasticNet + LightGBM). Earlier versions
+also ran a leak-free "selected" set for comparison; that is gone. Script/file
+names keep the "featureset_comparison" prefix for continuity with downstream
+scripts (13/14).
 
 Default (recommended) protocol
 -------------------------------
@@ -30,30 +36,21 @@ Default (recommended) protocol
        are therefore merged into one group before any split/CV, so twins are
        always kept together. Use --allow-twin-split to disable this and
        compare against the more permissive (twin-leakage-prone) grouping.
-    3. Feature selection run on the **training partition only** (leak-free),
-       via ceramicspeed.analysis.select_features.
-    4. Hyperparameters tuned (if --tune-lightgbm), and the CV estimate
+    3. Hyperparameters tuned (if --tune-lightgbm), and the CV estimate
        computed, by inner GroupKFold on the training partition.
-    5. No nested CV: tuning/selection/fitting never see the held-out fold.
+    4. No nested CV: tuning/fitting never see the held-out fold.
 
-It runs ElasticNet and LightGBM for two feature sets so their performance can
-be compared:
+It runs ElasticNet and LightGBM on the **full candidate feature set** (all
+candidate features, no selection -- regularisation/tree structure handle
+redundancy, and this is leak-free by construction). The candidate set is
+computed fresh from only target-independent cleaning (NaN/Inf handling,
+constant-column removal, RPM filter) via cleaning.true_candidate_columns -- it
+deliberately does NOT reuse feature_selection.json's "all_columns", which
+02_feature_analysis.py captures *after* a whole-dataset, kappa-correlated filter
+has already discarded most candidate columns. True candidate counts: AE 42,
+US 56.
 
-    * "selected" : Stage 1 (|rho|,|r| >= corr_min) + Stage 2 (iterative VIF),
-                   fit on the training rows only.
-    * "full"     : all candidate features, no selection (regularisation only;
-                   this is leak-free by construction). The candidate set is
-                   computed fresh from only target-independent cleaning
-                   (NaN/Inf handling, constant-column removal, RPM filter) --
-                   it deliberately does NOT reuse feature_selection.json's
-                   "all_columns", which 02_feature_analysis.py captures *after*
-                   a whole-dataset, kappa-correlated filter has already
-                   discarded most candidate columns (AE: 84->36, UL: 84->35).
-                   That field is not actually "full".
-
-Rows are held identical across the two feature sets (validity is computed over
-the full candidate set) so any difference reflects the feature set, not sample
-count. Per-sweep holdout predictions are saved with acquisition-group ids so
+Per-sweep holdout predictions are saved with acquisition-group ids so
 group-paired significance tests can be run downstream.
 
 Tuned LightGBM (--tune-lightgbm)
@@ -101,7 +98,6 @@ from ceramicspeed.loading import load_parquet_pair
 from ceramicspeed.cleaning import filter_by_metadata, true_candidate_columns
 from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.config import load_config, get_output_dir
-from ceramicspeed.analysis import select_features
 from ceramicspeed.grouping import derive_hold_groups, merge_twin_groups
 
 
@@ -146,12 +142,15 @@ args = parse_args()
 cfg = load_config(args.config)
 
 OUTPUT_DIR = get_output_dir(cfg)
-SCRIPT_DIR = OUTPUT_DIR / "11_featureset_comparison"
+NEW_DIR = OUTPUT_DIR / "new"
+SCRIPT_DIR = NEW_DIR / "regression"
 PRED_DIR = SCRIPT_DIR / "predictions"
 PRED_DIR.mkdir(parents=True, exist_ok=True)
 
 D_PW_MM = cfg["bearing"]["d_pw_mm"]
 RPM_MAX = cfg["filters"]["rpm_max"]
+RPM_MIN = cfg["filters"].get("rpm_min", 0.0)  # drop startup/standstill transients
+TEMP_MIN = cfg["filters"].get("temp_min", None)  # drop sub-floor cold-start
 RANDOM_STATE = cfg.get("random_state", 42)
 
 model_cfg = cfg.get("modelling", {})
@@ -159,10 +158,6 @@ CV_N_SPLITS = model_cfg.get("cv_n_splits", 5)
 TEST_SIZE = model_cfg.get("test_size", 0.2)
 GROUPED_SPLIT = bool(model_cfg.get("grouped_split", True))
 N_FOLDS = args.n_folds or CV_N_SPLITS
-
-fs_cfg = cfg.get("feature_selection", {})
-CORR_MIN = fs_cfg.get("corr_min", 0.1)
-VIF_THRESHOLD = fs_cfg.get("vif_threshold", 5.0)
 
 enet_cfg = model_cfg.get("elastic_net", {})
 ENET_ALPHAS = enet_cfg.get("alphas")
@@ -280,7 +275,7 @@ def grouped_cv_oof(make_est, X, y, groups):
 # =============================================================================
 # Load + filter + kappa
 # =============================================================================
-raw_feature_df, raw_metadata_df = load_parquet_pair(OUTPUT_DIR)
+raw_feature_df, raw_metadata_df = load_parquet_pair(NEW_DIR)
 
 true_all_columns = {
     sensor: true_candidate_columns(raw_feature_df, raw_metadata_df, sensor, RPM_MAX)
@@ -289,7 +284,8 @@ true_all_columns = {
 print(f"True candidate columns (target-independent cleaning only): "
       f"AE={len(true_all_columns['AE'])}, UL={len(true_all_columns['UL'])}")
 
-df, metadata = filter_by_metadata(raw_feature_df, raw_metadata_df, rpm_max=RPM_MAX)
+df, metadata = filter_by_metadata(raw_feature_df, raw_metadata_df,
+                                  rpm_max=RPM_MAX, rpm_min=RPM_MIN, temp_min=TEMP_MIN)
 df = df.reset_index(drop=True)
 metadata = metadata.reset_index(drop=True)
 
@@ -385,7 +381,7 @@ def run_split(train_sweep_idx, test_sweep_idx, fold_id):
     print(f"[fold {fold_id}] Train rows: {len(df_train)}  Test rows: {len(df_test)}")
 
     keyed_train, keyed_test = {}, {}
-    all_cols_renamed, selected_renamed = {}, {}
+    all_cols_renamed = {}
 
     for sensor, all_cols in true_all_columns.items():
         label = _SENSOR_LABEL.get(sensor, sensor)
@@ -396,12 +392,7 @@ def run_split(train_sweep_idx, test_sweep_idx, fold_id):
         keyed_train[sensor], keyed_test[sensor] = ktr, kte
         all_cols_renamed[sensor] = ren
 
-        sel = select_features(  # leak-free: this fold's TRAIN rows only
-            ktr[ren], ktr["kappa"].values,
-            corr_min=CORR_MIN, vif_threshold=VIF_THRESHOLD,
-        )
-        selected_renamed[sensor] = sel
-        print(f"  [fold {fold_id}] {label}: {len(ren)} candidates -> {len(sel)} selected "
+        print(f"  [fold {fold_id}] {label}: {len(ren)} candidate features "
               f"(train n={len(ktr)}, test n={len(kte)})")
 
     comb_train = _combined(keyed_train)
@@ -413,12 +404,12 @@ def run_split(train_sweep_idx, test_sweep_idx, fold_id):
         return keyed_train[target], keyed_test[target]
 
     def _cols_for(target, mode):
-        src = all_cols_renamed if mode == "full" else selected_renamed
+        src = all_cols_renamed
         return (src["AE"] + src["UL"]) if target == "combined" else src[target]
 
     holdout_preds, cv_preds, summary_rows = {}, {}, []
 
-    for mode in ("selected", "full"):
+    for mode in ("full",):
         for target in TARGETS:
             tr, te = _frames(target)
             cols = _cols_for(target, mode)
@@ -578,16 +569,11 @@ if not args.single_split:
 
 comp.to_csv(SCRIPT_DIR / f"featureset_comparison{_suffix}_byfold.csv", index=False)
 
-wide = comp.groupby(["model", "target", "feature_set"], as_index=False)["holdout_r2"].mean()
-wide = wide.pivot_table(
-    index=["model", "target"], columns="feature_set", values="holdout_r2"
-).reset_index()
-if {"full", "selected"}.issubset(wide.columns):
-    wide["delta(full-selected)"] = (wide["full"] - wide["selected"]).round(4)
+wide = comp.groupby(["model", "target"], as_index=False)["holdout_r2"].mean()
 wide.to_csv(SCRIPT_DIR / f"featureset_comparison{_suffix}_wide.csv", index=False)
 
 print("\n" + "=" * 78)
-print("HOLDOUT R2 (per-fold mean) - selected (leak-free) vs full feature set")
+print("HOLDOUT R2 (per-fold mean) - full feature set")
 print("=" * 78)
 print(wide.to_string(index=False))
 print(f"\nSaved tables -> {SCRIPT_DIR}")

@@ -38,14 +38,15 @@ from ceramicspeed.config import load_config, get_output_dir
 
 cfg = load_config()
 OUTPUT_DIR = get_output_dir(cfg)
-PRED_DIR = OUTPUT_DIR / "11_featureset_comparison" / "predictions"
-CM_PATH = OUTPUT_DIR / "12_fullset_decomposition" / "tables" / "cond_vs_marginal_full.csv"
-FIG_DIR = OUTPUT_DIR / "14_new_method_figures"
+NEW_DIR = OUTPUT_DIR / "new"
+PRED_DIR = NEW_DIR / "regression" / "predictions"
+CM_PATH = NEW_DIR / "correlations" / "tables" / "cond_vs_marginal_full.csv"
+FIG_DIR = NEW_DIR / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 MODELS = ["ElasticNet", "LightGBM"]
 TARGETS = ["AE", "US", "Combined"]
-MODES = ["full", "selected"]
+MODES = ["full"]  # selected feature set removed 2026-06-29
 DPI = 150
 
 
@@ -53,7 +54,7 @@ DPI = 150
 # =============================================================================
 # 1. Summary table (rendered) + comparison bars
 # =============================================================================
-comp = pd.read_csv(OUTPUT_DIR / "11_featureset_comparison" / "featureset_comparison.csv")
+comp = pd.read_csv(NEW_DIR / "regression" / "featureset_comparison.csv")
 comp = comp.sort_values(["model", "target", "feature_set"]).reset_index(drop=True)
 
 fig, ax = plt.subplots(figsize=(11, 0.45 * len(comp) + 1.2))
@@ -73,24 +74,22 @@ fig.savefig(FIG_DIR / "comparison_table.png", dpi=DPI, bbox_inches="tight")
 plt.close()
 print("Saved: comparison_table.png")
 
-# Holdout R2 bars, grouped by target
+# Holdout R2 bars, grouped by target (full feature set, per model)
 fig, ax = plt.subplots(figsize=(9, 5))
-bar_keys = [(m, fs) for m in MODELS for fs in MODES]
-colors = {"ElasticNet": ["#9ecae1", "#3182bd"], "LightGBM": ["#fdae6b", "#e6550d"]}
-width = 0.2
+colors = {"ElasticNet": "#3182bd", "LightGBM": "#e6550d"}
+width = 0.35
 x = np.arange(len(TARGETS))
-def _r2(m, t, fs):
-    sub = comp[(comp.model == m) & (comp.target == t) & (comp.feature_set == fs)]
+def _r2(m, t):
+    sub = comp[(comp.model == m) & (comp.target == t)]
     return float(sub["holdout_r2"].values[0]) if len(sub) else np.nan
 
 
-for i, (m, fs) in enumerate(bar_keys):
-    vals = [_r2(m, t, fs) for t in TARGETS]
-    ax.bar(x + (i - 1.5) * width, vals, width,
-           label=f"{m} ({fs})", color=colors[m][MODES.index(fs)])
+for i, m in enumerate(MODELS):
+    vals = [_r2(m, t) for t in TARGETS]
+    ax.bar(x + (i - 0.5) * width, vals, width, label=m, color=colors[m])
 ax.set_xticks(x); ax.set_xticklabels(TARGETS)
 ax.set_ylabel("Holdout R²"); ax.set_ylim(0, 1)
-ax.set_title("Holdout R² — full vs selected feature set")
+ax.set_title("Holdout R² (full feature set)")
 ax.legend(fontsize=8); ax.grid(axis="y", ls=":", alpha=0.5)
 fig.tight_layout(); fig.savefig(FIG_DIR / "holdout_r2_bars.png", dpi=DPI)
 plt.close()
@@ -121,7 +120,8 @@ def _pred_grid():
     group held out exactly once across all folds, by a model that never saw
     it during selection/tuning/training)."""
     for model in MODELS:
-        fig, axes = plt.subplots(2, 3, figsize=(15, 9.5), sharex=True, sharey=True)
+        fig, axes = plt.subplots(len(MODES), 3, figsize=(15, 5 * len(MODES)),
+                                 sharex=True, sharey=True, squeeze=False)
         for r, mode in enumerate(MODES):
             for c, target in enumerate(TARGETS):
                 ax = axes[r][c]
@@ -135,11 +135,10 @@ def _pred_grid():
                 lim = [0, max(d["y_true"].max(), d["y_pred"].max()) * 1.05]
                 ax.plot(lim, lim, "k--", lw=1, alpha=0.6)
                 ax.set_xlim(lim); ax.set_ylim(lim)
-                ax.set_title(f"{target} ({mode})  R²={r2:.3f}", fontsize=10)
+                ax.set_title(f"{target}  R²={r2:.3f}", fontsize=10)
                 if c == 0:
-                    ax.set_ylabel(f"{mode}\npredicted κ")
-                if r == 1:
-                    ax.set_xlabel("true κ")
+                    ax.set_ylabel("predicted κ")
+                ax.set_xlabel("true κ")
         fig.colorbar(sc, ax=axes, label="RPM", shrink=0.6, pad=0.01)
         fig.suptitle(f"{model} — predicted vs true κ (pooled held-out)", fontsize=13)
         fig.savefig(FIG_DIR / f"predvactual_{model.lower()}.png",

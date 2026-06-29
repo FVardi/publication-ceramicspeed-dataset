@@ -34,8 +34,9 @@ from ceramicspeed.config import load_config, get_output_dir
 
 cfg = load_config()
 OUTPUT_DIR = get_output_dir(cfg)
-CM_PATH = OUTPUT_DIR / "12_fullset_decomposition" / "tables" / "cond_vs_marginal_full.csv"
-SCRIPT_DIR = OUTPUT_DIR / "17_feature_oc_table"
+NEW_DIR = OUTPUT_DIR / "new"
+CM_PATH = NEW_DIR / "correlations" / "tables" / "cond_vs_marginal_full.csv"
+SCRIPT_DIR = NEW_DIR / "feature_oc_table"
 SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
 
 _TYPE = {"rms": "amp", "peak": "amp", "std": "amp", "variance": "amp",

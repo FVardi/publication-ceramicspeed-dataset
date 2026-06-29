@@ -69,7 +69,7 @@ OUTPUT_DIR = get_output_dir(cfg)
 # Fall back to the repo-local outputs/ when the configured machine profile
 # does not match this machine (same guard as scripts 07-10).
 from pathlib import Path as _P
-_REPO_OUT = _P(__file__).resolve().parent.parent / "outputs"
+_REPO_OUT = _P(__file__).resolve().parent.parent.parent / "outputs"
 if not (OUTPUT_DIR / "features.parquet").exists() and (_REPO_OUT / "features.parquet").exists():
     print(f"NOTE: {OUTPUT_DIR} has no pipeline outputs; falling back to {_REPO_OUT}")
     OUTPUT_DIR = _REPO_OUT

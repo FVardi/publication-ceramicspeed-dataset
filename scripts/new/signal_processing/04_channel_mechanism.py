@@ -48,8 +48,9 @@ from ceramicspeed.config import load_config, get_output_dir
 
 cfg = load_config()
 OUTPUT_DIR = get_output_dir(cfg)
-CM_PATH = OUTPUT_DIR / "12_fullset_decomposition" / "tables" / "cond_vs_marginal_full.csv"
-SCRIPT_DIR = OUTPUT_DIR / "16_channel_mechanism"
+NEW_DIR = OUTPUT_DIR / "new"
+CM_PATH = NEW_DIR / "correlations" / "tables" / "cond_vs_marginal_full.csv"
+SCRIPT_DIR = NEW_DIR / "channel_mechanism"
 TABLES_DIR = SCRIPT_DIR / "tables"
 FIG_DIR = SCRIPT_DIR / "figures"
 for d in (TABLES_DIR, FIG_DIR):
@@ -57,6 +58,8 @@ for d in (TABLES_DIR, FIG_DIR):
 
 D_PW = cfg["bearing"]["d_pw_mm"]
 RPM_MAX = cfg["filters"]["rpm_max"]
+RPM_MIN = cfg["filters"].get("rpm_min", 0.0)  # drop startup/standstill transients
+TEMP_MIN = cfg["filters"].get("temp_min", None)  # drop sub-floor cold-start
 RANDOM_STATE = cfg.get("random_state", 42)
 DPI = 150
 
@@ -159,8 +162,9 @@ print("Saved: coupling_by_type.png")
 # =============================================================================
 from ceramicspeed.cleaning import true_candidate_columns
 
-raw_feat, raw_meta = load_parquet_pair(OUTPUT_DIR)
-df, metadata = filter_by_metadata(raw_feat, raw_meta, rpm_max=RPM_MAX)
+raw_feat, raw_meta = load_parquet_pair(NEW_DIR)
+df, metadata = filter_by_metadata(raw_feat, raw_meta, rpm_max=RPM_MAX,
+                                  rpm_min=RPM_MIN, temp_min=TEMP_MIN)
 df = df.reset_index(drop=True); metadata = metadata.reset_index(drop=True)
 
 _SENSOR_LABEL = {"UL": "US"}

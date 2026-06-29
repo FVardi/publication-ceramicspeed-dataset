@@ -4,4 +4,4 @@ ElasticNet,US,full vs selected,ElasticNet_US_full,ElasticNet_US_selected,8548,52
 ElasticNet,Combined,full vs selected,ElasticNet_Combined_full,ElasticNet_Combined_selected,8548,522,-0.0187,-11.985,0.0,0.0,ElasticNet_Combined_full
 LightGBM,AE,full vs selected,LightGBM_AE_full,LightGBM_AE_selected,8548,522,-0.00432,-5.486,0.0,0.0,LightGBM_AE_full
 LightGBM,US,full vs selected,LightGBM_US_full,LightGBM_US_selected,8548,522,-0.0143,-7.04,0.0,0.0,LightGBM_US_full
-LightGBM,Combined,full vs selected,LightGBM_Combined_full,LightGBM_Combined_selected,8548,522,-0.00144,-1.444,0.1494,0.664094,LightGBM_Combined_full
+LightGBM,Combined,full vs selected,LightGBM_Combined_full,LightGBM_Combined_selected,8548,522,-0.00144,-1.444,0.1494,0.664095,LightGBM_Combined_full

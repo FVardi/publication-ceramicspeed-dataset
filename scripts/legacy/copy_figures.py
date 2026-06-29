@@ -18,7 +18,7 @@ import re
 import shutil
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 TEX_FILE = ROOT / "paper" / "main.tex"
 OUTPUT_DIR = ROOT / "outputs"
 DEST_DIR = ROOT / "paper" / "figures"

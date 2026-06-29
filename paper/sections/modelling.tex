@@ -5,7 +5,20 @@
 \subsection{Experimental design}
 \label{subsec:modelling_design}
 \subsubsection{Data sets and splits}
-The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. Each dataset is divided into a training set (80\%) and a hold-out test set (20\%) by a \emph{visit-grouped} split: sweeps are partitioned into groups corresponding to contiguous 60-second RPM holds (both sensor rows of a sweep kept together), and whole groups---rather than individual sweeps---are assigned to the training or hold-out set with \texttt{GroupShuffleSplit}. This prevents the near-duplicate windows of a single slowly-varying hold from straddling the train/test boundary, as a sweep-level random split would allow. The hold-out set is withheld entirely from all model development steps and used only for final evaluation. The training set is further divided during nested cross-validation described in Section~\ref{subsec:nested_cv}.
+The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets.
+
+The segments, which features are calculated from, are grouped to avoid soft leakage of information. Segments which are collected close to each other in time or under matching operating conditions are considered similar. The grouping protocol specifically consists of the following steps:
+\begin{itemize}
+\item All segments collected during the same 60s operating condition hold are grouped together.
+\item All groups which share mean RPM and temperature \todo{Check that it is mean and what the thresholds are} are grouped together.
+\end{itemize}
+
+This results in \todo{Insert number of groups} groups of segments which cannot be split across training, validation, and testing, avoiding soft leakage of features from segments collected under overly similar operating conditions.
+
+These grouped feature sets undergo a nested 5-fold cross-validation protocol. 
+
+
+
 \subsubsection{Model families}
 Three regression model families are evaluated for three sensor configurations,
 as summarised in Table~\ref{tab:model_families}.
@@ -16,15 +29,8 @@ as summarised in Table~\ref{tab:model_families}.
 \toprule
 \textbf{Model} & \textbf{Rationale} & \textbf{Hyperparameters \& tuning} \\
 \midrule
-Elastic Net &
-  $\ell_1$+$\ell_2$ regularised linear model; $\ell_1$ promotes sparsity, $\ell_2$ stabilises correlated features. &
-  $\alpha$ (9 values, $10^{-4}$--$10^{2}$) $\times$ $\ell_1$ ratio (6 values, $0.1$--$1.0$); \texttt{ElasticNetCV}, inner 5-fold. \\[4pt]
-Polynomial (deg.\ 2) &
-  Augments linear model with all pairwise interaction terms; remains linear in parameters. &
-  Ridge penalty $\lambda$ (15 log-spaced values, $10^{-3}$--$10^{4}$); \texttt{RidgeCV} (leave-one-out) within each outer fold. \\[4pt]
-LightGBM &
-  Gradient-boosted trees; captures non-linear feature--$\kappa$ mappings and high-order interactions. &
-  Learning rate, num.\ leaves, max.\ depth, min.\ child samples, $\ell_2$ reg.; Bayesian optimisation (Optuna TPE, 20~trials per outer fold). \\
+Elastic Net & $\ell_1$+$\ell_2$ regularised linear model; $\ell_1$ promotes sparsity, $\ell_2$ stabilises correlated features. & $\alpha$ (9 values, $10^{-4}$--$10^{2}$) $\times$ $\ell_1$ ratio (6 values, $0.1$--$1.0$); \texttt{ElasticNetCV}, inner 5-fold. \\[4pt]
+LightGBM & Gradient-boosted trees; captures non-linear feature--$\kappa$ mappings and high-order interactions. & Learning rate, num.\ leaves, max.\ depth, min.\ child samples, $\ell_2$ reg.; Bayesian optimisation (Optuna TPE, 20~trials per outer fold). \\
 \bottomrule
 \end{tabular}
 \caption{Regression model families: rationale and hyperparameter tuning strategy.}

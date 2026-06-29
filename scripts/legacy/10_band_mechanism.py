@@ -53,7 +53,7 @@ from scipy.stats import spearmanr
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import importlib.util as _ilu

@@ -10,25 +10,23 @@ The waveforms of four different segments for both of the AE and US channels are 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/eda_waveforms.png}
-\caption{Waveforms of AE and US signals from the same sweeps for different values of $\kappa$. AE shows clear pulses of energy from asperity contacts which modulate the signal afterwards. US shows a more regular, lower frequency, non-stationary waveform.}
+\caption{Waveforms of AE and US signals from the same segments for different values of $\kappa$. AE shows clear pulses of energy from asperity contacts which modulate the signal afterwards. US shows a more regular, lower frequency, non-stationary waveform.}
 \label{fig:waveforms}
-\end{figure}
+\end{figure}\todo{Select new files. The first file shows weird waveforms for both AE and US (clipping)}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/eda_spectrogram_chronological.png}
-\caption{Spectrograms of the raw AE and US ordered by sweep number (chronological). PSD is calculated with Welch's method, Hann windows, 50\% overlap, and }
+\caption{Spectrograms of the raw AE and US ordered by segment number (chronological). PSD is calculated with Welch's method, Hann windows, 50\% overlap, and }
 \label{fig:spectrograms}
-\end{figure}
+\end{figure}\todo{Finalize specrogramsw with correct colors, ranges, and dashed lines for sub-bands}
 
 \subsection{Sub-band decomposition}
 \label{subsec:filter_bands}
 
-The AE and US signals are decomposed into frequency sub-bands prior to feature extraction, since the information on lubrication conditions contained in the signals is expected to be localised in sub-bands rather than in broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}. For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz which contain bands of spectral energy which upon visual inspection of Figure~\ref{fig:spectrograms} vary with the operating conditions. Content above the \SI{1}{MHz} coupler low-pass is excluded from the feature set. For the US channel, the signal spans the probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband, and 20--100~kHz capturing the above-baseband content whose information value is assessed empirically. The sub-bands are summarised in Table~\ref{tab:subbands}. All decompositions use 5th-order Butterworth filters applied forward--backward giving zero phase distortion and a 10th-order effective magnitude response.
+The AE and US signals are decomposed into frequency sub-bands prior to feature extraction, since the information on lubrication conditions contained in the signals is expected to be more localised in sub-bands than in broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}. For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz, containing bands of spectral energy which upon visual inspection of Figure~\ref{fig:spectrograms} vary with the operating conditions. Content above the \SI{1}{MHz} coupler low-pass is excluded from the feature set. For the US channel, the signal spans the probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband, and 20--100~kHz capturing the above-baseband content whose information value is assessed empirically. The sub-bands are summarised in Table~\ref{tab:subbands}. All decompositions use 5th-order Butterworth filters applied forward--backward giving zero phase distortion and a 10th-order effective magnitude response.
 
 \begin{table}[htbp]
-\caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
-\label{tab:subbands}
 \centering
 {\small\setstretch{1}%
 \begin{tabular}{@{} l l l r @{}}
@@ -44,12 +42,14 @@ US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
 US & Sub-band 3 & Band-pass & 20--100\,kHz     \\
 \bottomrule
 \end{tabular}}
-\end{table}
+\caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
+\label{tab:subbands}
+\end{table}\todo{Should there not be a filter which filters for the broadband AE?}
 
-\subsection{Feature extraction}
+\subsection{Feature set}
 \label{subsec:features_extract}
 
-Features are computed from the voltage signal of each sweep--sensor pair, for the broadband signal and for each sub-band. In total 14 features are computed, comprising 8 time-domain and 6 frequency-domain statistics, as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately canonical: commonly used companions such as standard deviation, variance, peak, impulse factor, and RMS frequency are exact transforms or products of the retained features (e.g.\ $\mathrm{std}=\mathrm{RMS}$ for zero-mean band-filtered signals; $\mathrm{peak}=\mathrm{crest}\times\mathrm{RMS}$; $\mathrm{impulse}=\mathrm{crest}\times\mathrm{shape}$; and the RMS frequency satisfies $f_{\mathrm{RMS}}^2 = f_c^2 + \sigma_w^2$, where $f_c$ is the spectral centroid and $\sigma_w$ the spectral bandwidth) and are therefore omitted, so that no candidate feature is a deterministic function of another. The frequency-centroid information that RMS frequency would carry is instead represented by Hjorth mobility, its time-domain counterpart: $\text{mobility} = \sqrt{\operatorname{Var}(x')/\operatorname{Var}(x)}$ estimates the signal's mean frequency ($\text{mobility} \approx 2\pi f_{\mathrm{RMS}}$) from the variances of the signal and its time derivative $x'$. Because it is obtained from these time-domain variances rather than from the spectral moments, it is not an exact function of $f_c$ and $\sigma_w$, and is therefore retained as an independent feature. All retained features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
+Features are computed from the voltage signal of each segment--sensor pair, for the broadband signal and for each sub-band. In total 14 features are computed, comprising 8 time-domain and 6 frequency-domain statistics, as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately sought to be canonical: commonly used features such as standard deviation, variance, peak, impulse factor, and RMS frequency are exact transforms or products of the retained features (e.g.\ $\mathrm{std}=\mathrm{RMS}$ for zero-mean band-filtered signals; $\mathrm{peak}=\mathrm{crest}\times\mathrm{RMS}$; $\mathrm{impulse}=\mathrm{crest}\times\mathrm{shape}$; and the RMS frequency satisfies $f_{\mathrm{RMS}}^2 = f_c^2 + \sigma_w^2$, where $f_c$ is the spectral centroid and $\sigma_w$ the spectral bandwidth) and are therefore omitted, so that no candidate feature is a deterministic function of another. All retained features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
 
 \begin{table}[htbp]
 \centering
@@ -68,7 +68,7 @@ Hjorth mobility & $[\operatorname{Var}(x')/\operatorname{Var}(x)]^{1/2}$ & Mean 
 Hjorth complexity & $M(x')/M(x)$ & Spectral spread; increases as the signal departs from a single dominant frequency toward broadband content. \\
 \bottomrule
 \end{tabular}}
-\caption{Time-domain features. Notation: $N$ signal length; $\bar{x}$ sample mean; $\sigma$ population standard deviation; $x_{\text{peak}} = (\max x - \min x)/2$ half the peak-to-peak range.}
+\caption{Time-domain features. Notation: $N$ signal length; $n=1,\ldots,N$; $\bar{x}$ sample mean; $\sigma$ population standard deviation; $x_{\text{peak}} = (\max x - \min x)/2$ half the peak-to-peak range.}
 \label{tab:features}
 \end{table}
 
@@ -87,30 +87,18 @@ Spectral kurtosis & $\sum_k(f_k-f_c)^4 S_k\,/\,(\sigma_w^4\,\Sigma S)$ & Tailedn
 Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Tonal-versus-noise character; near~1 for broadband noise, near~0 for a pure tone. \\
 \bottomrule
 \end{tabular}}
-\caption{Frequency-domain features (companion to Table~\ref{tab:features}).
-  Notation: $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding
+\caption{Frequency-domain features. Notation: $N$ signal length; $k=1,\ldots,N$; $S_k = |X_k|$ one-sided FFT magnitude at bin~$k$; $f_k$ corresponding
   frequency; $\bar{S}$ arithmetic mean of $\{S_k\}$; $\Sigma S = \sum_k S_k$;
   $f_c = (\Sigma S)^{-1}\sum_k f_k S_k$;
   $\sigma_w = \big((\Sigma S)^{-1}\sum_k(f_k-f_c)^2 S_k\big)^{1/2}$.}
 \label{tab:features_freq}
 \end{table}
 
-All frequency-domain features are computed from the one-sided FFT magnitude spectrum
-of the sweep. The spectral skewness and kurtosis are standardised by
-$\sigma_w^p\,\Sigma S$ and are therefore dimensionless and invariant to overall signal
-amplitude, so that spectral-shape information is separated from the amplitude
+All frequency-domain features are computed from the one-sided FFT magnitude spectrum of the sweep. The spectral skewness and kurtosis are standardised by
+$\sigma_w^p\,\Sigma S$ and are therefore dimensionless and invariant to overall signal amplitude, so that spectral-shape information is separated from the amplitude
 information carried by RMS.
 
-\subsection{Candidate feature sets}
-\label{subsec:candidates}
-
 Extracting the 14-feature set independently for the broadband signal and each
-sub-band yields $14 \times 3 = \resNcandAe$~candidate AE features (broadband plus two
-sub-bands) and $14 \times 4 = \resNcandUs$~candidate US features (broadband plus three
-sub-bands) per sweep. Features are named by band and statistic
-(e.g.\ \texttt{AE\_500-1000kHz\_\_mobility}); broadband features carry no band prefix.
+sub-band yields $14 \times 3 = \resNcandAe$~candidate AE features (broadband plus two sub-bands) and $14 \times 4 = \resNcandUs$~candidate US features (broadband plus three sub-bands) per sweep. Features are named by channel, band, and statistic (e.g.\ \texttt{AE\_500-1000kHz\_\_mobility});\todo{Change this one pretties naming has been decided upon.} broadband features carry no band prefix.
 These two candidate sets, and their union (the combined AE+US set,
-$\resNcandAe + \resNcandUs$ features), define the three sensor configurations---AE-only,
-US-only, and combined---evaluated in Sections~\ref{sec:features}--\ref{sec:modelling}.
-The reduction of these candidate sets to compact, non-redundant subsets for modelling
-is described in Section~\ref{sec:features}.
+$\resNcandAe + \resNcandUs$ features), define the three sensor configurations---AE-only, US-only, and combined.

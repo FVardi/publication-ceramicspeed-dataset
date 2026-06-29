@@ -11,6 +11,8 @@ for the new pipeline beyond `14_new_method_figures.py`/`16_channel_mechanism.py`
 
 ## ⚠ 2026-06-29: new leak-free pipeline (scripts 11-17) — frozen results below are SUPERSEDED
 
+> **Restructured 2026-06-30:** the new pipeline moved to `scripts/new/` (stage subfolders `signal_processing/` + `modelling/`; owns its own feature generation; outputs now under `outputs/new/`). Legacy moved to `scripts/legacy/` (root-path finders bumped a level, behaviour preserved). The script numbers below (11-19) are the OLD flat names. Current structure, run command, and results: `docs/pipeline/new_pipeline_summary.md`.
+
 A long investigation (separate from the Gate 1-8 walkthrough below, triggered by
 re-checking the LightGBM/Combined complementarity claim) found and fixed several
 issues in the modelling protocol, using a new, simplified, leak-free pipeline

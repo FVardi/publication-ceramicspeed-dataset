@@ -5,12 +5,11 @@ Group-paired significance tests on the new-pipeline holdout predictions.
 
 Reads the per-sweep holdout predictions saved by 11_featureset_comparison.py
 (file, sweep, group, y_true, y_pred) and runs modified Diebold-Mariano tests
-for two questions:
+for complementarity -- does combining channels beat the best single channel?
+Combined vs AE and Combined vs US, per model, on the full feature set.
 
-  A. Complementarity -- does combining channels beat the best single channel?
-     Combined vs AE  and  Combined vs US   (per model, per feature set).
-  B. Full vs selected -- does dropping the selection gate change accuracy?
-     full vs selected (per model, per target).
+(The full-vs-selected test was removed with the selected feature set on
+2026-06-29; the pipeline models the full candidate set only.)
 
 The test unit must be the acquisition-hold GROUP, not the window: windows within
 a hold are near-duplicates, so a window-level test treats correlated points as
@@ -60,8 +59,9 @@ _p.add_argument("--allow-twin-split", action="store_true",
 _args, _ = _p.parse_known_args()
 cfg = load_config(_args.config)
 OUTPUT_DIR = get_output_dir(cfg)
-PRED_DIR = OUTPUT_DIR / "11_featureset_comparison" / "predictions"
-SCRIPT_DIR = OUTPUT_DIR / "13_group_paired_tests"
+NEW_DIR = OUTPUT_DIR / "new"
+PRED_DIR = NEW_DIR / "regression" / "predictions"
+SCRIPT_DIR = NEW_DIR / "group_paired_tests"
 SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
 
 _in_suffix_parts = []
@@ -123,57 +123,34 @@ def group_paired_test(df_a, df_b, label_a, label_b):
 
 
 MODELS = ["ElasticNet", "LightGBM"]
-MODES = ["full", "selected"]
 
-# --- A. Complementarity: Combined vs each single channel --------------------
+# --- Complementarity: Combined vs each single channel (full feature set) -----
 comp_rows = []
 for model in MODELS:
-    for mode in MODES:
-        comb = _load(model, "Combined", mode)
-        for single in ("AE", "US"):
-            sdf = _load(model, single, mode)
-            r = group_paired_test(comb, sdf, f"{model}_Combined_{mode}",
-                                  f"{model}_{single}_{mode}")
-            r = {"model": model, "feature_set": mode, "contrast": f"Combined vs {single}", **r}
-            comp_rows.append(r)
+    comb = _load(model, "Combined", "full")
+    for single in ("AE", "US"):
+        sdf = _load(model, single, "full")
+        r = group_paired_test(comb, sdf, f"{model}_Combined",
+                              f"{model}_{single}")
+        r = {"model": model, "contrast": f"Combined vs {single}", **r}
+        comp_rows.append(r)
 
 _out_suffix = _in_suffix
 
 comp = pd.DataFrame(comp_rows)
 comp.to_csv(SCRIPT_DIR / f"complementarity_tests{_out_suffix}.csv", index=False)
 
-# --- B. Full vs selected: same model + target -------------------------------
-fs_rows = []
-for model in MODELS:
-    for target in ("AE", "US", "Combined"):
-        full = _load(model, target, "full")
-        sel = _load(model, target, "selected")
-        r = group_paired_test(full, sel, f"{model}_{target}_full",
-                              f"{model}_{target}_selected")
-        r = {"model": model, "target": target, "contrast": "full vs selected", **r}
-        fs_rows.append(r)
-
-fs = pd.DataFrame(fs_rows)
-fs.to_csv(SCRIPT_DIR / f"full_vs_selected_tests{_out_suffix}.csv", index=False)
-
 # --- Report -----------------------------------------------------------------
-_cols_comp = ["model", "feature_set", "contrast", "n_groups",
+_cols_comp = ["model", "contrast", "n_groups",
               "mean_dMSE(A-B)", "dm_stat", "p_group", "p_window_naive", "better"]
-_cols_fs = ["model", "target", "n_groups",
-            "mean_dMSE(A-B)", "dm_stat", "p_group", "p_window_naive", "better"]
 
 print("\n" + "=" * 90)
-print("A. COMPLEMENTARITY  (Combined vs single channel; negative dMSE = Combined better)")
+print("COMPLEMENTARITY  (Combined vs single channel, full feature set; "
+      "negative dMSE = Combined better)")
 print("=" * 90)
 print(comp[_cols_comp].to_string(index=False))
 
-print("\n" + "=" * 90)
-print("B. FULL vs SELECTED  (negative dMSE = full better)")
-print("=" * 90)
-print(fs[_cols_fs].to_string(index=False))
-
 print(f"\nSaved: {SCRIPT_DIR / f'complementarity_tests{_out_suffix}.csv'}")
-print(f"Saved: {SCRIPT_DIR / f'full_vs_selected_tests{_out_suffix}.csv'}")
 
 if __name__ == "__main__":
     print("\n13_group_paired_tests complete.")
