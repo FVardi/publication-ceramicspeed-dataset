@@ -88,10 +88,11 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from joblib import Parallel, delayed
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit, GridSearchCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import ElasticNetCV
+from sklearn.linear_model import ElasticNet
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 from ceramicspeed.loading import load_parquet_pair
@@ -105,14 +106,12 @@ from ceramicspeed.grouping import derive_hold_groups, merge_twin_groups
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=str, default=None)
-    parser.add_argument("--tune-lightgbm", action="store_true",
-                        help="Tune LightGBM via Optuna using GroupKFold on the "
-                             "training partition only (single-level, held-out "
-                             "fold never touched).")
     parser.add_argument("--n-trials", type=int, default=None,
-                        help="Optuna trials per (feature_set, target[, fold]) "
-                             "combination (default: modelling.lightgbm.n_trials "
-                             "from config, or 20).")
+                        help="Optuna trials for LightGBM hyperparameter search "
+                             "per (target, fold) combination (default: "
+                             "modelling.lightgbm.n_trials from config, or 20). "
+                             "Both models are always tuned with group-aware inner "
+                             "GroupKFold; this flag controls LightGBM trial count only.")
     parser.add_argument("--single-split", action="store_true",
                         help="Use a single 80/20 GroupShuffleSplit instead of the "
                              "default pooled GroupKFold over the whole dataset. "
@@ -174,38 +173,54 @@ _SENSOR_LABEL = {"UL": "US"}  # AE keeps its name
 # Model factories — fresh, self-contained estimators (scaling inside the
 # pipeline so it is refit per fold; never leaks across the split).
 # =============================================================================
-def make_enet():
-    return make_pipeline(
-        StandardScaler(),
-        ElasticNetCV(l1_ratio=ENET_L1_RATIOS, alphas=ENET_ALPHAS,
-                     cv=CV_N_SPLITS, max_iter=ENET_MAX_ITER,
-                     random_state=RANDOM_STATE),
-    )
+def _inner_splits_from_groups(groups_tr, group_to_fold):
+    """Derive inner CV splits from the OUTER fold partition rather than
+    re-splitting the training data.
+
+    For an outer k-fold run, each group in the training partition belongs to
+    one of the (k-1) non-holdout outer folds. Using those (k-1) sub-partitions
+    as inner folds means the same group-aware, twin-merged partition governs
+    both levels of the nested CV, with no additional arbitrary re-splitting.
+    Each inner fold holds out one of the (k-1) sub-partitions and trains on
+    the remaining (k-2). For k=5 this gives 4 inner folds, each with ~3/5 of
+    all data as inner training and ~1/5 as inner validation.
+
+    If group_to_fold is None (single-split mode, no outer partition), falls
+    back to GroupKFold(n_splits=4) on the training groups."""
+    if group_to_fold is None:
+        return None  # caller falls back to GroupKFold
+    fold_labels = np.array([group_to_fold[int(g)] for g in groups_tr])
+    inner_folds = sorted(set(fold_labels))
+    splits = []
+    for val_fold in inner_folds:
+        val_mask = fold_labels == val_fold
+        splits.append((np.where(~val_mask)[0], np.where(val_mask)[0]))
+    return splits
 
 
-def make_lgbm():
-    from lightgbm import LGBMRegressor
-    return LGBMRegressor(
-        n_estimators=lgb_cfg.get("n_estimators", 500),
-        learning_rate=lgb_cfg.get("learning_rate", 0.05),
-        max_depth=lgb_cfg.get("max_depth", 6),
-        num_leaves=lgb_cfg.get("num_leaves", 31),
-        min_child_samples=lgb_cfg.get("min_child_samples", 10),
-        subsample=lgb_cfg.get("subsample", 0.8),
-        colsample_bytree=lgb_cfg.get("colsample_bytree", 0.8),
-        reg_alpha=lgb_cfg.get("reg_alpha", 0.0),
-        reg_lambda=lgb_cfg.get("reg_lambda", 1.0),
-        random_state=RANDOM_STATE, verbose=-1,
-    )
+def _tune_enet_hparams(X_tr, y_tr, inner_splits):
+    """Grid search for ElasticNet alpha and l1_ratio using pre-computed
+    inner splits (inherited from the outer fold partition). Returns
+    (best_alpha, best_l1_ratio, best_rmse)."""
+    alphas = ENET_ALPHAS if ENET_ALPHAS else np.logspace(-4, 2, 9).tolist()
+    pipe = make_pipeline(StandardScaler(), ElasticNet(max_iter=ENET_MAX_ITER))
+    param_grid = {
+        "elasticnet__alpha": alphas,
+        "elasticnet__l1_ratio": ENET_L1_RATIOS,
+    }
+    gs = GridSearchCV(pipe, param_grid, cv=inner_splits,
+                      scoring="neg_root_mean_squared_error",
+                      refit=False, n_jobs=-1)
+    gs.fit(X_tr, y_tr)
+    best = gs.best_params_
+    return best["elasticnet__alpha"], best["elasticnet__l1_ratio"], -gs.best_score_
 
 
-def _tune_lgbm_hparams(X_tr, y_tr, groups_tr, n_trials, n_inner_splits=3,
+def _tune_lgbm_hparams(X_tr, y_tr, inner_splits, n_trials,
                         screen_n_estimators=200):
-    """Single-level Optuna search for LightGBM, scored via GroupKFold on the
-    given training rows only. The holdout (or, in --kfold-pool mode, the
-    current outer fold) is never passed to this function, so the resulting
-    hyperparameters are blind to it -- safe to freeze and reuse for the final
-    fit + held-out evaluation."""
+    """Single-level Optuna search for LightGBM scored on the pre-computed
+    inner splits (inherited from the outer fold partition). The holdout fold
+    is never passed here."""
     import optuna
     from lightgbm import LGBMRegressor
 
@@ -225,10 +240,6 @@ def _tune_lgbm_hparams(X_tr, y_tr, groups_tr, n_trials, n_inner_splits=3,
         "max_depth": [4, 6, -1],
     }
 
-    k = min(n_inner_splits, len(np.unique(groups_tr)))
-    inner_cv = GroupKFold(n_splits=k)
-    splits = list(inner_cv.split(X_tr, y_tr, groups_tr))
-
     def objective(trial: "optuna.Trial") -> float:
         params = {
             **base,
@@ -237,7 +248,7 @@ def _tune_lgbm_hparams(X_tr, y_tr, groups_tr, n_trials, n_inner_splits=3,
                for name, choices in param_grid.items()},
         }
         scores = []
-        for itr, ival in splits:
+        for itr, ival in inner_splits:
             m = LGBMRegressor(**params)
             m.fit(X_tr.iloc[itr], y_tr[itr])
             scores.append(float(np.sqrt(mean_squared_error(
@@ -256,15 +267,13 @@ def _tune_lgbm_hparams(X_tr, y_tr, groups_tr, n_trials, n_inner_splits=3,
 
 N_TRIALS_LGBM = args.n_trials or lgb_cfg.get("n_trials", 20)
 
-MODELS = [("ElasticNet", make_enet), ("LightGBM", make_lgbm)]
+MODELS = ["ElasticNet", "LightGBM"]
 
 
-def grouped_cv_oof(make_est, X, y, groups):
-    """Leak-free out-of-fold predictions via GroupKFold (clipped at 0)."""
-    k = min(CV_N_SPLITS, len(np.unique(groups)))
-    gkf = GroupKFold(n_splits=k)
+def grouped_cv_oof(make_est, X, y, inner_splits):
+    """Leak-free out-of-fold predictions on the inherited inner splits."""
     oof = np.full(len(y), np.nan)
-    for tr, va in gkf.split(X, y, groups):
+    for tr, va in inner_splits:
         est = make_est()
         est.fit(X.iloc[tr], y[tr])
         oof[va] = np.clip(est.predict(X.iloc[va]), 0.0, None)
@@ -363,12 +372,15 @@ TARGETS = ["AE", "UL", "combined"]
 _DISPLAY = {"AE": "AE", "UL": "US", "combined": "Combined"}
 
 
-def run_split(train_sweep_idx, test_sweep_idx, fold_id):
+def run_split(train_sweep_idx, test_sweep_idx, fold_id, group_to_fold=None):
     """Run the full leak-free protocol for one train/test sweep partition.
 
-    Returns (holdout_preds, cv_preds, summary_rows): dicts/list keyed by tag
-    (model_target_mode), ready to be saved directly (single-split mode) or
-    accumulated across folds and pooled (--kfold-pool mode).
+    group_to_fold: dict mapping group_id -> outer fold index, used to derive
+    inner CV splits by inheriting the outer partition directly (so the same
+    group-aware, twin-merged partition governs both CV levels). Pass None in
+    single-split mode to fall back to GroupKFold(n_splits=4).
+
+    Returns (holdout_preds, cv_preds, summary_rows).
     """
     train_sweeps = set(
         zip(sweep_keys.iloc[train_sweep_idx]["file"], sweep_keys.iloc[train_sweep_idx]["sweep"]))
@@ -417,24 +429,46 @@ def run_split(train_sweep_idx, test_sweep_idx, fold_id):
             X_te, y_te = te[cols], te["kappa"].values
             g_tr = _groups_for(tr)
 
-            for model_name, default_make_est in MODELS:
+            # Inner splits: inherit the outer fold partition so the same
+            # group-aware twin-merged grouping governs both CV levels.
+            # Falls back to GroupKFold(4) if not enough sub-partitions exist
+            # (single-split mode, or n_folds < 3).
+            inner_splits = _inner_splits_from_groups(g_tr, group_to_fold)
+            if inner_splits is None or len(inner_splits) < 2:
+                k_fb = min(4, len(np.unique(g_tr)))
+                inner_splits = list(GroupKFold(n_splits=k_fb).split(X_tr, y_tr, g_tr))
+
+            for model_name in MODELS:
                 tag = f"{model_name}_{_DISPLAY[target]}_{mode}"
-                make_est = default_make_est
                 tuned_params, tuned_rmse = None, None
                 try:
-                    if model_name == "LightGBM" and args.tune_lightgbm:
+                    if model_name == "ElasticNet":
+                        alpha, l1_ratio, tuned_rmse = _tune_enet_hparams(
+                            X_tr, y_tr, inner_splits,
+                        )
+                        tuned_params = {"alpha": alpha, "l1_ratio": l1_ratio}
+                        print(f"  [fold {fold_id}] {tag:32s} tuned "
+                              f"(inner CV RMSE={tuned_rmse:.4f}): alpha={alpha:.4g} "
+                              f"l1_ratio={l1_ratio}")
+                        def make_est(_a=alpha, _l=l1_ratio):
+                            return make_pipeline(
+                                StandardScaler(),
+                                ElasticNet(alpha=_a, l1_ratio=_l,
+                                           max_iter=ENET_MAX_ITER),
+                            )
+
+                    elif model_name == "LightGBM":
                         from lightgbm import LGBMRegressor
                         tuned_params, tuned_rmse = _tune_lgbm_hparams(
-                            X_tr, y_tr, g_tr, n_trials=N_TRIALS_LGBM,
+                            X_tr, y_tr, inner_splits, n_trials=N_TRIALS_LGBM,
                         )
                         print(f"  [fold {fold_id}] {tag:32s} tuned "
                               f"(inner CV RMSE={tuned_rmse:.4f}): {tuned_params}")
-
                         def make_est(_p=tuned_params):
                             return LGBMRegressor(**_p)
 
-                    # Leak-free GroupKFold CV estimate on this fold's train rows
-                    oof = grouped_cv_oof(make_est, X_tr, y_tr, g_tr)
+                    # OOF CV estimate over the same inherited inner splits
+                    oof = grouped_cv_oof(make_est, X_tr, y_tr, inner_splits)
                     cv_r2 = r2_score(y_tr, oof)
 
                     # Final fit on this fold's full train rows, single held-out eval
@@ -495,14 +529,27 @@ _suffix = "" if not _suffix_parts else "_" + "_".join(_suffix_parts)
 
 if not args.single_split:
     print(f"\nPooled GroupKFold (k={N_FOLDS}) over "
-          f"{N_HOLD_GROUPS} hold groups, selection/tuning/fitting redone per fold.\n")
+          f"{N_HOLD_GROUPS} hold groups, tuning/fitting redone per fold "
+          f"(folds run in parallel).\n")
     gkf = GroupKFold(n_splits=N_FOLDS)
     pooled_holdout: dict[str, list] = {}
 
-    for fold_id, (train_sweep_idx, test_sweep_idx) in enumerate(
+    fold_splits = list(enumerate(
         gkf.split(np.arange(len(sweep_keys)), groups=_key_first["g"].values)
-    ):
-        holdout_preds, _cv_preds, summary_rows = run_split(train_sweep_idx, test_sweep_idx, fold_id)
+    ))
+    # Map each group to its outer holdout fold so run_split can inherit the
+    # same partition for inner CV (avoids a second, arbitrary re-split).
+    group_to_fold = {}
+    for fold_id, (_, test_idx) in fold_splits:
+        for pos in test_idx:
+            g = int(_key_first.iloc[pos]["g"])
+            group_to_fold[g] = fold_id
+
+    fold_results = Parallel(n_jobs=-1, prefer="processes")(
+        delayed(run_split)(train_idx, test_idx, fold_id, group_to_fold)
+        for fold_id, (train_idx, test_idx) in fold_splits
+    )
+    for holdout_preds, _cv_preds, summary_rows in fold_results:
         all_summary_rows.extend(summary_rows)
         for tag, pdf in holdout_preds.items():
             pooled_holdout.setdefault(tag, []).append(pdf)

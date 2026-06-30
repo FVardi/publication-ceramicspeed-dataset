@@ -178,10 +178,21 @@ _STY = {"AE": dict(marker="o", color="#1f4e79", label="AE"),
         "US": dict(marker="s", color="#c55a11", label="US")}
 has_iqr = {"cond_temp_lo", "cond_temp_hi", "cond_rpm_lo", "cond_rpm_hi"}.issubset(R.columns)
 
+# Label only the top-N features per sensor per conditional axis -- gives a
+# fixed, readable number regardless of the overall correlation magnitudes.
+TOP_N = 5
+
+notable = set()
+for sensor in R["sensor"].unique():
+    s = R[R["sensor"] == sensor]
+    notable.update(s.reindex(s["cond_rpm"].abs().nlargest(TOP_N).index)["feature"])
+    notable.update(s.reindex(s["cond_temp"].abs().nlargest(TOP_N).index)["feature"])
+
+R["_notable"] = R["feature"].isin(notable)
+
 fig, axes = plt.subplots(1, 2, figsize=(14, 6.4), sharex=True, sharey=True)
 panels = [("marg_temp", "marg_rpm", "Marginal correlation (all features)", None),
-          ("cond_temp", "cond_rpm", "Conditional (partition-based)",
-           ("cond_temp_lo", "cond_temp_hi", "cond_rpm_lo", "cond_rpm_hi") if has_iqr else None)]
+          ("cond_temp", "cond_rpm", "Conditional (partition-based)", None)]
 for ax, (xc, yc, ttl, errs) in zip(axes, panels):
     for sensor, st in _STY.items():
         s = R[R["sensor"] == sensor]
@@ -192,14 +203,18 @@ for ax, (xc, yc, ttl, errs) in zip(axes, panels):
                         fmt="none", ecolor=st["color"], alpha=0.2, lw=0.7)
         ax.scatter(s[xc], s[yc], marker=st["marker"], color=st["color"],
                    s=45, edgecolor="k", lw=0.4, label=st["label"], zorder=3)
-    _texts = [ax.text(row[xc], row[yc], _short(row["feature"]), fontsize=5.2,
-                      color=_STY[row["sensor"]]["color"], zorder=4)
-              for _, row in R.iterrows() if np.isfinite(row[xc]) and np.isfinite(row[yc])]
+    _texts = [ax.text(row[xc], row[yc], _short(row["feature"]), fontsize=7.5,
+                      color=_STY[row["sensor"]]["color"], zorder=5)
+              for _, row in R.iterrows()
+              if row["_notable"] and np.isfinite(row[xc]) and np.isfinite(row[yc])]
     try:
         from adjustText import adjust_text
-        adjust_text(_texts, ax=ax, expand=(1.1, 1.3),
-                    arrowprops=dict(arrowstyle="-", color="0.5", lw=0.3))
-    except ImportError:
+        adjust_text(_texts, ax=ax,
+                    expand=(2.0, 2.5),
+                    force_text=(0.5, 0.8),
+                    arrowprops=dict(arrowstyle="->", color="0.25", lw=1.0,
+                                    mutation_scale=8, shrinkB=3))
+    except (ImportError, Exception):
         pass
     ax.axhline(0, color="0.6", lw=0.8); ax.axvline(0, color="0.6", lw=0.8)
     ax.set_xlim(-1, 1); ax.set_ylim(-1, 1)

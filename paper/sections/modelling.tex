@@ -5,9 +5,7 @@
 \subsection{Experimental design}
 \label{subsec:modelling_design}
 \subsubsection{Data sets and splits}
-The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets.
-
-The segments, which features are calculated from, are grouped to avoid soft leakage of information. Segments which are collected close to each other in time or under matching operating conditions are considered similar. The grouping protocol specifically consists of the following steps:
+The data experiments utilise three different features sets: the AE, the US, and the combined AE and US feature sets. Each of the later described models are fitted to each of the three datasets. The segments, which features are calculated from, are grouped to avoid soft leakage of information: segments which are collected close to each other in time or under matching operating conditions are considered similar. The grouping protocol specifically consists of the following steps:
 \begin{itemize}
 \item All segments collected during the same 60s operating condition hold are grouped together.
 \item All groups which share mean RPM and temperature \todo{Check that it is mean and what the thresholds are} are grouped together.
@@ -15,8 +13,7 @@ The segments, which features are calculated from, are grouped to avoid soft leak
 
 This results in \todo{Insert number of groups} groups of segments which cannot be split across training, validation, and testing, avoiding soft leakage of features from segments collected under overly similar operating conditions.
 
-These grouped feature sets undergo a nested 5-fold cross-validation protocol. 
-
+These grouped feature sets undergo a single-pass 5-fold grouped 3-fold cross-validation protocol with per-fold hyperparameter tuning — each fold tunes and fits independently on its 4/5 training partition and evaluates once on the disjoint 1/5 holdout; predictions from all five holdout folds are pooled for significance testing.
 
 
 \subsubsection{Model families}
@@ -44,7 +41,7 @@ To obtain stable performance estimates that properly account for the variance in
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=1\textwidth]{figures/nested_cv_splits.png}
+\includegraphics[width=1\textwidth]{figures/nested_cv.png}
 \caption{Data partitioning for the repeated nested cross-validation: an 80/20
 group-level hold-out split (groups = 60-second RPM holds), with the training pool
 further divided into $R = \resNrepeats$ independently seeded, group-respecting
