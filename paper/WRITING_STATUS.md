@@ -224,7 +224,45 @@ elsarticle conversion; line numbers on; ToC removal; separate highlights file; g
 - Two new untracked files to commit: paper/tables/table_shap_agreement_tabular.tex, scripts/make_nested_cv_diagram.py.
 - Env set up this session: MiKTeX 25.12 + Strawberry Perl 5.42 (for latexmk); .venv completed with optuna 4.9 (+ added to pyproject.toml). Edit tool fails on this repo's CRLF .tex/.md files -> use PowerShell .NET literal replace.
 
-### E. New-pipeline reconciliation (added 2026-06-29, NOT started)
+### E. New-pipeline reconciliation (started 2026-07-03)
+
+**Done this session (2026-07-03):**
+
+§6 Modelling completely restructured for the new pipeline:
+- Removed the `\subsection{Repeated nested cross-validation}` (the old pipeline's
+  repeated outer-loop design). The new pipeline is single-pass 5-fold grouped CV.
+- New structure: §6.1 Experimental design | §6.2 Model families | §6.3 Statistical
+  testing | §6.4 Results. Each subsection has one job; no content duplicated across them.
+- §6.3 rewritten as prose describing the group-level Harvey-corrected DM test.
+  No test table — the test design is simple enough to describe in one paragraph.
+  References: Harvey et al. (1997) `\cite{harvey_testing_1997}` — needs entry in refs.bib.
+- Inference table (tab:inference) updated: 3 columns (ΔRMSE, DM p group, DM p naive),
+  3 rows (AE vs US, Combined vs AE, Combined vs US). New macro families:
+  `\resDeltaRmse*`, `\resDmGroup*`, `\resDmNaive*` — NOT yet generated; paper export
+  script needs writing.
+- All Polynomial model references removed from §6.4 and SHAP text.
+- All `\resNrepeats`, `\resNouterScores`, `RidgeCV` references removed.
+- Figure caption for `nested_cv.png` updated to describe single-pass design.
+- `scripts/new/modelling/03_group_paired_tests.py` updated: added AE vs US comparison,
+  saves to `outputs/new/group_paired_tests/channel_comparison.csv`. Script re-run;
+  results available.
+
+**Key new result (AE vs US, 2026-07-03):**
+The AE vs US direction splits by model family — ElasticNet finds US better, LightGBM
+finds AE better (both p≈0, 520 holdout groups). This is a non-trivial finding that
+§6.4 sensor-comparison paragraph and §7 Discussion must address. Currently §6.4 says
+"AE substantially outperforms US" — this is only true for LightGBM.
+
+**Remaining for Gate E (§5/§6/§7/§8 new-pipeline reconciliation):**
+- §6.4 sensor-comparison paragraph: rewrite to reflect AE vs US model split
+- New paper export script to generate `\resDeltaRmse*` etc. from new pipeline CSVs
+- `harvey_testing_1997` citation entry needed in refs.bib
+- Remaining \todo items in §6: number of groups, RPM/temp merge thresholds
+- §7 Discussion: needs full review — Polynomial refs, AE vs US split, decomposition null result
+- §8 Conclusion: mirrors legacy results; rewrite after §7
+- Abstract: still empty
+
+
 The Gate 1-8 walkthrough above and its "Bottom line" were written against the
 legacy pipeline's frozen results. The 2026-06-29 banner near the top of this
 file documents a separate, substantial investigation (new pipeline, scripts

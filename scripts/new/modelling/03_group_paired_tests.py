@@ -123,8 +123,21 @@ def group_paired_test(df_a, df_b, label_a, label_b):
 
 
 MODELS = ["ElasticNet", "LightGBM"]
+_COLS = ["model", "contrast", "n_groups",
+         "mean_dMSE(A-B)", "dm_stat", "p_group", "p_window_naive", "better"]
 
-# --- Complementarity: Combined vs each single channel (full feature set) -----
+# --- Channel comparison: AE vs US --------------------------------------------
+channel_rows = []
+for model in MODELS:
+    ae = _load(model, "AE", "full")
+    us = _load(model, "US", "full")
+    r = group_paired_test(ae, us, f"{model}_AE", f"{model}_US")
+    r = {"model": model, "contrast": "AE vs US", **r}
+    channel_rows.append(r)
+
+channel = pd.DataFrame(channel_rows)
+
+# --- Complementarity: Combined vs each single channel ------------------------
 comp_rows = []
 for model in MODELS:
     comb = _load(model, "Combined", "full")
@@ -135,22 +148,29 @@ for model in MODELS:
         r = {"model": model, "contrast": f"Combined vs {single}", **r}
         comp_rows.append(r)
 
+comp = pd.DataFrame(comp_rows)
+
 _out_suffix = _in_suffix
 
-comp = pd.DataFrame(comp_rows)
+# --- Save -------------------------------------------------------------------
+channel.to_csv(SCRIPT_DIR / f"channel_comparison{_out_suffix}.csv", index=False)
 comp.to_csv(SCRIPT_DIR / f"complementarity_tests{_out_suffix}.csv", index=False)
 
 # --- Report -----------------------------------------------------------------
-_cols_comp = ["model", "contrast", "n_groups",
-              "mean_dMSE(A-B)", "dm_stat", "p_group", "p_window_naive", "better"]
+print("\n" + "=" * 90)
+print("CHANNEL COMPARISON  (AE vs US, full feature set; "
+      "negative dMSE = AE better)")
+print("=" * 90)
+print(channel[_COLS].to_string(index=False))
 
 print("\n" + "=" * 90)
 print("COMPLEMENTARITY  (Combined vs single channel, full feature set; "
       "negative dMSE = Combined better)")
 print("=" * 90)
-print(comp[_cols_comp].to_string(index=False))
+print(comp[_COLS].to_string(index=False))
 
-print(f"\nSaved: {SCRIPT_DIR / f'complementarity_tests{_out_suffix}.csv'}")
+print(f"\nSaved: {SCRIPT_DIR / f'channel_comparison{_out_suffix}.csv'}")
+print(f"Saved: {SCRIPT_DIR / f'complementarity_tests{_out_suffix}.csv'}")
 
 if __name__ == "__main__":
     print("\n13_group_paired_tests complete.")

@@ -91,10 +91,24 @@ comparison only.
 (The small AE positive residual is two-stage temperature-estimate error
 propagation, not lubrication sensing.)
 
+**Channel comparison (AE vs US, group-paired DM, added 2026-07-03)** — result
+splits by model family:
+
+| Model | mean dMSE(AE−US) | DM p (group) | Better |
+|---|---|---|---|
+| ElasticNet | +0.010 | ≈0 | **US** |
+| LightGBM | −0.005 | ≈0 | **AE** |
+
+Interpretation: ElasticNet exploits the simpler temperature-driven US signal more
+effectively; LightGBM captures the nonlinear speed-dependent AE structure. This
+model-family split must be addressed in §6.4 and §7 of the paper.
+Output: `outputs/new/group_paired_tests/channel_comparison.csv`
+
 **Complementarity (group-paired Diebold–Mariano)** — robust and strong: Combined
 beats **both** AE and US, for **both** models, **all 4 contrasts p≈0** (naive
 window-level p≈0 too — shown only to demonstrate the inflation grouping prevents).
 The most defensible headline claim.
+Output: `outputs/new/group_paired_tests/complementarity_tests.csv`
 
 **Channel encoding (descriptive):** marginally both channels are speed-dominated;
 **conditionally**, US carries temperature information (10–20 kHz mobility/complexity,
@@ -108,3 +122,5 @@ complexity/mobility singletons.
 - Scripts' `if __name__` completion prints and some docstrings still reference the
   old flat numbering (11/12/...); functional, not yet swept.
 - `02_pca.py` output (`outputs/new/pca/`) not yet wired into the paper.
+- Paper export script does not yet exist for the new pipeline; new macros needed:
+  `\resDeltaRmse*`, `\resDmGroup*`, `\resDmNaive*` for the inference table in §6.4.
