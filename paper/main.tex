@@ -82,6 +82,18 @@
     {\input{../outputs/07_paper_export/results_macros.tex}}%
     {\errmessage{results\_macros.tex not found: run scripts/07\_paper\_export.py}}}
 
+%% Fallbacks for macros not yet emitted by the export (paper mid-rewrite);
+%% real values take precedence once these are wired into the export script.
+\providecommand{\resDeltaRmseAeUs}{\textbf{??}}
+\providecommand{\resDeltaRmseCombAe}{\textbf{??}}
+\providecommand{\resDeltaRmseCombUs}{\textbf{??}}
+\providecommand{\resDmGroupAeUs}{\textbf{??}}
+\providecommand{\resDmGroupCombAe}{\textbf{??}}
+\providecommand{\resDmGroupCombUs}{\textbf{??}}
+\providecommand{\resDmNaiveAeUs}{\textbf{??}}
+\providecommand{\resDmNaiveCombAe}{\textbf{??}}
+\providecommand{\resDmNaiveCombUs}{\textbf{??}}
+
 %% ============================================================================
 \begin{document}
 %% ============================================================================
