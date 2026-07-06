@@ -3,43 +3,19 @@
 \label{sec:features}
 %% ============================================================================
 
-This section reduces the \resNcandAe~AE and \resNcandUs~US candidate features
-(Section~\ref{sec:pipeline}) to compact, non-redundant subsets for modelling, and
-characterises what the surviving features respond to. The analysis proceeds in two
-selection stages -- a relevance filter against $\kappa$ followed by a redundancy
-reduction -- after which the operating-condition dependence and low-dimensional
-structure of the retained sets are examined.
+This \resNcandAe~AE and \resNcandUs~US candidate features are reduced to smaller, non-redundant subsets for modelling, and characterises what the surviving features respond to. The reduction consist of two selection stages -- a relevance filter against $\kappa$ followed by a redundancy reduction -- after which the operating-condition dependence and low-dimensional structure of the retained sets are examined.
 
 \subsection{Two-stage feature selection}
 \label{subsec:selection}
 
-\textbf{Stage 1 -- relevance.} Each candidate feature is ranked by its absolute
-Spearman ($|\rho|$, monotonic association) and Pearson ($|r|$, linear association)
-correlation with $\kappa$ across all sweeps. Features must satisfy both
-$|\rho| \geq 0.1$ and $|r| \geq 0.1$ to be retained, removing features carrying
-essentially no monotonic or linear information about the target.
+\textbf{Stage 1 -- montonic relevance.} Correlation between features and $\kappa$ is quantified with Spearman ($|\rho|$, monotonic association) and Pearson ($|r|$, linear association) coefficients across all segments for each sensor channel. Features must satisfy both $|\rho| \geq 0.1$ and $|r| \geq 0.1$ to be retained, removing features carrying essentially no monotonic or linear information about the target.
 
-\textbf{Stage 2 -- redundancy.} Among the survivors, multicollinearity is reduced by
-iterative variance-inflation-factor (VIF) elimination. At each round the VIF of every
-remaining feature is computed; if any feature exceeds the threshold $\text{VIF} = 5$,
-the \emph{least $\kappa$-relevant} feature among those above the threshold (lowest
-$|\rho|$ with $\kappa$) is dropped, and all VIFs are recomputed on the reduced set.
-The procedure repeats until no remaining feature exceeds the threshold. Recomputing
-the VIFs each round addresses both pairwise and distributed (many-to-one)
-collinearity, while the relevance-based tie-break protects the strongest predictor in
-each collinear group: a highly inter-correlated feature is retained when it is the
-most $\kappa$-relevant member of its group, its less-relevant partners being removed
-in its place. By construction every retained feature has $\text{VIF} < 5$ on the final
-subset.
+\textbf{Stage 2 -- redundancy.} Among the survivors, multicollinearity is reduced by iterative variance-inflation-factor (VIF) elimination. At each round the VIF of every remaining feature is computed; if any feature exceeds the threshold $\text{VIF} = 5$,  he feature with the lowest $|\rho|$ with $\kappa$ is dropped, and all VIFs are recomputed on the reduced set. The procedure repeats until no remaining feature exceeds the threshold. Recomputing the VIFs each round addresses both pairwise and distributed collinearity, while the relevance-based tie-break protects the strongest predictor in each collinear group: a highly inter-correlated feature is retained when it is the most $\kappa$-relevant member of its group. By construction every retained feature has $\text{VIF} < 5$ on the final subset.
 
 Table~\ref{tab:selection_funnel} summarises the selection funnel.
 
 \begin{table}[H]
 \centering
-\caption{Feature selection funnel: candidate features, survivors of the
-Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy
-reduction.}
-\label{tab:selection_funnel}
 \small
 \begin{tabular}{lccc}
 \toprule
@@ -51,6 +27,10 @@ US & \resNcandUs & \resNpostUs & \resNretUs \\
 Combined & -- & -- & \resNretComb \\
 \bottomrule
 \end{tabular}
+\caption{Feature selection funnel: candidate features, survivors of the
+Stage~1 relevance filter, and the final retained sets after Stage~2 redundancy
+reduction.}
+\label{tab:selection_funnel}
 \end{table}
 
 \subsection{Correlation with \texorpdfstring{$\kappa$}{kappa}}
