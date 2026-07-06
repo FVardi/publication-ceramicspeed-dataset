@@ -43,6 +43,7 @@ bearing:
 filters:
   rpm_min: 50              # discard sweeps below this RPM (startup transients)
   rpm_max: 3_000
+  temp_min: 38             # discard sub-floor cold-start (measured temp dips to 33C before the controller settles at the 40C floor)
   file_patterns:
     - "scope_20260424_115654"
 

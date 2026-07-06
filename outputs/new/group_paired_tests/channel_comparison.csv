@@ -1,0 +1,3 @@
+model,contrast,A,B,n_windows,n_groups,mean_dMSE(A-B),dm_stat,p_group,p_window_naive,better
+ElasticNet,AE vs US,ElasticNet_AE,ElasticNet_US,8498,520,0.01016,5.521,0.0,0.0,ElasticNet_US
+LightGBM,AE vs US,LightGBM_AE,LightGBM_US,8498,520,-0.0048,-4.308,0.0,0.0,LightGBM_AE

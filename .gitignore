@@ -5,8 +5,12 @@ data/
 # re-rendered on any machine; exclude regenerable images and the heavy EDA cache.
 outputs/**/*.png
 outputs/**/figures/
-outputs/eda/eda_spectrogram_cache.npz
+outputs/eda/eda_spectrogram_cache*.npz
 outputs/07_paper_export/
+# Large per-row prediction/decomposition tables (regenerable via
+# scripts/run_new_pipeline.py from tracked features.parquet/metadata.parquet)
+outputs/11_featureset_comparison/predictions/*.csv
+outputs/12_fullset_decomposition/tables/decomposition_predictions_*.csv
 __pycache__/
 *.egg-info/
 .venv/
@@ -29,3 +33,6 @@ paper/*.lot
 
 # Articles (PDFs — not pushed to remote)
 articles/
+
+# Compiled paper PDF — regenerable from paper/*.tex via pdflatex/latexmk
+paper/main.pdf
