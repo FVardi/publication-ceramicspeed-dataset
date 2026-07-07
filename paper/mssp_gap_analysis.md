@@ -93,3 +93,33 @@ Unresolved `\todo`s that affect reviewability, roughly in order of importance:
 5. Compliance pass: abstract length, title, keywords, nomenclature, elsarticle, line numbers, TOC removal, highlights file (§5).
 6. MSSP citation pass (§6).
 7. Cover letter + suggested reviewers + check ML pre-approval requirement (§4, §5).
+
+---
+
+## Addendum 2026-07-07 — status against current draft
+
+The draft has been substantially rewritten since 2026-06-11. Status of each section:
+
+**Resolved:**
+- §1 item 3 / clean gap statement: the complementarity framing now leads the intro and contribution list.
+- §2 κ-circularity: now handled head-on — the intro poses "how much performance is due to operating-point inference?" as research question 2, the two-stage decomposition is a headline contribution, conclusion item 6 carries the quantified caveat, and the "substantially higher performance than prior studies" claim is gone (discussion now reads "on par with … the contribution is thus methodological").
+- §7 sensor specs: present (Kistler 8152C1 + 5125C coupler 50 kHz–1 MHz, UE Ultra-trak 750, Agilent MSO2024 @ 12.5 MHz).
+- §7 slipring contribution: removed from the draft (also resolves §5's contradiction).
+- §7 2 N load: now a 60 kg dead weight measured by load cell (~61 kg) — the near-zero-load concern is gone, though the 60 vs 61 kg inconsistency in setup.tex remains.
+- §7 block-wise split: the new pipeline's acquisition-grouped evaluation implements this and elevates it to a headline contribution — the anticipated "major revision" request is pre-empted.
+
+**Changed / needs rework:**
+- **§1 item 1 (film-gated 1–2 MHz band) is no longer in the paper.** pipeline.tex excludes >1 MHz content from all analysis; SHAP top feature is now 500 kHz–1 MHz mobility. The strategic-fit argument must now rest on items 2 (confound decomposition) and the leakage-controlled evaluation protocol — or the 1–2 MHz analysis must be restored. This is a decision, not an edit.
+- §5 abstract: now empty (`Insert abstract`), not 370 words. Title: replaced with "Sensor Complementarity and Operating-Point Proxies…" (~20 words, ≈ reframing option B in spirit).
+- Statistics protocol throughout: repeated nested CV / Nadeau–Bengio / Holm replaced by single-pass 5-fold grouped CV + group-level Diebold–Mariano (Harvey). §8's praise of the old battery transfers to the new protocol, which is arguably a stronger differentiator (leakage-controlled, deployment-representative). But discussion.tex and conclusion.tex still narrate the old protocol — top-priority internal inconsistency.
+
+**Still open:** §3 benchmarking gap (no prior-art baseline, no broadband-only ablation — unchanged and still the most likely reviewer request); §4 ML pre-approval check; §6 MSSP citation pass (not re-audited); most of the §5 compliance table (elsarticle, highlights, keywords, nomenclature decision).
+
+### Addendum 2026-07-07 (2) — strategic fit under the new-pipeline results
+
+The new-pipeline numbers (`docs/pipeline/new_pipeline_summary.md`) change the novelty set itself, not just the narration:
+
+- **§2's κ-circularity outcome is now definitive, and it becomes the finding.** Two-stage decomposition: residual ≈ 0 for all channels — κ regression on this data *is* operating-point soft sensing, full stop. The earlier recommendation to headline "genuine lubrication sensitivity via within-step analysis" is dead; the within-step temperature signal is operating-point information. The strategically strongest MSSP framing is the cautionary methodological result: acoustic κ regression (including prior work, Jakobsen 2023) may measure operating-point recovery rather than lubrication state, demonstrated with a decomposition any LCM study can apply. Field-correcting negative results of this shape are publishable in MSSP; they also defuse the §1 desk-rejection risk better than the application framing does.
+- **New headline set:** (a) the soft-sensor decomposition with residual ≈ 0; (b) the first quantitative AE–US complementarity answer — robust, all 4 contrasts p≈0, both families; (c) the leakage-controlled, twin-merged evaluation protocol + dataset. Model performance is evidence only.
+- **New nuance that must be narrated (per summary, §6.4/§7):** the AE-vs-US ranking splits by model family (ElasticNet → US, LightGBM → AE). The draft currently claims a uniform AE win — see style-analysis addendum items 7–8 for the required rewrites.
+- **§3 benchmarking:** the two-stage (RPM,T)→κ model now *is* the reference baseline the original §3 asked for — present it as such in the results table rather than only as a decomposition.

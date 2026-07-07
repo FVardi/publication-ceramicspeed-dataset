@@ -48,3 +48,28 @@ Key cuts vs. current: the feature-count arithmetic, the selection-procedure deta
 - Title: A, B, or C (or a hybrid).
 - Whether contribution #2's "diagnostic methodology" claim is pitched as generalisable (stronger for MSSP, slightly bolder) or study-specific (safer).
 - Abstract keeps one headline number (R²) — could add ΔRMSE for fusion if you prefer two.
+
+---
+
+## Addendum 2026-07-07 — staleness check against current draft
+
+Several proposals here now conflict with the draft as rewritten. Status per section:
+
+- **§1 Title: settled.** main.tex now carries "Sensor Complementarity and Operating-Point Proxies in Acoustic Emission and Passive Ultrasound Regression of the ISO 281 Viscosity Ratio" — option B in spirit. Options A and C are void (see next point).
+- **§2 contribution #1, §3's 1–2 MHz sentence, §4 highlight #2: stale.** The film-gated 1–2 MHz analysis has been dropped from the draft (pipeline.tex excludes >1 MHz; `\resKneeKappa` macros gone; SHAP leader is now 500 kHz–1 MHz mobility). Either the analysis is restored to the paper, or contribution #1, highlight #2, and the corresponding abstract sentence are struck. Until that decision, the §3 abstract **cannot be adopted as-is** (contradicting the recommendation in `mssp_style_analysis.md` §abstract.tex, corrected in its own addendum).
+- **§2 contribution #2 (confound decomposition): survives**, and is now in the intro in claim-shaped form. The deliverable-shaped wording here is still the better MSSP fit.
+- **§2 contribution #3 (complementarity): survives**; stats references need updating — "all four tests" → the group-level Diebold–Mariano protocol; macro names have changed (`\resDeltaRmse*`, `\resDmGroup*`).
+- **§2 contribution #4 (dataset + protocol): still missing from the intro's contribution list** — recommendation stands; the leakage-controlled evaluation protocol arguably now belongs in this item as its strongest element.
+- **§3 abstract, final sentence: stale.** "Repeated nested cross-validation with corrected significance tests" → "acquisition-grouped cross-validation with group-level significance tests" (or similar); `\resNouterScores` no longer exists.
+- **New issue not covered here:** the current intro stacks three "first" claims. Corpus precedent (Sun) is to construct one gap explicitly and claim it once — keep the complementarity first, demote the others to stated facts.
+
+### Addendum 2026-07-07 (2) — reframing under the new-pipeline results
+
+The new-pipeline results change the contribution set (see gap-analysis addendum 2). Updated proposal skeleton:
+
+1. **First quantitative AE–US complementarity answer.** Simultaneous acquisition; Combined beats both single channels for both model families, all 4 group-paired DM contrasts p≈0 (R² 0.95 vs 0.91/0.89). Robust; the effect size is modest and stated as such.
+2. **A soft-sensor decomposition showing κ regression is operating-point inference.** Two-stage (features→RPM,T→ISO 281) recovers essentially all direct performance (residual ≈ +0.01 AE, ≈0 US/combined) — no measurable lubrication-specific signal. A diagnostic applicable to any study with an operating-point-derived target, and a cautionary reinterpretation of prior κ-regression results.
+3. **Channel-encoding structure.** Conditionally, US carries temperature information AE largely lacks (10–20 kHz, ρ up to ~0.78 at fixed speed); AE-vs-US ranking is model-family-dependent (ElasticNet → US, LightGBM → AE) — the mechanism behind the complementarity in #1.
+4. **Leakage-controlled dataset + protocol.** Twin-merged operating-point grouping, pooled GroupKFold (~8.5k sweeps, ~520 groups); naive window-level p-values reported alongside to demonstrate the inflation the grouping prevents.
+
+Highlight #4 ("genuine temperature-mediated film channel") is refuted by result #2 — replace with e.g. `Two-stage decomposition: kappa regression is operating-point soft sensing` (≤85 chars). The §3 abstract's within-step-channel sentence must flip the same way. Intro contribution #1's "residual variation consistent with changes in lubrication adequacy" likewise.

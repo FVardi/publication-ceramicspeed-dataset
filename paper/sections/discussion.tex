@@ -3,47 +3,133 @@
 \label{sec:discussion}
 %% ============================================================================
 
-\subsection{AE vs. US}
-\label{subsec:disc_ae}
+The experiments show that both acoustic channels support accurate $\kappa$
+regression under a leakage-controlled protocol, that their combination
+outperforms either channel alone, and that essentially all of this performance
+is attributable to operating-point inference. The obtained results are
+discussed as follows.
 
-The consistently superior performance of AE over the US channel across all model might reflect a fundamental hardware difference. The AE sensor captures wideband content extending into the MHz range (analysed here up to \SI{1}{MHz}), dominated by verified stress-wave emission up to several hundred kHz. The US channel down-mixes its $\approx$38--40~kHz sensing band to an audio-frequency baseband (Section~\ref{subsec:origins}). Although the probe acquires content across its 0--100~kHz band (Section~\ref{subsec:filter_bands}), the lubrication-relevant information is concentrated in the nominal 0--20~kHz baseband---a mixture of down-mixed contact activity, low-frequency machinery noise, VFD harmonics, and structural vibration, within which the 10--20~kHz half carries the strongest $\kappa$ correlations---while the 20--100~kHz above-baseband content contributes comparatively little. The high-frequency transient signature of individual microscale contact events, which the AE channel is thought to capture directly, is largely absent from this down-mixed envelope. Replacing the heterodyned probe with a wideband passive acoustic or ultrasound sensor would be expected to substantially improve the US-channel models.
+\subsection{The $\kappa$ regression is an operating-point soft sensor}
+\label{subsec:disc_softsensor}
 
-\subsection{Fusion gain}
-\label{subsec:disc_fusion}
+The two-stage decomposition (Section~\ref{subsubsec:decomposition}) shows that
+the direct $\kappa$-regression performance is recovered almost entirely from
+acoustically inferred operating points alone: for every channel, predicting RPM
+and temperature from the features and passing the estimates through the ISO~281
+mapping matches the direct regression to within $\approx$0.01~$R^2$. Since the
+features recover rotational speed almost perfectly and temperature well, and
+$\kappa$ is a deterministic function of the measured operating point, this outcome is mechanistically plausible; what the decomposition establishes is that there is no measurable performance contribution beyond it. The small positive AE residual is consistent with error
+propagation in the two-stage temperature estimate and provides no evidence of lubrication-specific sensing. Within this dataset, the acoustic $\kappa$
+regression is therefore best understood as an operating-point soft sensor
+combined with the ISO~281 mapping.
 
-Fusing the US channel into the AE model reduces hold-out RMSE from \resHOrmseLgbAe{}
-to \resHOrmseLgbComb{} ($\Delta\text{RMSE} = \resDrmseAeComb$; $\Delta R^2 =
-\resDrsqLgbCombAe$)---a relative reduction of about \resRelRmseRedCombAe\%, statistically
-robust under repeated nested cross-validation and confirmed by all three hold-out
-tests. Although the absolute $R^2$ gain is small, against an AE baseline of
-$R^2 = \resHOrsqLgbAe$ it is a meaningful cut in the residual error, confirming that
-the US channel adds genuinely non-redundant information. That contribution is
-nonetheless bounded by the relative weakness of the US channel, which retains only
-\resNretUs{} features after selection (vs.\ \resNretAe{} for AE) and whose top
-correlations ($|\rho| \leq \resTopUsRho$) are weaker than AE's ($|\rho| = \resTopAeRho$).
+This finding does not render the models useless. An acoustic soft sensor that
+recovers speed, temperature, and thereby nominal lubrication adequacy from a
+single externally mounted sensor---without tachometer or thermometer
+access---may be operationally valuable, particularly for retrofit monitoring.
+It does, however, change what the performance figures mean. High
+$\kappa$-regression accuracy, in this study and in prior work including
+Jakobsen et al.~\cite{jakobsen_detecting_2023}, should not by itself be read as
+evidence that the sensors detect the state of the lubricant film beyond what
+the operating point implies. Two consequences follow. First, generalisation to
+operating regimes outside the training distribution is not supported by the
+reported accuracy, since the learned mapping is anchored in the operating
+point. Second, changes in lubrication adequacy that are \emph{not} caused by
+the operating point---degradation, contamination, starvation, none of which
+$\kappa$ encodes---are outside the demonstrated
+capability, and detecting them with and online, non-invasive method remains an open problem.
 
-This result is an informative contribution to the LCM literature, where AE--US complementarity is \emph{argued} but rarely \emph{tested}. The conditional correlation structure (Figure~\ref{fig:marg_cond}) illustrates this complementarity at the feature level: the two channels lean toward different operating-condition axes---AE toward speed, US toward temperature---consistent with their carrying partly non-redundant information, even if the magnitude of that independence is modest. Whether a wideband passive ultrasound sensor (rather than a heterodyned probe) would provide more independent information -- and thus a more substantial fusion gain -- remains an open question for future work.
+\subsection{AE--US complementarity and channel encoding}
+\label{subsec:disc_channels}
 
-\subsection{Interpreting the amplitude-confounding result}
-\label{subsec:disc_confound}
-The strong raw Spearman correlations of amplitude features (RMS and related statistics) and frequency-tracking features (Hjorth mobility, centre frequency) with $\kappa$ should be interpreted with caution. As discussed in Section~\ref{subsec:confound}, rotational speed is a driver of both $\kappa$ (through $\nureq$ in Eq.~\eqref{eq:nu1}) and broadband signal energy (through the rate of and energy in contact events per revolution as described in~\cite{zhang_coupled_2026}). A model trained on amplitude features therefore exploits speed as an indirect proxy for $\kappa$ rather than sensing purely lubrication-specific signal changes directly.
+The fusion result is the most robust finding of the study: the combined feature
+set outperforms both single channels, for both model families, in all four
+group-level DM contrasts (Table~\ref{tab:inference}). The gain is modest in
+magnitude but consistent, and it has a structural basis in the
+operating-condition encoding of the two channels. Conditionally on speed, US
+resolves temperature substantially better than AE
+(Section~\ref{subsec:confound}, Table~\ref{tab:decomposition}), whereas both
+channels track speed near-perfectly; the clustered SHAP results mirror this
+separation, with the AE model led by a speed-tracking 500~kHz--1~MHz mobility
+cluster and the US model drawing on temperature-leaning baseband features. The
+two channels are thus complementary primarily because they encode partly
+distinct components of the operating point---a quantified answer to the
+complementarity question that has been argued, but not previously tested, in
+the LCM literature~\cite{shang_comprehensive_2024,wang_advanced_2024}.
 
-This confounding does not invalidate the regression results: a model that uses speed-mediated amplitude changes to predict $\kappa$ is still predicting $\kappa$, and its predictions may be operationally useful. However, it does indicate that the model's generalisation to operating conditions outside its training distribution (different speed ranges, different bearing loads) may be limited. The two-stage analysis of Section~\ref{subsec:confound} makes this concrete: predicted operating points alone, fed through the ISO~281 mapping, recover $R^2 = \resTwoStageRsq$ of the direct model's $R^2 = \resHOrsqLgbAe$---the model is an operating-point soft sensor, and its lubrication sensitivity beyond the operating point rests on the within-step evidence of Section~\ref{subsec:confound}. Future feature engineering should prioritise amplitude-invariant spectral-shape features (spectral skewness and kurtosis, spectral bandwidth, spectral flatness) that are expected to carry a higher proportion of genuine lubrication-state information relative to operating condition proxies.
+Which single channel is preferable proved to be model-family dependent: Elastic
+Net favours US while LightGBM favours AE, both significantly. A plausible
+explanation is that the temperature-mediated US structure is closer to linear
+and is captured well by a regularised linear model, whereas the speed-dependent
+AE structure is strongly non-linear and requires the tree ensemble. Channel
+rankings obtained under a single model family should therefore be treated with
+caution.
 
-\subsection{Implications for the $\kappa$ regression framework}
+The comparison is further bounded by hardware. The AE sensor captures wideband
+content up to \SI{1}{MHz}, dominated by verified stress-wave emission, whereas
+the US probe down-mixes a narrow $\approx$38--40~kHz sensing band to an
+audio-frequency baseband, within which the
+10--20~kHz half carries the strongest correlations. The high-frequency
+transient signature of individual contact events is largely absent from this
+down-mixed envelope. Whether a wideband passive ultrasound sensor would supply
+more independent information---and thus a larger fusion gain---remains an open
+question.
+
+\subsection{On the use of $\kappa$ as lubrication reference}
 \label{subsec:disc_kappa}
 
-The $\kappa$ regression framework is validated as a methodologically sound approach for passive non-invasive LCM, when $\kappa$ is assumed to be representative of the lubrication conditions in the bearing. A hold-out $R^2 = \resHOrsqLgbAe$ and RMSE~$= \resHOrmseLgbAe$~$\kappa$-units for a single AE sensor represents strong performance across a demanding continuous speed-and-temperature ramp spanning boundary through full-film lubrication conditions. Under matched random (sweep-level) splits this performance is on par with the passive $\kappa$ regression reported by Jakobsen et al.~\cite{jakobsen_detecting_2023,jakobsen_low_2024}. The figures reported here are not directly comparable to most prior work, however, because they are obtained under a stricter \emph{visit-grouped} evaluation protocol (Section~\ref{subsec:modelling_design}) that removes the near-duplicate leakage admitted by a sweep-level random split; to our knowledge they are the first $\kappa$-regression results reported under such a leakage-controlled protocol. The contribution is thus methodological---a more conservative, deployment-representative performance estimate---rather than a raw accuracy gain over earlier studies.
+The viscosity ratio is not measured but computed for each segment from the
+measured operating point via the ISO~281 relations and the ASTM~D341 Walther
+equation (Section~\ref{subsec:kappa}). It therefore inherits the assumptions of
+those relations, notably the use of housing temperature as a proxy for the
+elastohydrodynamic contact temperature and the assumption of nominally intact
+lubricant. More fundamentally, because the target is deterministic in the
+operating point, some degree of $\kappa$-regression success is guaranteed for
+any feature set that is informative about the operating point. The
+decomposition of Section~\ref{subsubsec:decomposition} quantifies this share
+rather than leaving it implicit. Breaking the circularity requires an independent reference---a
+film-thickness measurement, electrical contact resistance, or an experiment in
+which the lubricant state is varied independently of the operating point.
 
-The repeated nested cross-validation design provides appropriately conservative performance estimates: the \resNouterScores~outer RMSE scores capture fold-to-fold variance without the optimistic bias introduced by simple $k$-fold evaluation with shared hyperparameter search. The corrected significance tests confirm that performance differences between model families are assessed under assumptions that properly account for data re-use.
+\subsection{Evaluation protocol and comparability with prior work}
+\label{subsec:disc_protocol}
+
+The acquisition-grouped, twin-merged evaluation removes the near-duplicate
+leakage admitted by random splits over short measurement windows, and the
+group-level DM tests avoid the potential significance inflation of window-level testing. The reported figures are consequently not directly
+comparable to prior work evaluated under random splits, including
+Jakobsen et al.~\cite{jakobsen_detecting_2023}; they are intended as more
+conservative, deployment-representative estimates.
+
+A caveat applies in the opposite direction as well. Because the
+(RPM, temperature) space is densely and smoothly sampled, every held-out group
+is surrounded by near-neighbour training points: the high $R^2$ reflects
+\emph{interpolation} of the smooth $\kappa$(operating-point) surface, consistent
+with the soft-sensor interpretation, rather than extrapolation to unseen
+regimes. Same-operating-point leakage is controlled, but generalisation to
+unsampled operating regimes is untested.
 
 \subsection{Limitations}
 \label{subsec:disc_limits}
 
 \begin{enumerate}
-  \item \textbf{Single bearing and lubricant.} All results are specific to the SYJ25 bearing and Keratech~22 oil. Generalisability to other bearing types, sizes, or lubricants is unknown.
-  \item \textbf{Heterodyned US channel.} The passive US probe down-mixes a narrow $\approx$38--40~kHz sensing band to an audio-frequency baseband rather than recording wideband ultrasound directly, and its lubrication-relevant information is concentrated below $\approx$\SI{20}{kHz} (Section~\ref{subsec:origins}). It should not be equated with a wideband passive ultrasound sensor, and the US-channel results should be interpreted in light of this hardware constraint.
-  \item \textbf{Skewed $\kappa$ coverage.} The sampled $\kappa$ distribution is skewed toward the boundary and mixed-lubrication regime, with full-film states ($\kappa > 1$) under-represented and the highest $\kappa$ values reached only rarely (Figure~\ref{fig:op_conditions_distribution}). Extrapolation into the under-sampled full-film regime should therefore be treated with caution.
-  \item \textbf{Model-derived $\kappa$ reference.} The viscosity ratio is not measured directly but computed for each sweep from the measured operating point---rotational speed and housing temperature---via the ISO~281 relations and the ASTM~D341 Walther viscosity--temperature equation (Section~\ref{subsec:kappa}). The regression target is therefore a model-derived reference that inherits the assumptions of those relations, notably the use of housing temperature as a proxy for the elastohydrodynamic contact temperature; this also underlies the operating-point soft-sensor interpretation of Section~\ref{subsec:disc_confound}.
-  \item \textbf{Interpolation, not extrapolation.} \todo{Expand. The acquisition-grouped, twin-merged evaluation holds out operating-point groups, but because the (RPM, temperature) space is densely and smoothly sampled, every held-out group is surrounded by near-neighbour training points. The high $R^2$ therefore reflects \emph{interpolation} of the smooth $\kappa$(operating-point) surface---consistent with the operating-point soft-sensor interpretation---rather than \emph{extrapolation} to new regimes. Same-operating-point leakage is controlled, but generalisation to unsampled operating regimes (or to independently varied lubricant state) is untested; the excluded sub-floor cold-start sweeps illustrate the extrapolation failure mode.}
+  \item \textbf{Single bearing, lubricant, and session.} All results are
+    specific to the SYJ25 bearing, Keratech~22 oil, and one 14-hour
+    experimental session. Generalisability to other bearing types, sizes,
+    lubricants, or installations is unknown.
+  \item \textbf{Heterodyned US channel.} The passive US probe down-mixes a
+    narrow sensing band rather than recording wideband ultrasound; the
+    US-channel results should not be equated with those of a wideband passive
+    ultrasound sensor.
+  \item \textbf{Skewed $\kappa$ coverage.} The sampled $\kappa$ distribution is
+    concentrated in the boundary and mixed regimes, with full-film states
+    ($\kappa > 1$) under-represented; extrapolation into the full-film regime should be treated with caution.
+  \item \textbf{Model-derived $\kappa$ reference.} The regression target
+    inherits the ISO~281 and Walther-equation assumptions and is deterministic
+    in the operating point; no independent
+    measurement of the lubrication state was available.
+  \item \textbf{Interpolation, not extrapolation.} The grouped evaluation
+    controls same-operating-point leakage but not regime novelty; performance
+    on operating regimes outside the sampled staircase, or under independently
+    varied lubricant state, is untested.
 \end{enumerate}

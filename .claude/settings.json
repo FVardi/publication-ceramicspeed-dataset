@@ -25,5 +25,5 @@
       "Bash(.venv/Scripts/python -c ' *)"
     ]
   },
-  "model": "claude-opus-4-8"
+  "model": "claude-fable-5"
 }

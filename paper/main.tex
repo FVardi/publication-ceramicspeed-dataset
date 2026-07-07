@@ -82,19 +82,57 @@
     {\input{../outputs/07_paper_export/results_macros.tex}}%
     {\errmessage{results\_macros.tex not found: run scripts/07\_paper\_export.py}}}
 
-%% Fallbacks for macros not yet emitted by the export (paper mid-rewrite);
-%% real values take precedence once these are wired into the export script.
-\providecommand{\resDeltaRmseAeUs}{\textbf{??}}
-\providecommand{\resDeltaRmseCombAe}{\textbf{??}}
-\providecommand{\resDeltaRmseCombUs}{\textbf{??}}
-\providecommand{\resDmGroupAeUs}{\textbf{??}}
-\providecommand{\resDmGroupCombAe}{\textbf{??}}
-\providecommand{\resDmGroupCombUs}{\textbf{??}}
-\providecommand{\resDmNaiveAeUs}{\textbf{??}}
-\providecommand{\resDmNaiveCombAe}{\textbf{??}}
-\providecommand{\resDmNaiveCombUs}{\textbf{??}}
+%% Fallbacks for new-pipeline macros not yet emitted by an export script.
+%% PROVISIONAL values hand-copied from outputs/new/ (2026-07-07):
+%%   regression/featureset_comparison.csv, decomposition/tables/decomposition_summary.csv,
+%%   group_paired_tests/{complementarity_tests,channel_comparison}.csv.
+%% TODO: write scripts/new export step emitting these; exported \newcommand
+%% definitions will take precedence over these \providecommand fallbacks.
+% Dataset / grouping
+\providecommand{\resNgroups}{520}
+\providecommand{\resNwindowsPooled}{8498}
+% Pooled held-out regression performance
+\providecommand{\resPooledRsqEnetAe}{0.74}
+\providecommand{\resPooledRsqEnetUs}{0.79}
+\providecommand{\resPooledRsqEnetComb}{0.84}
+\providecommand{\resPooledRsqLgbAe}{0.92}
+\providecommand{\resPooledRsqLgbUs}{0.89}
+\providecommand{\resPooledRsqLgbComb}{0.95}
+\providecommand{\resPooledRmseEnetAe}{0.183}
+\providecommand{\resPooledRmseEnetUs}{0.162}
+\providecommand{\resPooledRmseEnetComb}{0.141}
+\providecommand{\resPooledRmseLgbAe}{0.103}
+\providecommand{\resPooledRmseLgbUs}{0.119}
+\providecommand{\resPooledRmseLgbComb}{0.081}
+% Operating-point decomposition (LightGBM)
+\providecommand{\resRpmRsqAe}{0.97}
+\providecommand{\resRpmRsqUs}{0.96}
+\providecommand{\resRpmRsqComb}{0.98}
+\providecommand{\resTempRsqAe}{0.78}
+\providecommand{\resTempRsqUs}{0.89}
+\providecommand{\resTempRsqComb}{0.90}
+\providecommand{\resTwoStageRsqAe}{0.90}
+\providecommand{\resTwoStageRsqUs}{0.89}
+\providecommand{\resTwoStageRsqComb}{0.95}
+\providecommand{\resDirectRsqAe}{0.91}
+\providecommand{\resDirectRsqUs}{0.89}
+\providecommand{\resDirectRsqComb}{0.95}
+\providecommand{\resResidRsqAe}{$+0.01$}
+\providecommand{\resResidRsqUs}{$-0.00$}
+\providecommand{\resResidRsqComb}{$+0.00$}
+% Group-level Diebold--Mariano tests (LightGBM; positive = first better)
+\providecommand{\resDeltaRmseAeUs}{$+0.016$}
+\providecommand{\resDeltaRmseCombAe}{$+0.022$}
+\providecommand{\resDeltaRmseCombUs}{$+0.038$}
+\providecommand{\resDmGroupAeUs}{$<0.001$}
+\providecommand{\resDmGroupCombAe}{$<0.001$}
+\providecommand{\resDmGroupCombUs}{$<0.001$}
+\providecommand{\resDmNaiveAeUs}{$<0.001$}
+\providecommand{\resDmNaiveCombAe}{$<0.001$}
+\providecommand{\resDmNaiveCombUs}{$<0.001$}
 
 %% ============================================================================
+% (sync touch)
 \begin{document}
 %% ============================================================================
 
