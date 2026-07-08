@@ -40,6 +40,10 @@
 \usepackage{booktabs}
 \setlength{\marginparwidth}{2cm}
 \usepackage[colorinlistoftodos]{todonotes}
+%% marginnote-based \marginpar: todonotes marginpars near page breaks between the
+%% large [H] floats otherwise die with "LaTeX Error: Float(s) lost".
+\usepackage{marginnote}
+\let\marginpar\marginnote
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{longtable}
