@@ -150,6 +150,41 @@ def _pred_grid():
 _pred_grid()
 
 
+def _pred_grid_combined():
+    """Single 2x3 grid (models x sensors) over the pooled held-out predictions,
+    for the paper's predicted-vs-actual figure."""
+    fig, axes = plt.subplots(len(MODELS), 3, figsize=(15, 5 * len(MODELS)),
+                             sharex=True, sharey=True, squeeze=False)
+    sc = None
+    for r, model in enumerate(MODELS):
+        for c, target in enumerate(TARGETS):
+            ax = axes[r][c]
+            fp = PRED_DIR / f"holdout_pooled_{model}_{target}_full.csv"
+            if not fp.exists():
+                ax.set_visible(False); continue
+            d = pd.read_csv(fp)
+            r2 = r2_score(d["y_true"], d["y_pred"])
+            sc = ax.scatter(d["y_true"], d["y_pred"], c=d["rpm"], cmap="viridis",
+                            s=8, alpha=0.5, edgecolors="none")
+            lim = [0, max(d["y_true"].max(), d["y_pred"].max()) * 1.05]
+            ax.plot(lim, lim, "k--", lw=1, alpha=0.6)
+            ax.set_xlim(lim); ax.set_ylim(lim)
+            ax.set_title(f"{target}  R²={r2:.3f}", fontsize=10)
+            if c == 0:
+                ax.set_ylabel(f"{model}\npredicted κ")
+            if r == len(MODELS) - 1:
+                ax.set_xlabel("true κ")
+    if sc is not None:
+        fig.colorbar(sc, ax=axes, label="RPM", shrink=0.6, pad=0.01)
+    fig.suptitle("Predicted vs true κ (pooled held-out)", fontsize=13)
+    fig.savefig(FIG_DIR / "predvactual_combined.png", dpi=DPI, bbox_inches="tight")
+    plt.close()
+    print("Saved: predvactual_combined.png")
+
+
+_pred_grid_combined()
+
+
 # %%
 # =============================================================================
 # 3. Marginal vs conditional correlation figure (paper style) — ALL features

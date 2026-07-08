@@ -86,6 +86,9 @@
     {\input{../outputs/07_paper_export/results_macros.tex}}%
     {\errmessage{results\_macros.tex not found: run scripts/07\_paper\_export.py}}}
 
+%% New-pipeline macros (scripts/new/paper_export.py)
+\IfFileExists{tables/results_macros_new.tex}{\input{tables/results_macros_new.tex}}{}
+
 %% Fallbacks for new-pipeline macros not yet emitted by an export script.
 %% PROVISIONAL values hand-copied from outputs/new/ (2026-07-07):
 %%   regression/featureset_comparison.csv, decomposition/tables/decomposition_summary.csv,
@@ -134,6 +137,15 @@
 \providecommand{\resDmNaiveAeUs}{$<0.001$}
 \providecommand{\resDmNaiveCombAe}{$<0.001$}
 \providecommand{\resDmNaiveCombUs}{$<0.001$}
+\providecommand{\resDeltaRmseEnetAeUs}{$-0.021$}
+\providecommand{\resDeltaRmseEnetCombAe}{$+0.042$}
+\providecommand{\resDeltaRmseEnetCombUs}{$+0.022$}
+\providecommand{\resDmGroupEnetAeUs}{$<0.001$}
+\providecommand{\resDmGroupEnetCombAe}{$<0.001$}
+\providecommand{\resDmGroupEnetCombUs}{$<0.001$}
+\providecommand{\resDmNaiveEnetAeUs}{$<0.001$}
+\providecommand{\resDmNaiveEnetCombAe}{$<0.001$}
+\providecommand{\resDmNaiveEnetCombUs}{$<0.001$}
 
 %% ============================================================================
 % (sync touch)

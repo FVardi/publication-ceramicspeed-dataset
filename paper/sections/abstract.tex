@@ -1,3 +1,29 @@
 \begin{abstract}
-Insert abstract
+This paper investigates whether acoustic emission (AE) and passive ultrasound
+(US) sensing provide complementary information about the lubrication condition of
+rolling-element bearings, and what such measurements actually capture. Wideband
+AE and heterodyned passive US are acquired simultaneously from a single ball
+bearing on an instrumented test rig, while the operating condition is varied over
+a staircase of rotational speeds repeated across a sequence of temperature
+blocks, driving the lubricant through the boundary, mixed, and full-film regimes.
+The ISO~281 viscosity ratio $\kappa$, computed from the measured speed and
+temperature, serves as a continuous reference for oil-film adequacy, and
+frequency-band features from both channels are regressed onto $\kappa$ with a
+regularised linear model and a gradient-boosted tree ensemble. To obtain
+deployment-representative estimates, the models are evaluated under an
+acquisition-grouped protocol that keeps closely related measurement segments from
+being split across training and evaluation.
+
+Both channels predict $\kappa$ accurately, and combining them improves on either
+alone---the first quantitative confirmation of the AE--US complementarity that had
+previously only been argued. A two-stage analysis shows, however, that almost all
+of this predictive performance can be recovered from the operating point that the
+sensors infer acoustically: within this dataset the acoustic $\kappa$-regression
+behaves as an operating-point soft sensor rather than a direct measurement of the
+lubricant film. The two channels are complementary because they encode partly
+different aspects of the operating point, ultrasound resolving temperature more
+strongly than acoustic emission. These findings clarify what acoustic
+$\kappa$-regression does and does not demonstrate about lubrication sensing, and
+indicate that detecting lubrication changes not caused by the operating condition
+remains an open problem.
 \end{abstract}

@@ -12,13 +12,12 @@
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Should there not be a filter which filters for the broadband AE?}{15}{section*.21}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Change this one pretties naming has been decided upon.}{16}{section*.24}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check the twin-merge criterion (nominal vs.\ mean) and thresholds}{20}{section*.27}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Regenerate the figure: it currently shows the legacy 80/20 holdout scheme.}{21}{section*.29}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Table~\ref {tab:models} currently shows legacy-pipeline numbers; regenerate from outputs/new/regression/featureset\_comparison.csv.}{22}{section*.32}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How are the models trained?}{23}{section*.33}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Under Elastic Net the AE-vs-US ordering in Table~\ref {tab:inference} reverses (US better, $p \approx 0$); decide whether to add an Elastic Net block to the table or report it in prose only.}{24}{section*.36}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Old figure which includes polynomial. Recreate.}{25}{section*.38}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Rewrite interpretation based upon new figure}{25}{section*.39}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Wire cluster names/values as macros from outputs/new/clustered\_shap.}{26}{section*.40}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Stale table with polynomial}{26}{section*.42}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{36}{section*.47}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{36}{section*.49}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Table~\ref {tab:models} currently shows legacy-pipeline numbers; regenerate from outputs/new/regression/featureset\_comparison.csv.}{22}{section*.31}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How are the models trained?}{23}{section*.32}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Under Elastic Net the AE-vs-US ordering in Table~\ref {tab:inference} reverses (US better, $p \approx 0$); decide whether to add an Elastic Net block to the table or report it in prose only.}{24}{section*.35}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Old figure which includes polynomial. Recreate.}{25}{section*.37}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Rewrite interpretation based upon new figure}{25}{section*.38}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Wire cluster names/values as macros from outputs/new/clustered\_shap.}{26}{section*.39}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Stale table with polynomial}{26}{section*.41}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{36}{section*.46}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{36}{section*.48}%

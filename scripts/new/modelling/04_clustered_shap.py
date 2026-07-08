@@ -73,14 +73,16 @@ _ABBR = {"mobility": "mob", "complexity": "cplx", "spectral_skewness": "sp.skew"
 
 
 def _short(name):
+    # keep the channel prefix so broadband AE/US features stay distinguishable
+    ch = "AE" if name.startswith("AE") else ("US" if name.startswith("US") else "")
     n = name.replace("AE__", "").replace("US__", "").replace("AE_", "").replace("US_", "")
     band, _, stat = n.partition("__")
-    if not stat:
-        return _ABBR.get(band, band)
+    if not stat:  # broadband: the leading token is the stat, no sub-band
+        return f"{ch} {_ABBR.get(band, band)}".strip()
     band = (band.replace("500-1000kHz", "0.5-1M").replace("20-500kHz", "20-500k")
                 .replace("20-100kHz", "20-100k").replace("10-20kHz", "10-20k")
                 .replace("0-10kHz", "0-10k"))
-    return f"{band} {_ABBR.get(stat, stat)}"
+    return f"{ch} {band} {_ABBR.get(stat, stat)}".strip()
 
 
 # %%
