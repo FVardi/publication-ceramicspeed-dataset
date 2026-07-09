@@ -88,11 +88,8 @@ held-out $R^2$, MAE, and RMSE ($n = \resNwindowsPooled$ segments in
 \end{table}
 
 \subsubsection{Overall performance}
-LightGBM outperforms Elastic Net in every sensor configuration, with pooled
-held-out $R^2 = \resPooledRsqLgbAe$ (AE), $\resPooledRsqLgbUs$ (US), and
-$\resPooledRsqLgbComb$ (combined), against $\resPooledRsqEnetAe$,
-$\resPooledRsqEnetUs$, and $\resPooledRsqEnetComb$ for Elastic Net. The size and
-consistency of this gap indicate that the feature--$\kappa$ mapping is
+LightGBM outperforms Elastic Net in every sensor configuration (Table~\ref{tab:models}); on the combined feature set, for example, it reaches pooled held-out $R^2 = \resPooledRsqLgbComb$ against $\resPooledRsqEnetComb$ for Elastic Net. The size and
+consistency of this gap across all configurations indicate that the feature--$\kappa$ mapping is
 substantially non-linear. The close agreement between the per-fold CV scores and
 the pooled held-out scores indicates stable generalisation across folds.
 

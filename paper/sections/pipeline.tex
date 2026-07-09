@@ -17,7 +17,7 @@ The waveforms of four different segments for both of the AE and US channels are 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/eda_spectrogram_chronological.png}
-\caption{Spectrograms of the raw AE and US ordered by segment number (chronological). PSD is calculated with Welch's method, Hann windows, 50\% overlap, and }
+\caption{Spectrograms of the raw AE and US ordered chronologically by acquisition time. PSD is calculated with Welch's method, Hann windows, 50\% overlap, and segment lengths of 4096 samples (AE; $\Delta f \approx 3$\,kHz) and 65536 samples (US; $\Delta f \approx 0.2$\,kHz).}
 \label{fig:spectrograms}
 \end{figure}\todo{Finalize specrogramsw with correct colors, ranges, and dashed lines for sub-bands}
 
@@ -44,7 +44,7 @@ US & Sub-band 3 & Band-pass & 20--100\,kHz     \\
 \end{tabular}}
 \caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
 \label{tab:subbands}
-\end{table}\todo{Should there not be a filter which filters for the broadband AE?}
+\end{table}
 
 \subsection{Feature set}
 \label{subsec:features_extract}

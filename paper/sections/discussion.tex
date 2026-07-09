@@ -54,8 +54,8 @@ separation, with the AE model led by a speed-tracking 500~kHz--1~MHz mobility
 cluster and the US model drawing on temperature-leaning baseband features. The
 two channels are thus complementary primarily because they encode partly
 distinct components of the operating point---a quantified answer to the
-complementarity question that has been argued, but not previously tested, in
-the LCM literature~\cite{shang_comprehensive_2024,wang_advanced_2024}.
+complementarity question that has not previously been tested in the LCM
+literature.
 
 Which single channel is preferable proved to be model-family dependent: Elastic
 Net favours US while LightGBM favours AE, both significantly. A plausible
@@ -83,12 +83,19 @@ measured operating point via the ISO~281 relations and the ASTM~D341 Walther
 equation (Section~\ref{subsec:kappa}). It therefore inherits the assumptions of
 those relations, notably the use of housing temperature as a proxy for the
 elastohydrodynamic contact temperature and the assumption of nominally intact
-lubricant. More fundamentally, because the target is deterministic in the
+lubricant. A further assumption is that lubricant supply is sufficient for fully
+flooded inlet conditions: as noted in Section~\ref{subsec:kappa}, high rotational
+speeds can induce starvation that reduces the actual film below $\kappa$'s
+prediction even when the bulk lubricant is intact~\cite{poll_starved_2019}.
+Whether the staircase protocol's higher speed steps induced starvation, and
+whether the acoustic signals carry a starvation signature that the regression
+attributes to the operating point rather than the film state, has not been
+investigated. More fundamentally, because the target is deterministic in the
 operating point, some degree of $\kappa$-regression success is guaranteed for
 any feature set that is informative about the operating point. The
 decomposition of Section~\ref{subsubsec:decomposition} quantifies this share
 rather than leaving it implicit. Breaking the circularity requires an independent reference---a
-film-thickness measurement, electrical contact resistance, or an experiment in
+film-thickness measurement~\cite{shang_comprehensive_2024}, electrical contact resistance, or an experiment in
 which the lubricant state is varied independently of the operating point.
 
 \subsection{Evaluation protocol and comparability with prior work}
