@@ -10,37 +10,10 @@ regressed to the ISO~281 viscosity ratio $\kappa$ under an acquisition-grouped,
 leakage-controlled evaluation protocol. The main findings are as follows:
 
 \begin{enumerate}
-  \item \textbf{AE and passive US are complementary.} The combined feature set
-    outperforms either channel alone for both model families (pooled held-out
-    $R^2 = \resPooledRsqLgbComb$ against \resPooledRsqLgbAe{} for AE and
-    \resPooledRsqLgbUs{} for US under LightGBM), providing the first
-    quantitative confirmation of the complementarity that has previously only
-    been argued. The complementarity has a structural basis: both channels
-    track rotational speed, but US resolves temperature substantially better
-    than AE. Which single channel performs best is model-family dependent
-    (Elastic Net favours US, LightGBM favours AE), so single-model channel
-    comparisons should be interpreted with caution.
-  \item \textbf{The $\kappa$ regression acts as an operating-point soft
-    sensor.} A two-stage decomposition---predicting speed and temperature from
-    the features and applying the ISO~281 mapping---recovers essentially all of
-    the direct regression performance for every channel, leaving no measurable
-    lubrication-specific residual. Reported accuracies for acoustic $\kappa$
-    regression, here and in prior work, should be interpreted as
-    operating-point recovery; detecting lubrication changes that are not caused
-    by the operating point remains an open problem.
-  \item \textbf{Leakage-controlled evaluation changes the picture.} Grouping
-    segments by acquisition hold and merging operating-point twins prevents
-    near-duplicate windows from crossing the training--evaluation boundary, and
-    group-level significance testing avoids the inflation of window-level
-    tests. The reported figures are conservative, deployment-representative
-    estimates and are not directly comparable to results obtained under random
-    splits.
+  \item \textbf{The $\kappa$ regression acts as an operating-point soft sensor.}
+  A two-stage decomposition that predicts speed and temperature from the features and then calculates $\kappa$ recovers essentially all of
+  the direct regression performance for every channel, leaving no measurable lubrication-specific residual. Reported accuracies for acoustic $\kappa$ regression, here and in prior work, should be interpreted as operating-point recovery. Detecting lubrication changes that are not caused by the operating point through acoustic measurements remains an open problem.
+  \item \textbf{AE and passive US are complementary.} The combined feature set outperforms either channel alone for both model families,providing quantitative indication of the complementarity. The complementarity has a structural basis: both channels track rotational speed, but US resolves temperature substantially better than AE. Which single channel performs best is model-family dependent, so single-model channel comparisons should be interpreted with caution.
+  \item \textbf{Leakage-controlled evaluation changes the picture.}
+  Grouping segments by acquisition hold and operating-point similarity prevents near-duplicate windows from crossing the training--evaluation boundary, and group-level significance testing avoids the inflation of window-level tests. The reported figures are conservative, deployment-representative estimates.
 \end{enumerate}
-
-Future work should validate the model-derived $\kappa$ reference against an
-independent film-thickness or contact-resistance measurement, replace the
-heterodyned probe with a wideband passive ultrasound sensor, vary the lubricant
-state independently of the operating point (degradation, contamination,
-starvation), extend the protocol to multiple bearings, lubricants, and
-sessions, and pursue amplitude-invariant spectral-shape features designed to be
-robust to operating-condition variation.

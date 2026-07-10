@@ -9,21 +9,18 @@ blocks, driving the lubricant through the boundary, mixed, and full-film regimes
 The ISO~281 viscosity ratio $\kappa$, computed from the measured speed and
 temperature, serves as a continuous reference for oil-film adequacy, and
 frequency-band features from both channels are regressed onto $\kappa$ with a
-regularised linear model and a gradient-boosted tree ensemble. To obtain
-deployment-representative estimates, the models are evaluated under an
-acquisition-grouped protocol that keeps closely related measurement segments from
-being split across training and evaluation.
-
-Both channels predict $\kappa$ accurately, and combining them improves on either
-alone---the first quantitative confirmation of the AE--US complementarity that had
-previously only been argued. A two-stage analysis shows, however, that almost all
-of this predictive performance can be recovered from the operating point that the
-sensors infer acoustically: within this dataset the acoustic $\kappa$-regression
-behaves as an operating-point soft sensor rather than a direct measurement of the
-lubricant film. The two channels are complementary because they encode partly
-different aspects of the operating point, ultrasound resolving temperature more
-strongly than acoustic emission. These findings clarify what acoustic
-$\kappa$-regression does and does not demonstrate about lubrication sensing, and
-indicate that detecting lubrication changes not caused by the operating condition
-remains an open problem.
+regularised linear model and a gradient-boosted tree ensemble, evaluated under an
+acquisition-grouped protocol that prevents leakage of near-duplicate segments
+across the training--evaluation boundary.
+A two-stage decomposition shows that operating-point estimation is sufficient to
+reproduce the direct $\kappa$-regression performance for every channel, with no
+measurable contribution beyond it: within this dataset the acoustic
+$\kappa$ regression behaves as an operating-point soft sensor. Combining the two
+channels nonetheless outperforms either alone---the first quantitative
+confirmation of the AE--US complementarity---because they encode partly distinct
+operating-condition information, ultrasound resolving temperature more strongly
+than acoustic emission. These findings clarify what acoustic $\kappa$ regression
+does and does not demonstrate about lubrication sensing, and indicate that
+detecting lubrication changes not caused by the operating condition remains an
+open problem.
 \end{abstract}

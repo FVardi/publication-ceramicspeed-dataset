@@ -8,5 +8,5 @@
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Select new files. The first file shows weird waveforms for both AE and US (clipping)}{14}{section*.15}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Finalize specrogramsw with correct colors, ranges, and dashed lines for sub-bands}{14}{section*.17}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Change this one pretties naming has been decided upon.}{16}{section*.21}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{34}{section*.34}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{34}{section*.36}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{33}{section*.34}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{33}{section*.36}%

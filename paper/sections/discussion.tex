@@ -12,7 +12,7 @@ discussed as follows.
 \subsection{The $\kappa$ regression is an operating-point soft sensor}
 \label{subsec:disc_softsensor}
 
-The two-stage decomposition (Section~\ref{subsubsec:decomposition}) shows that
+The two-stage decomposition (Section~\ref{subsec:decomposition}) shows that
 the direct $\kappa$-regression performance is recovered almost entirely from
 acoustically inferred operating points alone: for every channel, predicting RPM
 and temperature from the features and passing the estimates through the ISO~281
@@ -37,7 +37,8 @@ reported accuracy, since the learned mapping is anchored in the operating
 point. Second, changes in lubrication adequacy that are \emph{not} caused by
 the operating point---degradation, contamination, starvation, none of which
 $\kappa$ encodes---are outside the demonstrated
-capability, and detecting them with and online, non-invasive method remains an open problem.
+capability, and detecting them with an online, non-invasive method remains an open problem.
+All results are specific to the SYJ25 bearing, Keratech~22 oil, and one 14-hour experimental session; whether these conclusions hold for other bearing types, sizes, lubricants, or installations is unknown.
 
 \subsection{AE--US complementarity and channel encoding}
 \label{subsec:disc_channels}
@@ -90,10 +91,12 @@ prediction even when the bulk lubricant is intact~\cite{poll_starved_2019}.
 Whether the staircase protocol's higher speed steps induced starvation, and
 whether the acoustic signals carry a starvation signature that the regression
 attributes to the operating point rather than the film state, has not been
-investigated. More fundamentally, because the target is deterministic in the
+investigated. The sampled $\kappa$ distribution is also concentrated in the
+boundary and mixed regimes; extrapolation into the full-film range ($\kappa > 1$)
+should be treated with caution. More fundamentally, because the target is deterministic in the
 operating point, some degree of $\kappa$-regression success is guaranteed for
 any feature set that is informative about the operating point. The
-decomposition of Section~\ref{subsubsec:decomposition} quantifies this share
+decomposition of Section~\ref{subsec:decomposition} quantifies this share
 rather than leaving it implicit. Breaking the circularity requires an independent reference---a
 film-thickness measurement~\cite{shang_comprehensive_2024}, electrical contact resistance, or an experiment in
 which the lubricant state is varied independently of the operating point.
@@ -115,28 +118,3 @@ is surrounded by near-neighbour training points: the high $R^2$ reflects
 with the soft-sensor interpretation, rather than extrapolation to unseen
 regimes. Same-operating-point leakage is controlled, but generalisation to
 unsampled operating regimes is untested.
-
-\subsection{Limitations}
-\label{subsec:disc_limits}
-
-\begin{enumerate}
-  \item \textbf{Single bearing, lubricant, and session.} All results are
-    specific to the SYJ25 bearing, Keratech~22 oil, and one 14-hour
-    experimental session. Generalisability to other bearing types, sizes,
-    lubricants, or installations is unknown.
-  \item \textbf{Heterodyned US channel.} The passive US probe down-mixes a
-    narrow sensing band rather than recording wideband ultrasound; the
-    US-channel results should not be equated with those of a wideband passive
-    ultrasound sensor.
-  \item \textbf{Skewed $\kappa$ coverage.} The sampled $\kappa$ distribution is
-    concentrated in the boundary and mixed regimes, with full-film states
-    ($\kappa > 1$) under-represented; extrapolation into the full-film regime should be treated with caution.
-  \item \textbf{Model-derived $\kappa$ reference.} The regression target
-    inherits the ISO~281 and Walther-equation assumptions and is deterministic
-    in the operating point; no independent
-    measurement of the lubrication state was available.
-  \item \textbf{Interpolation, not extrapolation.} The grouped evaluation
-    controls same-operating-point leakage but not regime novelty; performance
-    on operating regimes outside the sampled staircase, or under independently
-    varied lubricant state, is untested.
-\end{enumerate}

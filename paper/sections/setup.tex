@@ -6,7 +6,7 @@
 \subsection{Experimental rig}
 \label{subsec:rig}
 
-The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). The rig is used for conducting experiments under conditions, where rotational speed, load, temperature, and lubricant amount can be controlled. \todo{Should there be more general motivation for this?} It can be seen in Figure~\ref{fig:test_rig}.
+The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). The rig is used for conducting experiments under conditions, where rotational speed, load, temperature, and lubricant amount can be controlled. \todo{Should there be more general motivation for this?} It can be seen in Fig.~\ref{fig:test_rig}.
 
 \begin{figure}[H]
 \centering
@@ -47,7 +47,7 @@ Data are acquired as short segments rather than continuously: every $\sim$\resWi
 
 Since the operating conditions are maintained through a control loop, they vary from the nominal conditions specified by the protocol. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded \SI{40}{\celsius} floor (down to $\approx$\SI{33}{\celsius}), which is tentatively attributed to instability of the temperature control rather than to any commanded set-point. During the last temperature block, the speed recordings at the top of the speed staircase were corrupted and are therefore discarded.
 
-After excluding an initial stationary warm-up segment recorded before the first staircase and \resNsweepsRemoved{} segments with measured RPM above the \SI{3000}{rpm}, \resNsweeps{} segments per channel remain (median \resSweepsPerHold{} segments per staircase hold). The measured operating conditions space and the distribution of calculated $\kappa$ values for the remaining segments are seen in Figure~\ref{fig:op_conditions_distribution}. The measured operating conditions over time, ordered by acquisition time are seen in Figure~\ref{fig:op_conditions_timeseries}. The $\kappa$ value for each segment is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-segment measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther equation. The $\kappa$ values range from adequate ($\kappa\approx1.6$) to insufficient ($\kappa\approx0.05$).
+After excluding an initial stationary warm-up segment recorded before the first staircase and \resNsweepsRemoved{} segments with measured RPM above the \SI{3000}{rpm}, \resNsweeps{} segments per channel remain (median \resSweepsPerHold{} segments per staircase hold). The measured operating conditions space and the distribution of calculated $\kappa$ values for the remaining segments are seen in Fig.~\ref{fig:op_conditions_distribution}. The measured operating conditions over time, ordered by acquisition time are seen in Fig.~\ref{fig:op_conditions_timeseries}. The $\kappa$ value for each segment is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-segment measured RPM and temperature, with \nuop{} evaluated via the ASTM~D341 Walther equation. The $\kappa$ values range from adequate ($\kappa\approx1.6$) to insufficient ($\kappa\approx0.05$).
 
 \begin{figure}[H]
 \centering

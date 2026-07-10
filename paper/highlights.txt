@@ -1,0 +1,7 @@
+Highlights
+
+- Simultaneous AE and passive US regressed to the ISO 281 viscosity ratio
+- Two-stage decomposition quantifies the operating-point proxy share of kappa models
+- Within-speed-step analysis isolates a temperature-mediated lubrication channel
+- AE-US fusion cuts RMSE 26% over AE alone, significant on all tests
+- Visit-grouped splits remove near-duplicate leakage from reported performance
