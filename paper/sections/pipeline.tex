@@ -5,25 +5,25 @@
 
 \subsection{Waveforms and spectrograms}
 
-The waveforms of four different segments for both of the AE and US channels are seen in Fig.~\ref{fig:waveforms}, and the spectrograms of all segments over time are seen in Fig.~\ref{fig:spectrograms}. AE and US qualitatively display clearly different waveforms and frequency content in all segments. AE in general contains spectral energy from 0Hz to 1MHz as expected from the AE sensor and band-pass filter applied during data acquisition. Energy above 1 MHz was observed in the FFT despite the nominal acquisition bandwidth. This component is attributed to residual filter attenuation, sensor/electronic response, or spectral leakage rather than physical bearing emissions. Since its origin could not be reliably established, frequencies above 1 MHz were excluded from subsequent analysis.
+The waveforms of four different segments for both of the AE and US channels are seen in Fig.~\ref{fig:waveforms}, and the spectrograms of all segments over time are seen in Fig.~\ref{fig:spectrograms}. AE and US qualitatively display clearly different waveforms and frequency content in all segments. AE in general contains spectral energy from \SI{50}{kHz} to \SI{1}{MHz} as expected from the AE sensor and band-pass filter applied during data acquisition. Some energy also appears above 1 MHz, but as its origin could not be reliably established it is excluded from subsequent analysis.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/eda_waveforms.png}
 \caption{Waveforms of AE and US signals from the same segments for different values of $\kappa$. AE shows transient energy bursts consistent with impulsive contact-related events. US shows a more regular, lower frequency, non-stationary waveform.}
 \label{fig:waveforms}
-\end{figure}\todo{Select new files. The first file shows weird waveforms for both AE and US (clipping)}
+\end{figure}\todo{Select new files. The first file shows weird waveforms for both AE and US (clipping). Maybe same y-axis?}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/eda_spectrogram_chronological.png}
-\caption{Spectrograms of the raw AE and US ordered chronologically by acquisition time. PSD is calculated with Welch's method, Hann windows, 50\% overlap, and segment lengths of 4096 samples (AE; $\Delta f \approx 3$\,kHz) and 65536 samples (US; $\Delta f \approx 0.2$\,kHz).}
+\caption{Spectrograms of the raw AE and US ordered chronologically by acquisition time. PSD is calculated with Welch's method, Hann windows, 50\% overlap, and segment lengths of 4096 samples and 65536 samples, respectively.}
 \label{fig:spectrograms}
-\end{figure}\todo{Finalize specrogramsw with correct colors, ranges, and dashed lines for sub-bands}
+\end{figure}\todo{Finalize specrograms with correct colors, ranges, and dashed lines for sub-bands}
 
 \subsection{Sub-band decomposition}
 \label{subsec:filter_bands}
-The AE and US signals are decomposed into frequency sub-bands prior to feature extraction, since the predictive information related to $\kappa$ is expected to be more localised in sub-bands than in broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}. For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz, containing bands of spectral energy which upon visual inspection of Fig.~\ref{fig:spectrograms} vary with the operating conditions. Content above the \SI{1}{MHz} coupler low-pass is excluded from the feature set. For the US channel, the signal spans the probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband, and 20--100~kHz. The 0–20 kHz bands correspond to the audible heterodyned baseband commonly used in commercial passive ultrasound instruments, while 20–100 kHz evaluates whether additional ultrasonic information retained after acquisition contributes to prediction. The sub-bands are summarised in Table~\ref{tab:subbands}. The goal of sub-band feature extraction is not to find the most informative, physically motivated frequency bands, but to extract more information than from simple broadband features. Usefulness of sub-bands is expected to vary across test rig setups, bearings, lubricants, and operating conditions, so datamining for optimal sub-bands is furthermore expected to overfit on this particular setup. All decompositions use 5th-order Butterworth filters applied forward--backward giving zero phase distortion and a 10th-order effective magnitude response.
+The AE and US signals are decomposed into frequency sub-bands prior to feature extraction, since the predictive information related to $\kappa$ is expected to be more localised in sub-bands than in broadband signals~\cite{renhart_ae_2021, zhang_coupled_2026}. For the AE channel, two sub-bands are extracted in addition to the broadband signal: 20--500~kHz and 500~kHz--1~MHz, containing bands of spectral energy which upon visual inspection of Fig.~\ref{fig:spectrograms} vary with the operating conditions. Content above the \SI{1}{MHz} coupler low-pass is excluded from the feature set. The coupler additionally high-passes at \SI{50}{kHz} before digitisation (Section~\ref{subsec:rig}), so the AE broadband spans \SI{50}{kHz}--\SI{1}{MHz} and the 20--500~kHz sub-band---a nominal digital passband---carries effective content of 50--500~kHz, as no energy remains below \SI{50}{kHz}. For the US channel, the signal spans the probe's 0--100~kHz acquisition band, and three sub-bands are extracted in addition to the broadband signal: 0--10~kHz and 10--20~kHz within the nominal heterodyned baseband, and 20--100~kHz. The 0–20 kHz bands correspond to the audible heterodyned baseband commonly used in commercial passive ultrasound instruments, while 20–100 kHz evaluates whether additional ultrasonic information retained after acquisition contributes to prediction. The sub-bands are summarised in Table~\ref{tab:subbands}. The goal of sub-band feature extraction is not to find the most informative, physically motivated frequency bands, but to extract more information than from simple broadband features. Usefulness of sub-bands is expected to vary across test rig setups, bearings, lubricants, and operating conditions, so datamining for optimal sub-bands is furthermore expected to overfit on this particular setup. All decompositions use 5th-order Butterworth filters applied forward--backward giving zero phase distortion and a 10th-order effective magnitude response.
 
 \begin{table}[htbp]
 \centering
@@ -32,7 +32,7 @@ The AE and US signals are decomposed into frequency sub-bands prior to feature e
 \toprule
 \textbf{Channel} & \textbf{Sub-band} & \textbf{Filter type} & \textbf{Frequency range} \\
 \midrule
-AE & Broadband  & --        & 0--1\,MHz        \\
+AE & Broadband  & --        & 50\,kHz--1\,MHz        \\
 AE & Sub-band 1 & Band-pass & 20--500\,kHz     \\
 AE & Sub-band 2 & Band-pass & 500\,kHz--1\,MHz \\
 US & Broadband  & Low-pass  & 0--100\,kHz      \\
@@ -41,14 +41,14 @@ US & Sub-band 2 & Band-pass & 10--20\,kHz      \\
 US & Sub-band 3 & Band-pass & 20--100\,kHz     \\
 \bottomrule
 \end{tabular}}
-\caption{Frequency sub-bands used for signal pre-filtering before feature extraction.}
+\caption{Frequency sub-bands used for signal pre-filtering before feature extraction. AE ranges reflect the coupler's \SI{50}{kHz}--\SI{1}{MHz} passband (Section~\ref{subsec:rig}); the 20--500~kHz sub-band is the nominal digital filter, with effective content 50--500~kHz.}
 \label{tab:subbands}
 \end{table}
 
 \subsection{Feature set}
 \label{subsec:features_extract}
 
-Features are computed from the voltage signal of each segment--sensor pair, for the broadband signal and for each sub-band. In total 14 features are computed, comprising 8 time-domain and 6 frequency-domain statistics, as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately sought to be canonical: commonly used features such as standard deviation, variance, peak, impulse factor, and RMS frequency are approximately equivalent to of products of the chosen features (e.g.\ $\mathrm{std}=\mathrm{RMS}$ for zero-mean band-filtered signals; $\mathrm{peak}=\mathrm{crest}\times\mathrm{RMS}$; $\mathrm{impulse}=\mathrm{crest}\times\mathrm{shape}$; and the RMS frequency satisfies $f_{\mathrm{RMS}}^2 = f_c^2 + \sigma_w^2$, where $f_c$ is the spectral centroid and $\sigma_w$ the spectral bandwidth) and are therefore omitted, so that no feature is a deterministic function of another. All features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
+Features are computed from the voltage signal of each segment--sensor pair, for the broadband signal and for each sub-band. In total 14 features are computed, comprising 8 time-domain and 6 frequency-domain statistics, as listed in Tables~\ref{tab:features} and~\ref{tab:features_freq}. The set is deliberately sought to be canonical: commonly used features such as standard deviation, variance, peak, impulse factor, and RMS frequency are approximately equivalent to products of the chosen features and are therefore omitted, so that no feature is a deterministic function of another. All features (without the specific sub-bands) have previously been applied to signals for bearing condition monitoring and LCM~\cite{jakobsen_detecting_2023,zhang_graph_2024}; the Hjorth parameters originate from EEG analysis~\cite{hjorth_eeg_1970}.
 
 \begin{table}[htbp]
 \centering
@@ -93,10 +93,10 @@ Spectral flatness & $\exp(K'^{-1}\!\sum_{k:S_k>0}\!\ln S_k)\,/\,\bar{S}$ & Tonal
 \label{tab:features_freq}
 \end{table}
 
-All frequency-domain features are computed from the one-sided FFT magnitude spectrum of the sweep. The spectral skewness and kurtosis are standardised by
+All frequency-domain features are computed from the one-sided FFT magnitude spectrum of the segment. The spectral skewness and kurtosis are standardised by
 $\sigma_w^p\,\Sigma S$ and are therefore dimensionless and invariant to overall signal amplitude, so that spectral-shape information is separated from the amplitude
 information carried by RMS.
 
-Extracting the 14-feature set independently for the broadband signal and each sub-band yields $14 \times 3 = \resNcandAe$~AE features (broadband plus two sub-bands) and $14 \times 4 = \resNcandUs$~US features (broadband plus three sub-bands) per sweep. Features are named by channel, band, and statistic (e.g.\ \texttt{AE\_500-1000kHz\_\_mobility});\todo{Change this one pretties naming has been decided upon.} broadband features carry no band prefix. These two sets, and their union (the combined AE+US set, $\resNcandAe + \resNcandUs$ features), define the three sensor configurations---AE-only, US-only, and combined.
+Extracting the 14-feature set independently for the broadband signal and each sub-band yields \resNcandAe~AE features (broadband plus two sub-bands) and \resNcandUs~US features (broadband plus three sub-bands) per segment. Features are named by channel, band, and statistic (e.g.\ \texttt{AE\_500-1000kHz\_\_mobility});\todo{Change this once prettier names have been decided upon.} broadband features carry no band prefix. These two sets, and their union (the combined AE+US set, $\resNcandAe + \resNcandUs$ features), define the three sensor configurations---AE-only, US-only, and combined.
 
 The extracted features are not assumed to represent lubrication-specific quantities. Instead, they provide a compact representation of acoustic signal characteristics that may contain contributions from lubrication-dependent contact dynamics, operating conditions, structural transmission effects, and sensor coupling. The subsequent analysis therefore evaluates which of these contributions explains $\kappa$ prediction performance.

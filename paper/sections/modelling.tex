@@ -6,7 +6,7 @@
 \subsection{Experimental design}
 \label{subsec:modelling_design}
 
-Three feature sets are evaluated: AE-only, US-only, and combined AE+US. Both model families are fitted to each, giving six model--sensor configurations in total. Models are trained on the full candidate feature sets (\resNcandAe{} AE and \resNcandUs{} US features); no feature selection is applied, as preliminary experiments showed no accuracy benefit from it. Interpretation is instead performed post hoc with redundancy-aware clustered SHAP.
+Having characterised what the features encode, we now regress them onto $\kappa$. Three feature sets are evaluated: AE-only, US-only, and combined AE+US. Both model families are fitted to each, giving six model--sensor configurations in total. Models are trained on the full candidate feature sets (\resNcandAe{} AE and \resNcandUs{} US features) and no feature selection is applied, as preliminary experiments showed no accuracy benefit from it. Interpretation is instead performed post hoc with redundancy-aware clustered SHAP.
 
 \subsubsection{Grouping and data splits}
 The segments from which features are calculated are grouped to prevent soft leakage of information: segments collected close together in time or under matching operating conditions encode near-duplicate signal characteristics and must not straddle a fold boundary. The grouping protocol consists of two steps:
@@ -16,12 +16,12 @@ The segments from which features are calculated are grouped to prevent soft leak
 \end{enumerate}
 This yields \resNgroups{} groups of \resNwindowsPooled{} segments in total.
 
-The groups are evaluated by a single-pass 5-fold grouped cross-validation over the full dataset. Each fold is held out exactly once, while hyperparameter selection and model fitting are repeated from scratch on the remaining four folds. Pooling the five held-out folds therefore yields one prediction for every segment from a model that never saw its group during training or tuning. All reported performance figures and significance tests are computed on these pooled held-out predictions. The procedure is visualised in Fig.~\ref{fig:data_partition}.
+The groups are evaluated by a single-pass 5-fold grouped cross-validation over the full dataset. Each fold is held out exactly once, while hyperparameter selection and model fitting are repeated from scratch on the remaining four folds. Pooling the five held-out folds yields one prediction for every segment from a model that never saw its group during training or tuning. All reported performance figures and significance tests are computed on these pooled held-out predictions. The procedure is visualised in Fig.~\ref{fig:data_partition}.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1\textwidth]{figures/nested_cv.png}
-\caption{Data partitioning scheme: acquisition-hold groups (60-second RPM holds,
+\caption{Data partitioning scheme: acquisition-hold groups (60-second holds,
 twin-merged across the up- and down-sweep) are partitioned by a single-pass 5-fold
 grouped cross-validation. Each fold is scored once by a model tuned and fitted on
 the remaining four folds, and the held-out predictions are pooled.}
@@ -32,13 +32,7 @@ the remaining four folds, and the held-out predictions are pooled.}
 \label{subsec:model_families}
 
 Two regression model families are evaluated across the three sensor configurations,
-as summarised in Table~\ref{tab:model_families}. For LightGBM, each CV fold contains
-its own inner Optuna optimisation loop, ensuring that the reported fold scores are not
-contaminated by hyperparameter selection on the fold test data. For Elastic Net,
-\texttt{ElasticNetCV} performs an inner 4-fold grouped search over the
-$\alpha$/$\ell_1$-ratio grid within each outer training partition; the selected
-hyperparameters are refit on the full outer-training fold before the fold test set
-is scored. The inner search is group-aware, matching the outer split structure.
+as summarised in Table~\ref{tab:model_families}. Both are tuned by a group-aware inner cross-validation within each outer training fold---Optuna for LightGBM, \texttt{ElasticNetCV} for Elastic Net---so that fold scores are never contaminated by hyperparameter selection on the held-out data.
 
 \begin{table}[htbp]
 \centering
@@ -58,20 +52,13 @@ LightGBM & Gradient-boosted trees; captures non-linear feature--$\kappa$ mapping
 \subsection{Statistical significance testing}
 \label{subsec:sig_tests}
 
-Three cross-sensor comparisons form the study's focal claims: AE vs.\ US,
-Combined vs.\ AE, and Combined vs.\ US. Each is tested with a group-level
-modified Diebold--Mariano test~\cite{harvey_testing_1997}. The unit of analysis
-is the acquisition-hold group rather than the individual window: windows within
-a 60\,s hold are near-duplicates, so a window-level test treats correlated
-observations as independent and grossly overstates significance. Instead, the
-squared-error differential $d_i = e_{A,i}^2 - e_{B,i}^2$ is averaged within
-each holdout group, and the Harvey et al.\ small-sample correction
-($\times\sqrt{(T-1)/T}$, $t_{T-1}$ reference distribution) is applied to the
-resulting $T$ group means. The naive window-level $p$-value is reported
-alongside each result to make the degree of inflation explicit.
+Three cross-sensor comparisons form the study's focal claims: AE vs.\ US, Combined vs.\ AE, and Combined vs.\ US. Each is tested with a group-level modified Diebold--Mariano test~\cite{harvey_testing_1997}. The unit of analysis is the same set of groups used for the regression modelling, so that overly similar segments do not overstate the significance. The squared-error differential $d_i = e_{A,i}^2 - e_{B,i}^2$ is averaged within each holdout group, and the Harvey et al.\ small-sample correction is applied to the resulting $\resNgroups$ group means. The naive segment-level $p$-value is reported alongside each result to make the degree of inflation explicit.
 
 \section{Results}
 \label{sec:results}
+
+\subsection{Overall performance}
+As Table~\ref{tab:models} shows, all six model--sensor configurations predict $\kappa$ well, with LightGBM ahead of Elastic Net in every one. The size and consistency of this gap indicate a substantially non-linear feature--$\kappa$ mapping, and the close agreement between the per-fold and pooled held-out scores indicates stable generalisation. How much of this accuracy reflects operating-point inference rather than lubrication sensing is the question taken up next.
 
 \begin{table}[H]
 \centering
@@ -82,34 +69,20 @@ alongside each result to make the degree of inflation explicit.
     {\input{../outputs/07_paper_export/table_models_tabular.tex}}%
     {\todo[inline]{Run scripts/07\_paper\_export.py to generate table\_models\_tabular.tex.}}}
 \caption{Regression model performance: mean grouped-CV $R^2$ per fold and pooled
-held-out $R^2$, MAE, and RMSE ($n = \resNwindowsPooled$ segments in
-\resNgroups{} groups). Best pooled $R^2$ in bold.}
+held-out $R^2$, MAE, and RMSE. Best pooled $R^2$ in bold.}
 \label{tab:models}
 \end{table}
 
-\subsection{Overall performance}
-LightGBM outperforms Elastic Net in every sensor configuration (Table~\ref{tab:models}); on the combined feature set, for example, it reaches pooled held-out $R^2 = \resPooledRsqLgbComb$ against $\resPooledRsqEnetComb$ for Elastic Net. The size and
-consistency of this gap across all configurations indicate that the feature--$\kappa$ mapping is
-substantially non-linear. The close agreement between the per-fold CV scores and
-the pooled held-out scores indicates stable generalisation across folds.
-
 \subsection{Operating-point decomposition}
 \label{subsec:decomposition}
-Because $\kappa$ is a deterministic function of the measured operating point
-(Eq.~\eqref{eq:kappa}), any $\kappa$-regression performance may in principle be
-obtained by inferring the operating point acoustically and applying the ISO~281
-mapping. To quantify this share, a two-stage model is evaluated under the same
-pooled grouped cross-validation: the features first predict RPM and temperature, and the
-predictions are passed through Eqs.~\eqref{eq:kappa} and \eqref{eq:nu1} to obtain
-$\kappa$. The feature-to-RPM and feature-to-temperature models are LightGBM regressors, trained per fold on the four training folds and scored on the held-out fold, exactly as the direct feature-to-$\kappa$ regression of Table~\ref{tab:models}. Table~\ref{tab:decomposition} compares the two-stage and direct
-regressions.
+Because $\kappa$ is a deterministic function of the measured operating point (Eq.~\eqref{eq:kappa}), any $\kappa$-regression performance may in principle be obtained by inferring the operating point acoustically and applying the ISO~281 mapping. To explore this path, a two-stage model is evaluated under the same pooled grouped cross-validation. The features first predict rotational speed and temperature, and the predictions are passed through Eqs.~\eqref{eq:kappa} and \eqref{eq:nu1} to obtain $\kappa$. The feature-to-speed and feature-to-temperature models are LightGBM regressors, trained per fold on the four training folds and scored on the held-out fold, exactly as the direct feature-to-$\kappa$ regression of Table~\ref{tab:models}. Table~\ref{tab:decomposition} compares the two-stage and direct regressions.
 
 \begin{table}[H]
 \centering
 \small
 \begin{tabular}{@{} l c c c c c @{}}
 \toprule
-\textbf{Channel} & $R^2$ (RPM) & $R^2$ (temp.) & $R^2$ ($\kappa$, two-stage) & $R^2$ ($\kappa$, direct) & Residual \\
+\textbf{Channel} & $R^2$ (speed) & $R^2$ (temp.) & $R^2$ ($\kappa$, two-stage) & $R^2$ ($\kappa$, direct) & Residual \\
 \midrule
 AE       & \resRpmRsqAe   & \resTempRsqAe   & \resTwoStageRsqAe   & \resDirectRsqAe   & \resResidRsqAe \\
 US       & \resRpmRsqUs   & \resTempRsqUs   & \resTwoStageRsqUs   & \resDirectRsqUs   & \resResidRsqUs \\
@@ -117,44 +90,21 @@ Combined & \resRpmRsqComb & \resTempRsqComb & \resTwoStageRsqComb & \resDirectRs
 \bottomrule
 \end{tabular}
 \caption{Operating-point decomposition (LightGBM, pooled grouped CV): $R^2$ of the
-feature-based RPM and temperature regressions, the two-stage $\kappa$ estimate
+feature-based rotational speed and temperature regressions, the two-stage $\kappa$ estimate
 obtained by passing these through the ISO~281 mapping, and the direct $\kappa$
 regression. Residual is the direct-minus-two-stage difference.}
 \label{tab:decomposition}
 \end{table}
 
-Both channels recover the rotational speed almost perfectly
-($R^2 = \resRpmRsqAe$--$\resRpmRsqComb$) and the temperature well, with US
-markedly stronger on temperature ($R^2 = \resTempRsqUs$ vs.\ \resTempRsqAe{} for
-AE), consistent with the conditional correlation structure of
-Section~\ref{subsec:confound}. For every channel the two-stage $\kappa$ estimate
-matches the direct regression to within $\approx$0.01~$R^2$: the direct models
-perform no better than operating-point inference followed by the ISO~281 mapping.
-The small positive AE residual is attributable to error propagation in the
-two-stage temperature estimate rather than to lubrication-specific sensing. No
-measurable lubrication-specific signal component beyond the operating point is
-therefore detected in either channel.
+Both channels recover the rotational speed and temperature well, with US markedly stronger on temperature, consistent with the conditional correlations shown earlier. For every channel the two-stage $\kappa$ estimate matches the direct regression to within $\approx$0.01~$R^2$, so the direct models perform no better than operating-point inference followed by the ISO~281 mapping. The small positive AE residual is too slight to read as evidence of lubrication-specific sensing. This does not mean the acoustic signals lack lubrication information. Since $\kappa$ is computed from speed and temperature alone, any lubrication effect unrelated to them is absent from $\kappa$, and the decomposition could not detect it even if the signals carried it.
 
 \subsection{Sensor comparison}
-Which single channel performs better depends on the model family. Under
-LightGBM, AE outperforms US ($R^2 = \resPooledRsqLgbAe$ vs.\
-\resPooledRsqLgbUs); under Elastic Net the ordering reverses
-($R^2 = \resPooledRsqEnetAe$ vs.\ \resPooledRsqEnetUs{} in favour of US). Both
-orderings are confirmed by the group-level DM test
-(Table~\ref{tab:inference}). A plausible explanation is that the
-temperature-mediated US structure is closer to linear and is exploited well by
-Elastic Net, whereas the speed-dependent AE structure is strongly non-linear and
-requires the tree ensemble; Section~\ref{subsec:disc_channels} returns to this
-point. The AE--US gap under LightGBM is in any case small
-($\Delta R^2 \approx 0.03$).
+\label{subsec:sensor_comparison}
+Both channels infer the operating point, so their relative performance turns on which parts of it each captures. Which single channel performs better depends on the model family. Under LightGBM, AE outperforms US while under Elastic Net, the ordering reverses. Both orderings are confirmed by the group-level DM test. A plausible explanation is that the temperature-mediated US structure is closer to linear and is exploited well by Elastic Net, whereas the speed-dependent AE structure is strongly non-linear and requires the tree ensemble. The AE--US gap under LightGBM is in any case small.
 
 \subsection{Sensor fusion}
-The combined feature set outperforms both single channels for both model
-families: LightGBM reaches $R^2 = \resPooledRsqLgbComb$
-(RMSE~$= \resPooledRmseLgbComb$~$\kappa$-units) against \resPooledRsqLgbAe{} for
-AE alone and \resPooledRsqLgbUs{} for US alone, and Elastic Net shows the same
-ordering. All four combined-vs-single contrasts are significant under the
-group-level DM test (Table~\ref{tab:inference}). The absolute $R^2$ gain is
+\label{subsec:sensor_fusion}
+The combined feature set outperforms both single channels for both model families, and all four combined-vs-single contrasts are significant under the group-level DM test of Table~\ref{tab:inference}. The absolute $R^2$ gain is
 modest, but its consistency across model families and contrasts indicates that
 each channel contributes non-redundant information.
 
@@ -179,56 +129,34 @@ Combined vs.\ US & Elastic Net & \resDeltaRmseEnetCombUs & \resDmGroupEnetCombUs
 predictions. $\Delta$RMSE is the point estimate in $\kappa$-units (positive =
 first sensor/set better). DM $p$ (group) is the Harvey et al.\ corrected
 Diebold--Mariano $p$-value on group-averaged squared-error differentials
-($T = \resNgroups$ groups) and DM $p$ (naive) is the uncorrected window-level
+($T = \resNgroups$ groups) and DM $p$ (naive) is the uncorrected segment-level
 $p$-value.}
 \label{tab:inference}
 \end{table}
+\todo{Shoudl the table not include exact p-values?}
 
 Fig.~\ref{fig:pred_vs_actual} shows predicted vs.\ actual $\kappa$ over the
 pooled held-out predictions for both model families and all sensor
-configurations, coloured by RPM.
+configurations, coloured by rotational speed.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/model_pred_vs_actual_holdout.png}
 \caption{Predicted vs.\ actual $\kappa$ (pooled held-out predictions) for both model families
-and all sensor configurations, coloured by RPM. The dashed diagonal indicates perfect
+and all sensor configurations, coloured by rotational speed. The dashed diagonal indicates perfect
 prediction. Residual spread is largest toward the sparsely sampled full-film range
 ($\kappa > 1$).}
 \label{fig:pred_vs_actual}
 \end{figure}
 
-Across the grid, predictions track the diagonal most closely for LightGBM---tightest
-in the AE and combined configurations---whereas Elastic Net compresses the range,
-over-predicting at low-to-mid $\kappa$ and bowing below the diagonal at high $\kappa$,
-the linear-model signature of the non-linear feature--$\kappa$ mapping that gradient
-boosting captures. Predictions fall into discrete vertical stripes, one per operating
-point visited by the staircase: all segments at a given operating point share the same
+Across the grid, predictions track the diagonal most closely for LightGBM whereas Elastic Net compresses the range, over-estimating at low-to-mid $\kappa$-levels and under-estimating at high $\kappa$-levels. Predictions fall into discrete vertical stripes, one per operating
+point visited by the staircase. All segments at a given operating point share the same
 $\kappa$, so each stripe's vertical scatter is the model's within-operating-point
-prediction noise---the visible manifestation of the near-duplicate structure that the
-acquisition-hold grouping (Section~\ref{subsec:modelling_design}) controls for. This
-scatter is largest toward the sparsely sampled full-film range ($\kappa > 1$) and for
-the US channel. In every panel the RPM colouring varies smoothly along the diagonal:
-prediction is organised chiefly by the inferred operating point, the visual counterpart
-of the operating-point decomposition of Section~\ref{subsec:decomposition}.
+estimation noise. This scatter is largest toward the sparsely sampled full-film range ($\kappa > 1$) and for the US channel.
 
 \subsection{Clustered SHAP feature importance}
 \label{subsec:shap}
-Because the full feature sets contain strongly correlated features, SHAP
-(SHapley Additive exPlanations) values computed via TreeExplainer are aggregated
-over correlation-based feature clusters, so that importance shared among
-near-duplicate features is not artificially diluted (Fig.~\ref{fig:shap}). For
-the AE LightGBM model the dominant cluster by a large margin is the
-500~kHz--1~MHz mobility/centre-frequency pair (summed mean $|\text{SHAP}| = \resShapAeTop$), followed by the 500~kHz--1~MHz
-complexity--RMS cluster ($\resShapAeSecond$). The US model is led instead by a 10--20~kHz amplitude
-(RMS) cluster ($\resShapUsTop$), with the 0--10~kHz complexity ($\resShapUsSecond$) and 10--20~kHz mobility features as
-distinct singletons. The two channels thus rely on distinct features
-whose operating-condition leanings differ---the dominant AE cluster is
-speed-tracking, whereas the leading US features include the temperature-leaning
-10--20~kHz mobility (Fig.~\ref{fig:marg_cond})---so the SHAP structure is
-consistent with the conditional correlation analysis. (The US band labels refer
-to the probe's heterodyned audio baseband, not raw acoustic frequencies, so the
-contrast is one of operating-condition channel rather than frequency.)
+The full feature sets contain many strongly correlated features, and SHAP (SHapley Additive exPlanations) importance is split among such near-duplicates, obscuring it. Features are therefore grouped into correlation clusters. Agglomerative hierarchical clustering with average linkage is applied to their pairwise Spearman correlations, and the dendrogram is cut so that features correlated at $|\rho| \geq 0.8$ fall in the same cluster, with each feature assigned to exactly one. Fig.~\ref{fig:shap} reports each cluster's combined importance. The two channels lean on visibly different clusters. AE importance is dominated by a single high-frequency cluster---500~kHz--1~MHz mobility and centre-frequency---well above any other, whereas US importance is led by a baseband amplitude (RMS) cluster together with a few distinct features such as 10--20~kHz mobility. The conditional correlations of Fig.~\ref{fig:marg_cond} tell the same story, with the dominant AE cluster tracking speed and the leading US features leaning towards temperature. The two analyses therefore agree by independent routes.
 
 \begin{figure}[H]
 \centering

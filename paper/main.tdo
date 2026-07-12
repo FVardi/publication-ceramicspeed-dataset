@@ -1,12 +1,12 @@
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Should there be more general motivation for this?}{10}{section*.4}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Should there be more general motivation for this?}{11}{section*.4}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Explain the filter and how effective it is expected to be.}{11}{section*.6}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that this is correct}{11}{section*.7}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{11}{section*.8}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{11}{section*.9}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Confirm why the 3000~rpm peak is held for $\sim $20~min (the temperature set-point is not changed there).}{12}{section*.10}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Update figure according to kappa thresholds}{13}{section*.13}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Select new files. The first file shows weird waveforms for both AE and US (clipping)}{14}{section*.15}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Finalize specrogramsw with correct colors, ranges, and dashed lines for sub-bands}{14}{section*.17}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Change this one pretties naming has been decided upon.}{16}{section*.21}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Select new files. The first file shows weird waveforms for both AE and US (clipping). Maybe same y-axis?}{14}{section*.14}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Finalize specrograms with correct colors, ranges, and dashed lines for sub-bands}{14}{section*.16}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Change this once prettier names have been decided upon.}{16}{section*.20}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Shoudl the table not include exact p-values?}{24}{section*.28}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{33}{section*.34}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{33}{section*.36}%

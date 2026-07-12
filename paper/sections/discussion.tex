@@ -6,39 +6,15 @@
 The experiments show that both acoustic channels support accurate $\kappa$
 regression under a leakage-controlled protocol, that their combination
 outperforms either channel alone, and that essentially all of this performance
-is attributable to operating-point inference. The obtained results are
-discussed as follows.
+is attributable to operating-point inference.
 
 \subsection{The $\kappa$ regression is an operating-point soft sensor}
 \label{subsec:disc_softsensor}
 
-The two-stage decomposition (Section~\ref{subsec:decomposition}) shows that
-the direct $\kappa$-regression performance is recovered almost entirely from
-acoustically inferred operating points alone: for every channel, predicting RPM
-and temperature from the features and passing the estimates through the ISO~281
-mapping matches the direct regression to within $\approx$0.01~$R^2$. Since the
-features recover rotational speed almost perfectly and temperature well, and
-$\kappa$ is a deterministic function of the measured operating point, this outcome is mechanistically plausible; what the decomposition establishes is that there is no measurable performance contribution beyond it. The small positive AE residual is consistent with error
-propagation in the two-stage temperature estimate and provides no evidence of lubrication-specific sensing. Within this dataset, the acoustic $\kappa$
-regression is therefore best understood as an operating-point soft sensor
-combined with the ISO~281 mapping.
+The two-stage decomposition shows that acoustically inferred rotational speed and temperature reproduce the direct $\kappa$-regression accuracy. This is expected, since the features recover rotational speed almost perfectly and temperature well, and $\kappa$ is a deterministic function of these. The decomposition thus attributes the accuracy to operating-point inference, but cannot test whether the signals also sense the lubricant film, since $\kappa$ carries no information beyond the operating point. Any film-level signal would be invisible to a $\kappa$ target. Within this dataset, the acoustic $\kappa$ regression is best understood, in performance terms, as an operating-point soft sensor combined with the ISO~281 mapping.
 
-This finding does not render the models useless. An acoustic soft sensor that
-recovers speed, temperature, and thereby nominal lubrication adequacy from a
-single externally mounted sensor---without tachometer or thermometer
-access---may be operationally valuable, particularly for retrofit monitoring.
-It does, however, change what the performance figures mean. High
-$\kappa$-regression accuracy, in this study and in prior work including
-Jakobsen et al.~\cite{jakobsen_detecting_2023}, should not by itself be read as
-evidence that the sensors detect the state of the lubricant film beyond what
-the operating point implies. Two consequences follow. First, generalisation to
-operating regimes outside the training distribution is not supported by the
-reported accuracy, since the learned mapping is anchored in the operating
-point. Second, changes in lubrication adequacy that are \emph{not} caused by
-the operating point---degradation, contamination, starvation, none of which
-$\kappa$ encodes---are outside the demonstrated
+This finding does not render the models useless. An acoustic soft sensor that recovers speed, temperature, and thereby nominal lubrication adequacy from a single externally mounted sensor---without tachometer or thermometer access---may be operationally valuable, particularly for retrofit monitoring. It does, however, change what the performance figures mean. High $\kappa$-regression accuracy, in this study and in prior work including Jakobsen et al.~\cite{jakobsen_detecting_2023}, should not by itself be read as evidence that the sensors detect the state of the lubricant film beyond whatthe operating point implies. Two consequences follow. First, generalisation to operating regimes outside the training distribution is not supported by the reported accuracy, since the learned mapping is anchored in the operating point. Second, changes in lubrication adequacy that are \emph{not} caused by the operating point---degradation, contamination, starvation, none of which $\kappa$ encodes---are outside the demonstrated
 capability, and detecting them with an online, non-invasive method remains an open problem.
-All results are specific to the SYJ25 bearing, Keratech~22 oil, and one 14-hour experimental session; whether these conclusions hold for other bearing types, sizes, lubricants, or installations is unknown.
 
 \subsection{AE--US complementarity and channel encoding}
 \label{subsec:disc_channels}
@@ -53,10 +29,7 @@ resolves temperature substantially better than AE
 channels track speed near-perfectly; the clustered SHAP results mirror this
 separation, with the AE model led by a speed-tracking 500~kHz--1~MHz mobility
 cluster and the US model drawing on temperature-leaning baseband features. The
-two channels are thus complementary primarily because they encode partly
-distinct components of the operating point---a quantified answer to the
-complementarity question that has not previously been tested in the LCM
-literature.
+two channels are complementary primarily because they encode partly distinct components of the operating point, providing a quantified answer to the complementarity question.
 
 Which single channel is preferable proved to be model-family dependent: Elastic
 Net favours US while LightGBM favours AE, both significantly. A plausible
@@ -73,7 +46,7 @@ audio-frequency baseband, within which the
 10--20~kHz half carries the strongest correlations. The high-frequency
 transient signature of individual contact events is largely absent from this
 down-mixed envelope. Whether a wideband passive ultrasound sensor would supply
-more independent information---and thus a larger fusion gain---remains an open
+more independent information and a larger fusion gain remains an open
 question.
 
 \subsection{On the use of $\kappa$ as lubrication reference}
@@ -105,16 +78,18 @@ which the lubricant state is varied independently of the operating point.
 \label{subsec:disc_protocol}
 
 The acquisition-grouped, twin-merged evaluation removes the near-duplicate
-leakage admitted by random splits over short measurement windows, and the
-group-level DM tests avoid the potential significance inflation of window-level testing. The reported figures are consequently not directly
+leakage admitted by random splits over short measurement segments, and the
+group-level DM tests avoid the potential significance inflation of segment-level testing. The reported figures are consequently not directly
 comparable to prior work evaluated under random splits, including
 Jakobsen et al.~\cite{jakobsen_detecting_2023}; they are intended as more
 conservative, deployment-representative estimates.
 
 A caveat applies in the opposite direction as well. Because the
-(RPM, temperature) space is densely and smoothly sampled, every held-out group
+(rotational speed, temperature) space is densely and smoothly sampled, every held-out group
 is surrounded by near-neighbour training points: the high $R^2$ reflects
 \emph{interpolation} of the smooth $\kappa$(operating-point) surface, consistent
 with the soft-sensor interpretation, rather than extrapolation to unseen
 regimes. Same-operating-point leakage is controlled, but generalisation to
 unsampled operating regimes is untested.
+
+Finally, all results are specific to the SYJ25 bearing, Keratech~22 oil, and one 14-hour experimental session. Whether these conclusions hold for other bearing types, sizes, lubricants, or installations is unknown.
