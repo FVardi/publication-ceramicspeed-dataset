@@ -6,11 +6,17 @@ on the FULL candidate feature set (no selection gate).
 
 Why clustered: with the full set, near-duplicate features split SHAP credit, so
 per-feature importances within a correlated family are diluted/unstable. We
-therefore cluster features by |Spearman correlation| (merge when |rho| >= --corr),
-sum mean|SHAP| within each cluster, and name the cluster by its single strongest
-member. This recovers honest, nameable importance ("the amplitude cluster, led by
-rms") without a separate VIF-selected feature set, and keeps genuinely distinct
-features (e.g. mobility, complexity) as their own singletons.
+therefore cluster features by |Spearman correlation| (merge when |rho| >= --corr)
+and aggregate SHAP within each cluster, naming the cluster by its single
+strongest member. This recovers honest, nameable importance ("the amplitude
+cluster, led by rms") without a separate VIF-selected feature set, and keeps
+genuinely distinct features (e.g. mobility, complexity) as their own singletons.
+
+Cluster importance is the groupShapley-consistent mean |per-sample signed sum|
+(Jullum et al. 2021, arXiv:2106.12228): group_shap = mean_s |sum_{i in G}
+phi_i^(s)|. The former metric sum_{i} mean_s |phi_i^(s)| is kept in the CSV as
+`sum_mean_abs` for comparison; it upper-bounds group_shap and overstates
+clusters whose members cancel within a sample.
 
 Per channel (AE, US, Combined): fit LightGBM features->kappa, TreeSHAP, cluster,
 plot top clusters.
@@ -151,14 +157,19 @@ def _clustered_shap(channel):
 
     rows = []
     for cl in np.unique(labels):
-        members = X.columns[labels == cl]
+        mask = labels == cl
+        members = X.columns[mask]
         sub = imp[members].sort_values(ascending=False)
+        # groupShapley-consistent importance: signed sum within cluster per
+        # sample, then mean absolute value over samples
+        group_shap = float(np.abs(sv[:, mask].sum(axis=1)).mean())
         rows.append({
             "channel": channel, "cluster": int(cl), "size": len(members),
-            "total_shap": float(sub.sum()), "rep": sub.index[0],
-            "members": ";".join(sub.index),
+            "group_shap": group_shap, "sum_mean_abs": float(sub.sum()),
+            "rep": sub.index[0], "members": ";".join(sub.index),
         })
-    cdf = pd.DataFrame(rows).sort_values("total_shap", ascending=False)
+    cdf = pd.DataFrame(rows).sort_values("group_shap", ascending=False)
+    cdf["rank_old"] = cdf["sum_mean_abs"].rank(ascending=False).astype(int)
     cdf.to_csv(SCRIPT_DIR / f"clustered_shap_{channel.lower()}.csv", index=False)
     return cdf
 
@@ -169,7 +180,17 @@ results = {ch: _clustered_shap(ch) for ch in channels}
 for ch in channels:
     top = results[ch].head(3)
     print(f"{ch}: top clusters -> " + ", ".join(
-        f"{_short(r.rep)}(+{r.size-1}, {r.total_shap:.3f})" for r in top.itertuples()))
+        f"{_short(r.rep)}(+{r.size-1}, {r.group_shap:.3f})" for r in top.itertuples()))
+
+# impact of the aggregation change: group_shap vs the old summed mean|SHAP|
+print("\n--- aggregation impact (top clusters by group_shap) ---")
+for ch in channels:
+    print(f"\n{ch}:")
+    for new_rank, r in enumerate(results[ch].head(args.top).itertuples(), start=1):
+        shrink = 100.0 * (1.0 - r.group_shap / r.sum_mean_abs) if r.sum_mean_abs else 0.0
+        moved = "" if new_rank == r.rank_old else f"  [rank {r.rank_old} -> {new_rank}]"
+        print(f"  {new_rank:2d}. {_short(r.rep):28s} group={r.group_shap:.3f} "
+              f"old_sum={r.sum_mean_abs:.3f} shrink={shrink:5.1f}%{moved}")
 
 fig, axes = plt.subplots(1, 3, figsize=(17, 6))
 for ax, ch in zip(axes, channels):
@@ -177,9 +198,9 @@ for ax, ch in zip(axes, channels):
     labels = [f"{_short(r.rep)}" + (f"  (+{r.size-1})" if r.size > 1 else "")
               for r in c.itertuples()]
     colors = ["#1f4e79" if r.rep.startswith("AE") else "#c55a11" for r in c.itertuples()]
-    ax.barh(range(len(c)), c["total_shap"], color=colors, edgecolor="k", lw=0.4)
+    ax.barh(range(len(c)), c["group_shap"], color=colors, edgecolor="k", lw=0.4)
     ax.set_yticks(range(len(c))); ax.set_yticklabels(labels, fontsize=8)
-    ax.set_xlabel("summed mean |SHAP| in cluster")
+    ax.set_xlabel("mean |within-cluster SHAP sum|")
     ax.set_title(f"{ch}")
     ax.grid(axis="x", ls=":", alpha=0.5)
 fig.suptitle(f"Clustered SHAP importance for κ (full feature set; clusters at |ρ|≥{args.corr}; "

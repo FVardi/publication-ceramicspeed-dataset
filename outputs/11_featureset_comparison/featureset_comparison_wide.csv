@@ -1,7 +1,0 @@
-model,target,holdout_r2
-ElasticNet,AE,0.7056600000000001
-ElasticNet,Combined,0.8300000000000001
-ElasticNet,US,0.7726599999999999
-LightGBM,AE,0.90718
-LightGBM,Combined,0.9474199999999999
-LightGBM,US,0.88612

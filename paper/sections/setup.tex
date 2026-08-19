@@ -2,11 +2,12 @@
 \section{Experimental Setup}
 \label{sec:setup}
 %% ============================================================================
+To test the complementarity of AE and US under controlled conditions, a test rig was designed and built in which rotational speed and temperature can be varied while load and lubricant are held fixed. AE and US sensors collect time-synchronised data across these operating conditions, and the resulting dataset is used to estimate $\kappa$. This section presents the rig setup, the experimental protocol for varying operating conditions, the data acquisition method, and an overview of the acquired data.
 
 \subsection{Experimental rig}
 \label{subsec:rig}
 
-The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). The rig runs experiments under controlled rotational speed, load, temperature, and lubricant quantity. \todo{Should there be more general motivation for this?} It can be seen in Fig.~\ref{fig:test_rig}.
+The test rig is a custom-built bearing test stand at Aarhus University (Herning, Denmark). It can be seen in Fig.~\ref{fig:test_rig}.
 
 \begin{figure}[H]
 \centering
@@ -32,14 +33,38 @@ The test rig is a custom-built bearing test stand at Aarhus University (Herning,
 \label{fig:test_rig}
 \end{figure}
 
-The rig uses a deep-groove ball bearing of model SYJ25 with \SI{25}{mm} bore width, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, and dynamic load rating \SI{14000}{N}. The bearing is driven by a Klee T712-2 \SI{0.55}{kW} variable-frequency electric motor controlled through a variable-frequency drive (VFD), which is controlled by a PID-controller based on measurements by an OGT5000 diffuse reflection sensor. The VFD switching frequency is nominally \SI{5}{kHz}, and the harmonic artefacts from this are sought filtered out \todo{Explain the filter and how effective it is expected to be.}. Temperature is increased by a heating element mounted on the bearing pillow block and controlled by an Omron E5CC PID controller based on measurements from a type K temperature sensor mounted on the outer ring of the bearing. A static dead-weight applies a nominal radial load of \SI{60}{kg} to the bearing, and the actual load is measured by an FN2114 pedal load cell. The bearing is lubricated with \SI{0.5}{ml} \todo{Check that this is correct} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$ at 40\si{\celsius} and 100\si{\celsius}, respectively). AE signals are collected by a Kistler Piezotron Type~8152C1 wideband piezoelectric sensor bonded to the bearing housing\todo{How is it mounted?}. Its output is conditioned by a Kistler Type~5125C AE Piezotron coupler, which applies a Butterworth band-pass filter from \SI{50}{kHz} to \SI{1}{MHz} to the raw AE signal before it is digitised. This band-pass sets the \SI{1}{MHz} upper analysis limit used throughout the paper. US signals are collected by a UE Systems Ultra-trak 750 sensor \todo{How is it mounted?}. Synchronized sampling is performed by an Agilent MSO2024 oscilloscope at a frequency of \SI{12.5}{MHz}.
+The rig uses a deep-groove ball bearing of model SYJ25 with \SI{25}{mm} bore diameter, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, and dynamic load rating \SI{14000}{N}. The bearing is driven by a Klee T712-2 \SI{0.55}{kW} variable-frequency electric motor through a variable-frequency drive (VFD) and a PID controller regulates the speed based on rotational-speed measurements from an OGT5000 diffuse-reflection sensor. The VFD switching frequency is nominally \SI{5}{kHz}, and the harmonic artefacts from this are sought filtered out \todo{Explain the filter and how effective it is expected to be.}. Temperature is increased by a heating element mounted on the bearing pillow block, regulated by an Omron E5CC PID controller using a type~K sensor mounted on the outer ring of the bearing. A static dead-weight applies a nominal radial load of \SI{60}{kg} and the load measured by an FN2114 pedal load cell is approximately \SI{61}{kg}. The bearing is lubricated with \SI{0.5}{ml} \todo{Check that this is correct} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$).
+
+AE signals are collected by a Kistler Piezotron Type~8152C1 wideband
+piezoelectric sensor bonded to the bearing housing\todo{How is it mounted?}.
+Its output is conditioned by a Kistler Type~5125C AE Piezotron coupler, which
+applies a Butterworth band-pass filter from \SI{50}{kHz} to \SI{1}{MHz} to the
+raw AE signal before it is digitised. This band-pass sets the \SI{1}{MHz}
+upper analysis limit used throughout the paper.
+
+US signals are collected by a UE Systems Ultra-Trak~750 sensor mounted on the
+bearing housing\todo{How is it mounted?}. The sensor is narrowband, with peak
+sensitivity around its resonance frequency\todo{State the resonance frequency
+and heterodyne specification from the Ultra-Trak~750 datasheet.}, and
+internally heterodynes the received signal down to an audio-range output, as
+is typical of commercial US instruments (Section~\ref{subsec:origins}). It is
+this heterodyned output, rather than the raw acoustic signal, that constitutes
+the US waveform analysed in this paper, and the US sub-band frequencies referred to in later sections are therefore baseband frequencies of the heterodyned signal.
+
+Both channels are digitised by the same Agilent MSO2024 oscilloscope at \SI{12.5}{MHz}, sharing a sampling rate and sampling points, so every acquired segment contains inherently time-synchronised AE and US waveforms, with no post-hoc alignment required.
 
 \subsection{Experimental protocol for varying $\kappa$}
 \label{subsec:ops}
 
-The experiment follows a protocol which varies the nominal operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This causes the viscosity ratio $\kappa$ of the bearing in the test rig to vary under controlled loading and bearing geometry. The nominal rotational speed follows a staircase sweep from 100 to 3000 rpm and back down to 100 rpm in steps of 100 rpm with a minimum 60-second hold at each step. This staircase is repeated for 13 temperature blocks. The nominal temperature is increased in coherent blocks from 40 to 100~\si{\celsius} in 5~\si{\celsius} increments. After each downsweep from 3000 rpm to 100 rpm, the housing is brought to the next temperature set-point before the next staircase sweep begins. Radial load is applied with the static dead-weight and held constant throughout the experiment; the measured radial load is approximately \SI{61}{kg}. The hold at the \SI{3000}{rpm} staircase peak is substantially longer than the ordinary 60-second steps (approximately 20~minutes), so this operating point is over-represented in the data: it accounts for roughly a third of all sweeps.\todo{Confirm why the 3000~rpm peak is held for $\sim$20~min (the temperature set-point is not changed there).} The total duration of the experiment is approximately 14 hours.
+The experiment follows a protocol which varies the nominal operating conditions through changes in rotational speed (rpm) and housing temperature (\si{\celsius}). This causes the viscosity ratio $\kappa$ of the bearing in the test rig to vary under controlled loading and bearing geometry. The nominal rotational speed follows a staircase sweep from 100 to 3000 rpm and back down to 100 rpm in steps of 100 rpm with a minimum 60-second hold at each step. This staircase is repeated for 13 temperature blocks. The nominal temperature is increased in coherent blocks from 40 to 100~\si{\celsius} in 5~\si{\celsius} increments. After each downsweep from 3000 rpm to 100 rpm, the housing is brought to the next temperature set-point before the next staircase sweep begins. Radial load is applied with the static dead-weight and held constant throughout the experiment. The hold at the \SI{3000}{rpm} staircase peak is substantially longer than the ordinary 60-second steps (approximately 20~minutes), so this operating point is over-represented in the data: it accounts for roughly a third of all sweeps. The total duration of the experiment is approximately 14 hours.
 
-The lubrication conditions in the bearing are not expected to change during the experiment in other ways than what is entailed by rpm and temperature and the effect of these upon the lubricant. It is not expected or assumed that any degradation, starvation or contamination of the lubricant happens.
+Over the $\approx$14-hour experiment the lubricant is assumed to remain
+nominally intact: no degradation, starvation, or contamination is expected,
+so the lubrication conditions vary only through rotational speed and
+temperature and their effect on the lubricant, consistent with the
+assumptions underlying $\kappa$.
+
+\todo{Include figure which illustrates the protocol for varying operating conditions and kappa once the speed issue has been settled.}
 
 \subsection{Acquisition segments and measured operating conditions}
 Data are acquired as short segments rather than continuously: every $\sim$\resWindowIntervalS~s the oscilloscope captures a \resWindowMs~ms segment
@@ -47,7 +72,7 @@ Data are acquired as short segments rather than continuously: every $\sim$\resWi
 
 Since the operating conditions are maintained through a control loop, they vary from the nominal conditions specified by the protocol. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded \SI{40}{\celsius} floor (down to $\approx$\SI{33}{\celsius}), which is tentatively attributed to instability of the temperature control rather than to any commanded set-point. During the last temperature block, the speed recordings at the top of the speed staircase were corrupted and discarded.
 
-After excluding an initial stationary warm-up segment recorded before the first staircase and \resNsweepsRemoved{} segments with measured rotational speed above \SI{3000}{rpm}, \resNsweeps{} segments per channel remain (median \resSweepsPerHold{} segments per staircase hold). The measured operating conditions space and the distribution of calculated $\kappa$ values for the remaining segments are seen in Fig.~\ref{fig:op_conditions_distribution}. The measured operating conditions over time, ordered by acquisition time are seen in Fig.~\ref{fig:op_conditions_timeseries}. The $\kappa$ value for each segment is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-segment measured rotational speed and temperature, with \nuop{} evaluated via the ASTM~D341 Walther equation. The $\kappa$ values range from adequate ($\kappa\approx1.6$) to insufficient ($\kappa\approx0.05$).
+After excluding an initial stationary warm-up segment recorded before the first staircase and \resNsweepsRemoved{} segments with measured rotational speed above \SI{3000}{rpm}, \resNsweeps{} segments per channel remain (median \resSweepsPerHold{} segments per staircase hold). The measured operating-condition space and the distribution of calculated $\kappa$ values for the remaining segments are shown in Fig.~\ref{fig:op_conditions_distribution}, and their evolution over the course of the experiment in Fig.~\ref{fig:op_conditions_timeseries}. The $\kappa$ value for each segment is computed according to Equations~\eqref{eq:kappa} and \eqref{eq:nu1} using the per-segment measured rotational speed and temperature, with \nuop{} evaluated via the ASTM~D341 Walther equation. The $\kappa$ values range from full film ($\kappa\approx1.6$) to boundary lubrication ($\kappa\approx0.05$).
 
 \begin{figure}[H]
 \centering
@@ -62,3 +87,5 @@ After excluding an initial stationary warm-up segment recorded before the first 
 \caption{Measured operating conditions (rotational speed and temperature) during the experiment, ordered chronologically by acquisition time. Each point corresponds to a \SI{20}{ms} segment of sampling. The colour of each point corresponds to the derived $\kappa$ value for that segment.}
 \label{fig:op_conditions_timeseries}
 \end{figure}
+
+The experiment thus yields \resNsweeps{} time-synchronised AE--US segment pairs from a single bearing, with per-segment measured operating conditions and $\kappa$ spanning the boundary to full-film regimes ($\kappa \approx 0.05$--$1.6$). Because both channels observe the same contact events at the same instants, differences in their information content are attributable to the sensing methods themselves --- the property on which the complementarity test rests. Section~\ref{sec:pipeline} next describes the signal processing that converts these segments into features for the $\kappa$ regression.

@@ -35,4 +35,4 @@ paper/*.lot
 articles/
 
 # Compiled paper PDF — regenerable from paper/*.tex via pdflatex/latexmk
-paper/main.pdf
+paper/main.pdfpaper/*.tdo

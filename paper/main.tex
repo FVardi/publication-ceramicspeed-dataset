@@ -5,16 +5,16 @@
 %% ============================================================================
 %%
 %% HIGHLIGHTS (3--5 bullets, $\leq$85 characters each):
-%% 1. Simultaneous AE and passive US regressed to the ISO 281 viscosity ratio
-%% 2. Two-stage decomposition quantifies the operating-point proxy share of kappa models
-%% 3. Within-speed-step analysis isolates a temperature-mediated lubrication channel
-%% 4. AE-US fusion cuts RMSE 26% over AE alone, significant on all tests
-%% 5. Visit-grouped splits remove near-duplicate leakage from reported performance
+%% 1. First simultaneous, time-synchronised AE and passive US dataset from one bearing
+%% 2. AE-US fusion significantly outperforms either channel for both model families
+%% 3. Channels are complementary: both track speed, US resolves temperature better
+%% 4. Correlation analysis and grouped SHAP independently confirm the channel split
+%% 5. Acquisition-grouped evaluation removes near-duplicate leakage from results
 %%
 %% Layout toggle — comment one block, uncomment the other
 %% --- REVIEW (wide margins, 12pt, 1.5× spacing) ---
-\documentclass[12pt]{article}
-\usepackage[a4paper, top=25mm, bottom=25mm, left=25mm, right=25mm]{geometry}
+\documentclass{article}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
 \usepackage[T1]{fontenc}
 
 %% --- MSSP approximation (2-col, 10pt Times, single-spaced) ---
@@ -26,17 +26,9 @@
 \usepackage[english]{babel}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
-% Search order: paper/figures (committed fallbacks) then live script outputs.
-% Remove the ../outputs/... paths when packaging for journal submission
-% and run scripts/copy_figures.py to populate paper/figures/ instead.
-\graphicspath{
-  {figures/}
-  {../outputs/02_feature_analysis/figures/}
-  {../outputs/03_evaluation/figures/}
-  {../outputs/04_modelling/figures/}
-  {../outputs/06_plots/}
-  {../outputs/eda/}
-}
+% All figures live in paper/figures/ (copied from outputs/new/ by their
+% generating scripts), so the paper compiles standalone.
+\graphicspath{{figures/}}
 \usepackage{booktabs}
 \setlength{\marginparwidth}{2cm}
 \usepackage[colorinlistoftodos]{todonotes}
@@ -45,9 +37,6 @@
 \usepackage{marginnote}
 \let\marginpar\marginnote
 \usepackage{array}
-\usepackage{tabularx}
-\usepackage{longtable}
-\usepackage{multirow}
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{hyperref}
@@ -66,7 +55,7 @@
 
 %% Line spacing — use \onehalfspacing for review, comment out for MSSP mode
 \onehalfspacing
-\linenumbers
+%\linenumbers
 
 %% Colours
 \definecolor{myblue}{RGB}{31,78,121}
@@ -75,19 +64,13 @@
 %% Macros
 \newcommand{\nuop}{\ensuremath{\nu}}
 \newcommand{\nureq}{\ensuremath{\nu_1}}
-\newcommand{\Rsq}{\ensuremath{R^2}}
 
 %% Auto-generated result numbers (scripts/07_paper_export.py).
 %% All performance metrics, p-values, and counts in the text come from these
 %% macros -- never hand-type a result number in the prose.
 \IfFileExists{tables/results_macros.tex}%
   {\input{tables/results_macros.tex}}%
-  {\IfFileExists{../outputs/07_paper_export/results_macros.tex}%
-    {\input{../outputs/07_paper_export/results_macros.tex}}%
-    {\errmessage{results\_macros.tex not found: run scripts/07\_paper\_export.py}}}
-
-%% New-pipeline macros (scripts/new/paper_export.py)
-\IfFileExists{tables/results_macros_new.tex}{\input{tables/results_macros_new.tex}}{}
+  {\errmessage{tables/results\_macros.tex not found}}
 
 %% Fallbacks for new-pipeline macros not yet emitted by an export script.
 %% PROVISIONAL values hand-copied from outputs/new/ (2026-07-07):
@@ -134,18 +117,23 @@
 \providecommand{\resDmGroupAeUs}{$<0.001$}
 \providecommand{\resDmGroupCombAe}{$<0.001$}
 \providecommand{\resDmGroupCombUs}{$<0.001$}
-\providecommand{\resDmNaiveAeUs}{$<0.001$}
-\providecommand{\resDmNaiveCombAe}{$<0.001$}
-\providecommand{\resDmNaiveCombUs}{$<0.001$}
+% Harvey-corrected DM statistics from group_paired_tests CSVs (dm_stat), sign
+% flipped so positive = first-listed configuration better, matching dRMSE.
+\providecommand{\resDmStatAeUs}{$+4.31$}
+\providecommand{\resDmStatCombAe}{$+7.16$}
+\providecommand{\resDmStatCombUs}{$+7.70$}
+\providecommand{\resDmStatEnetAeUs}{$-5.52$}
+\providecommand{\resDmStatEnetCombAe}{$+11.40$}
+\providecommand{\resDmStatEnetCombUs}{$+5.21$}
+% Elastic Net contrasts (same sources; dRMSE from featureset_comparison.csv pooled
+% holdout RMSEs, p-values from group_paired_tests CSVs, all reported 0.0)
 \providecommand{\resDeltaRmseEnetAeUs}{$-0.021$}
 \providecommand{\resDeltaRmseEnetCombAe}{$+0.042$}
 \providecommand{\resDeltaRmseEnetCombUs}{$+0.022$}
 \providecommand{\resDmGroupEnetAeUs}{$<0.001$}
 \providecommand{\resDmGroupEnetCombAe}{$<0.001$}
 \providecommand{\resDmGroupEnetCombUs}{$<0.001$}
-\providecommand{\resDmNaiveEnetAeUs}{$<0.001$}
-\providecommand{\resDmNaiveEnetCombAe}{$<0.001$}
-\providecommand{\resDmNaiveEnetCombUs}{$<0.001$}
+
 
 %% ============================================================================
 % (sync touch)
@@ -155,21 +143,21 @@
 \begin{titlepage}
 \vspace*{2cm}
 {\Large\bfseries\color{myblue}
-Sensor Complementarity and Operating-Point Inference for Lubrication Condition Monitoring with Acoustic Emission and Passive Ultrasound
+Esimating the lubricant viscosity ratio in ball bearings with ultrasound and acoustic emission sensor fusion
 \par}
 \vspace{1.5cm}
 {\large Frederik Appel Vardinghus-Nielsen\par}
 \vspace{0.5cm}
 {\normalsize
-Department of Electrical and Computer Engineering, Aarhus University, Denmark\\
+Department of Electrial and Computer Engeering, Aarhus University, Denmark\\
 \texttt{frederikavn@gmail.com}
 \par}
 \vspace{2cm}
 {\small\itshape Draft submitted for peer review. Do not cite or distribute without permission.}
 \vspace{1cm}
 
-\textbf{Keywords:} acoustic emission; lubrication condition monitoring;
-viscosity ratio $\kappa$; ball bearing; signal processing; sensor fusion
+\textbf{Keywords:} acoustic emission, ultrasound, lubrication condition monitoring,
+viscosity ratio, ball bearing
 
 \end{titlepage}
 
@@ -194,7 +182,7 @@ viscosity ratio $\kappa$; ball bearing; signal processing; sensor fusion
 \input{sections/discussion}
 \input{sections/conclusion}
 
-\input{sections/appendix}
+% \input{sections/appendix}  % empty since 2026-07-14 (correlation longtables removed)
 
 \input{sections/backmatter}
 

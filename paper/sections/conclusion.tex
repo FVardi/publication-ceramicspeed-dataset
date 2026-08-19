@@ -3,18 +3,20 @@
 \label{sec:conclusion}
 %% ============================================================================
 
-This paper has presented a controlled study in which wideband acoustic emission
-and heterodyned passive ultrasound were acquired simultaneously from a ball
-bearing across staircase speed sweeps and stepped temperature blocks, and
-regressed to the ISO~281 viscosity ratio $\kappa$ under an acquisition-grouped,
-leakage-controlled evaluation protocol. The main findings are as follows:
+This paper has presented a controlled study in which wideband acoustic emission and heterodyned passive ultrasound were acquired simultaneously from a ball bearing across speed sweeps and temperature blocks, and regressed to the ISO~281 viscosity ratio $\kappa$ under an acquisition-grouped, leakage-controlled evaluation protocol. The main findings are as follows:
 
 \begin{enumerate}
-  \item \textbf{The $\kappa$ regression acts as an operating-point soft sensor.}
-  A two-stage decomposition that predicts speed and temperature from the features and then calculates $\kappa$ recovers essentially all of the direct regression performance for every channel. High $\kappa$-regression accuracy, in this study and in prior work, should not necessarily by itself be read as evidence of lubrication sensing beyond the operating-point. Detecting lubrication changes that are not caused by the operating point through acoustic measurements remains an open problem.
-  \item \textbf{AE and passive US are complementary.} The combined feature set outperforms either channel alone for both model families. This complementarity has a structural basis, since both channels track rotational speed, but US resolves temperature substantially better than AE. Which single channel performs best is model-family dependent, so single-model channel comparisons should be interpreted with caution.
-  \item \textbf{Leakage-controlled evaluation changes the picture.}
-  Grouping segments by acquisition hold and operating-point similarity prevents near-duplicate segments from crossing the training--evaluation boundary, and group-level significance testing avoids the inflation of segment-level tests. The reported figures are conservative, deployment-representative estimates.
+  \item \textbf{AE and passive US are complementary.} The combined feature set outperforms either channel alone for both model families, significantly in all four group-level contrasts. The complementarity has a conditonal correlation basis: both channels track rotational speed, but US is more strongly associated with temperature than AE, so the two channels encode partly distinct components of the operating point. The clustered SHAP analysis confirms this at the feature level, with the combined model retaining temperature-leaning US features while discarding US amplitude features whose speed information the AE features already provide. Which single channel performs best is model-family dependent, so single-model channel comparisons should be interpreted with caution.
+  \item \textbf{The acoustic features are informative about lubrication conditions as quantified by $\kappa$.} Either channel alone supports $\kappa$ regression well, recovering the bearing's nominal lubrication adequacy from externally mounted sensors without tachometer or thermometer access. Because $\kappa$ is determined by the operating point, and the feature and SHAP analyses indicate that the models draw primarily on operating-point-tracking features, this accuracy could be understood as operating-point soft sensing. Sensitivity to lubrication changes not caused by the operating point, such as degradation, contamination, starvation, is neither demonstrated nor ruled out, and remains an open problem.
+  \item \textbf{The evaluation is leakage-controlled and conservative.} Grouping segments by acquisition hold and operating-point similarity prevents near-duplicate segments from crossing the training--evaluation boundary, and group-level significance testing avoids the inflation of segment-level tests. The reported figures are conservative estimates.
 \end{enumerate}
 
-Taken together, the study shows that within this dataset the accuracy of acoustic $\kappa$ regression is accounted for by inference of rotational speed and temperature. The models function as a practical operating-point soft sensor. Whether the same signals additionally carry film-level lubrication information is not resolved here, and testing it would require decoupling the lubricant state from the operating point, for example through an independent film reference or controlled degradation. A wideband passive ultrasound channel may also widen the modest complementarity found here.
+Taken together, the study provides the first quantitative demonstration of
+AE--US complementarity for lubrication condition monitoring, enabled by
+simultaneous, time-synchronised acquisition from the same bearing. Future work
+should test whether a wideband passive ultrasound channel widens the modest
+fusion gain found here, whether the complementarity persists across bearing
+types, lubricants, and installations, and whether the acoustic signals carry
+lubrication information beyond the operating point. This would require decoupling
+the lubricant state from the operating conditions, for example through an
+independent film reference or controlled degradation.

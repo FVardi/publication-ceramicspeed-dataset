@@ -42,7 +42,7 @@ bearing:
 
 filters:
   rpm_min: 50              # discard sweeps below this RPM (startup transients)
-  rpm_max: 3_000
+  rpm_max: 3_600         # raised from 3000 after VFD-based speed reconstruction: the 60 Hz rail delivers ~3570 rpm
   temp_min: 38             # discard sub-floor cold-start (measured temp dips to 33C before the controller settles at the 40C floor)
   file_patterns:
     - "scope_20260424_115654"
