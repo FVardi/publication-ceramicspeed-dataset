@@ -36,7 +36,6 @@ FEATURE_GENERATION = ("Feature generation (raw HDF5 -> outputs/new/features.parq
 
 STEPS = [
     # --- signal processing / characterisation ---
-    ("PCA of the full feature set", "signal_processing/02_pca.py"),
     ("Operating-condition correlations (marginal vs conditional)",
      "signal_processing/03_correlations.py"),
     ("Channel mechanism (sub-band / feature-type coupling + SHAP)",

@@ -30,6 +30,12 @@ _VISCOSITY_FALLBACK: dict[str, float] = {
     "viscosity_100c_cst": 4.1,
 }
 
+#: See loading._CMD_HZ_TO_RPM -- telem_rpm_meas is unreliable; RPM is
+#: reconstructed from telem_vfd_cmd_hz instead. Clean fit (R^2=1.0000, zero
+#: intercept, no saturation) to scope_20260817_114548.h5 -- re-derive before
+#: applying to an earlier, pre-August capture.
+_CMD_HZ_TO_RPM: float = 59.5
+
 _STAT_COLS: list[tuple[str, str]] = [
     ("rms",               "RMS [V]"),
     ("kurtosis",          "Kurtosis"),
@@ -45,8 +51,11 @@ _STAT_COLS: list[tuple[str, str]] = [
 
 def _normalize_sweep_params(params: dict) -> dict:
     out = dict(params)
-    if "rpm" not in out and "telem_rpm_meas" in out:
-        out["rpm"] = out["telem_rpm_meas"]
+    if "rpm" not in out:
+        if "telem_vfd_cmd_hz" in out:
+            out["rpm"] = float(out["telem_vfd_cmd_hz"]) * _CMD_HZ_TO_RPM
+        elif "telem_rpm_meas" in out:
+            out["rpm"] = out["telem_rpm_meas"]
     if "temperature_c" not in out and "telem_omron_pv_c" in out:
         out["temperature_c"] = out["telem_omron_pv_c"]
     if "load_g" not in out and "telem_mass_g" in out:

@@ -62,6 +62,20 @@ _VISCOSITY_FALLBACK: dict[str, float] = {
     "viscosity_100c_cst": 4.1,
 }
 
+#: telem_rpm_meas is unreliable (see dev/exploration/eda_speed_calibration.py
+#: and eda_speed_verification.py): growing bias vs. the protocol target and,
+#: in some files, a corrupted/saturating tail. telem_vfd_cmd_hz tracks
+#: telem_rpm_target far more closely, so RPM is reconstructed from it as
+#: rpm = cmd_hz * _CMD_HZ_TO_RPM instead. This constant is a pure
+#: proportional (through-origin) least-squares fit of telem_rpm_target vs.
+#: telem_vfd_cmd_hz on scope_20260817_114548.h5 (R^2=1.0000, zero intercept,
+#: no VFD saturation across the full 100-3000 RPM protocol range — this file
+#: also fixed the phantom-zero low-speed issue present in earlier captures).
+#: The pre-August files (scope_20260331/0416/0424/0529/0625) follow a
+#: different, messier relationship (VFD saturates at 60 Hz from ~2500 RPM
+#: target up) — re-derive this constant before applying it to one of those.
+_CMD_HZ_TO_RPM: float = 59.5
+
 
 def _normalize_sweep_params(params: dict) -> dict:
     """Map scope-format telemetry keys to the canonical column names.
@@ -72,8 +86,11 @@ def _normalize_sweep_params(params: dict) -> dict:
     unaffected by the format difference.
     """
     out = dict(params)
-    if "rpm" not in out and "telem_rpm_meas" in out:
-        out["rpm"] = out["telem_rpm_meas"]
+    if "rpm" not in out:
+        if "telem_vfd_cmd_hz" in out:
+            out["rpm"] = float(out["telem_vfd_cmd_hz"]) * _CMD_HZ_TO_RPM
+        elif "telem_rpm_meas" in out:
+            out["rpm"] = out["telem_rpm_meas"]
     if "temperature_c" not in out and "telem_omron_pv_c" in out:
         out["temperature_c"] = out["telem_omron_pv_c"]
     if "load_g" not in out and "telem_mass_g" in out:
@@ -168,6 +185,12 @@ def load_hdf5_file(
             dict(f["metadata"]["lubricant"].attrs)
         )
         bearing_metadata = dict(f["metadata"]["bearing"].attrs)
+
+        logger.warning(
+            "RPM channel: using telem_vfd_cmd_hz * %.3f in place of telem_rpm_meas "
+            "(sensor found unreliable — see dev/exploration/eda_speed_calibration.py).",
+            _CMD_HZ_TO_RPM,
+        )
 
         sweep_list: list[dict[str, Any]] = []
         for sweep_name in sorted(sweeps_grp.keys(), key=lambda n: int(n.split("_")[1])):

@@ -16,7 +16,6 @@ scripts/
     run_pipeline.py               # orchestrator (signal_processing -> modelling)
     signal_processing/            # the "signal-processing package" for the paper
       01_feature_generation.py    #   raw HDF5 -> outputs/new/features.parquet (owns it)
-      02_pca.py                   #   PCA of the full feature set, coloured by kappa
       03_correlations.py          #   marginal vs conditional operating-condition corr
       04_channel_mechanism.py     #   sub-band / feature-type coupling + SHAP-on-(RPM,T)
       05_feature_oc_table.py      #   per-feature OC correlation table + signed heatmaps
@@ -69,7 +68,7 @@ python scripts/new/run_pipeline.py --with-feature-generation
 # or, if outputs/new/features.parquet already exists, just the analysis:
 python scripts/new/run_pipeline.py
 # individual stage, e.g.:
-python scripts/new/signal_processing/02_pca.py
+python scripts/new/signal_processing/03_correlations.py
 ```
 
 `--config alt.yaml` is forwarded to every step. Comparison opt-outs (modelling
@@ -121,6 +120,5 @@ complexity/mobility singletons.
 ## Known cosmetic TODOs
 - Scripts' `if __name__` completion prints and some docstrings still reference the
   old flat numbering (11/12/...); functional, not yet swept.
-- `02_pca.py` output (`outputs/new/pca/`) not yet wired into the paper.
 - Paper export script does not yet exist for the new pipeline; new macros needed:
   `\resDeltaRmse*`, `\resDmGroup*`, `\resDmNaive*` for the inference table in §6.4.

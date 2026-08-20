@@ -115,9 +115,9 @@ for fpath in files:
             })
 
 df = pd.DataFrame(rows)
-print(f"Loaded {len(df)} sweeps with SR data (RPM ≥ {RPM_MIN})")
-print(f"  kappa:     {df['kappa'].min():.3f} – {df['kappa'].max():.3f}")
-print(f"  sr_mean_v: {df['sr_mean_v'].min():.3f} – {df['sr_mean_v'].max():.3f} V")
+print(f"Loaded {len(df)} sweeps with SR data (RPM >= {RPM_MIN})")
+print(f"  kappa:     {df['kappa'].min():.3f} - {df['kappa'].max():.3f}")
+print(f"  sr_mean_v: {df['sr_mean_v'].min():.3f} - {df['sr_mean_v'].max():.3f} V")
 
 
 # %%

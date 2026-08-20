@@ -45,7 +45,7 @@ filters:
   rpm_max: 3_000
   temp_min: 38             # discard sub-floor cold-start (measured temp dips to 33C before the controller settles at the 40C floor)
   file_patterns:
-    - "scope_20260424_115654"
+    - "scope_20260817_114548"
 
 signal_cleaning:
   enabled: true
@@ -67,13 +67,25 @@ welch:
 
 sensors:
   AE:
-    f_min: 0
-    f_max: 1_000_000   # sensor specified to 1 MHz; a 1 MHz low-pass is applied
-                       # in the acquisition chain. Content above 1 MHz is
-                       # post-filter EM pickup and excluded from analysis.
+    f_min: 50_000
+    f_max: 600_000     # Kistler 5125C coupler high-passes at 50 kHz before
+                       # digitisation; raw spectrogram inspection (2026-08-18,
+                       # dev/exploration/eda_spectrogram.py on scope_20260817)
+                       # confirms real, kappa-dependent AE content in
+                       # 50-600 kHz. A persistent ~20-30 kHz band exists below
+                       # 50 kHz but doesn't track kappa/operating condition and
+                       # isn't attributable to a known mechanism, so it's
+                       # excluded. Above 600 kHz, content falls to the noise
+                       # floor aside from a fixed ~980 kHz electronic tone
+                       # (doesn't track kappa either) — excluded too.
   UL:
     f_min: 0
-    f_max: 100_000
+    f_max: 40_000      # Raw spectrogram inspection (2026-08-18,
+                       # dev/exploration/eda_spectrogram.py on scope_20260817)
+                       # shows real content spans ~0-30 kHz (strongest below
+                       # 8 kHz), with the clearest kappa-dependence in
+                       # 10-16 kHz. Above ~30 kHz content falls to the noise
+                       # floor, so the broadband/prefilter is capped at 40 kHz.
 
 band_width_hz: 100_000
 
@@ -81,19 +93,18 @@ band_width_hz: 100_000
 # UL is heterodyned to <20 kHz — without this, spectral features are
 # dominated by out-of-band noise across the full ~5 MHz DAQ bandwidth.
 sensor_prefilter:
-  AE: {f_lo: 0, f_hi: 1_000_000}
-  UL: {f_lo: 0, f_hi: 100_000}
+  AE: {f_lo: 50_000, f_hi: 600_000}
+  UL: {f_lo: 0, f_hi: 40_000}
 
 # Additional feature set per frequency band.
-# UL bands operate on the prefiltered (0–20 kHz) signal.
+# UL bands operate on the prefiltered (0–40 kHz) signal.
 frequency_bands:
   AE:
-    - {f_lo:       20_000, f_hi:    500_000, label: "AE_20-500kHz"}
-    - {f_lo:      500_000, f_hi:  1_000_000, label: "AE_500-1000kHz"}
+    - {f_lo:       50_000, f_hi:    200_000, label: "AE_50-200kHz"}
+    - {f_lo:      200_000, f_hi:    600_000, label: "AE_200-600kHz"}
   UL:
-    - {f_lo:      0, f_hi:  10_000, label: "US_0-10kHz"}
-    - {f_lo: 10_000, f_hi:  20_000, label: "US_10-20kHz"}
-    - {f_lo: 20_000, f_hi: 100_000, label: "US_20-100kHz"}
+    - {f_lo:      0, f_hi:  16_000, label: "US_0-16kHz"}
+    - {f_lo: 16_000, f_hi:  40_000, label: "US_16-40kHz"}
 
 # Bands characterised by the validation scripts (08/10) but EXCLUDED from
 # feature extraction and modelling. Keeps the >1 MHz region documented.
