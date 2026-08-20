@@ -1,6 +1,7 @@
 data/
 *.h5
 *.hdf5
+*.npz
 # Results: version the tabular/serialised outputs so figures and tables can be
 # re-rendered on any machine; exclude regenerable images and the heavy EDA cache.
 outputs/**/*.png
@@ -35,4 +36,4 @@ paper/*.lot
 articles/
 
 # Compiled paper PDF — regenerable from paper/*.tex via pdflatex/latexmk
-paper/main.pdf
+paper/main.pdfpaper/*.tdo

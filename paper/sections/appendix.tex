@@ -1,22 +1,7 @@
 %% ============================================================================
-\appendix
-\section{Per-feature operating-condition correlations}
-\label{app:feature_oc}
+%% APPENDIX — currently empty. The per-feature correlation longtables were
+%% removed (2026-07-14); Fig.~feature_kappa_correlation and fig:marg_cond
+%% carry that content in the body now. Re-enable the \input in main.tex if
+%% appendix content returns.
 %% ============================================================================
-
-Table~\ref{tab:feature_oc} lists the signed Spearman $\rho$ between each
-candidate feature and the measured rotational speed (rpm) and housing
-temperature, both marginally (over all segments) and conditionally
-(partition-based: within-speed-step for the temperature axis;
-within-temperature-block for the speed axis). The conditional values are
-medians across all valid partitions containing at least 30 segments and
-8 distinct levels of the target variable. Features are grouped by sensor and
-frequency sub-band. This table supports the discussion in
-Section~\ref{subsec:confound}.
-
-\IfFileExists{tables/feature_oc_table.tex}%
-  {\input{tables/feature_oc_table.tex}}%
-  {\IfFileExists{../outputs/new/feature_oc_table/feature_oc_table.tex}%
-    {\input{../outputs/new/feature_oc_table/feature_oc_table.tex}}%
-    {\todo[inline]{Run scripts/new/signal\_processing/05\_feature\_oc\_table.py
-      to generate this table.}}}
+\appendix

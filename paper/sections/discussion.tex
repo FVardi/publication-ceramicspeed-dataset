@@ -2,48 +2,37 @@
 \section{Discussion}
 \label{sec:discussion}
 %% ============================================================================
-
-The experiments show that both acoustic channels support accurate $\kappa$
-regression under a leakage-controlled protocol, that their combination
-outperforms either channel alone, and that essentially all of this performance
-is attributable to operating-point inference.
-
-\subsection{The $\kappa$ regression is an operating-point soft sensor}
-\label{subsec:disc_softsensor}
-
-The two-stage decomposition shows that acoustically inferred rotational speed and temperature reproduce the direct $\kappa$-regression accuracy. This is expected, since the features recover rotational speed almost perfectly and temperature well, and $\kappa$ is a deterministic function of these. The decomposition thus attributes the accuracy to operating-point inference, but cannot test whether the signals also sense the lubricant film, since $\kappa$ carries no information beyond the operating point. Any film-level signal would be invisible to a $\kappa$ target. Within this dataset, the acoustic $\kappa$ regression is best understood, in performance terms, as an operating-point soft sensor combined with the ISO~281 mapping.
-
-This finding does not render the models useless. An acoustic soft sensor that recovers speed, temperature, and thereby nominal lubrication adequacy from a single externally mounted sensor---without tachometer or thermometer access---may be operationally valuable, particularly for retrofit monitoring. It does, however, change what the performance figures mean. High $\kappa$-regression accuracy, in this study and in prior work including Jakobsen et al.~\cite{jakobsen_detecting_2023}, should not by itself be read as evidence that the sensors detect the state of the lubricant film beyond whatthe operating point implies. Two consequences follow. First, generalisation to operating regimes outside the training distribution is not supported by the reported accuracy, since the learned mapping is anchored in the operating point. Second, changes in lubrication adequacy that are \emph{not} caused by the operating point---degradation, contamination, starvation, none of which $\kappa$ encodes---are outside the demonstrated
-capability, and detecting them with an online, non-invasive method remains an open problem.
+The principal finding of this work is that combining AE and US features significantly improves $\kappa$ estimation under a leakage-controlled evaluation protocol. The remaining analyses suggest an explanation for this improvement: AE and US encode partly different aspects of the operating point, particularly with respect to temperature. The subsections below discuss these findings and the limitations of this paper.
 
 \subsection{AE--US complementarity and channel encoding}
 \label{subsec:disc_channels}
 
-The fusion result is the most robust finding of the study: the combined feature
+The fusion result is the central finding of the study: the combined feature
 set outperforms both single channels, for both model families, in all four
 group-level DM contrasts (Table~\ref{tab:inference}). The gain is modest in
-magnitude but consistent, and it has a structural basis in the
+magnitude but consistent, and it can be related to the
 operating-condition encoding of the two channels. Conditionally on speed, US
-resolves temperature substantially better than AE
-(Section~\ref{subsec:confound}, Table~\ref{tab:decomposition}), whereas both
-channels track speed near-perfectly; the clustered SHAP results mirror this
-separation, with the AE model led by a speed-tracking 500~kHz--1~MHz mobility
-cluster and the US model drawing on temperature-leaning baseband features. The
-two channels are complementary primarily because they encode partly distinct components of the operating point, providing a quantified answer to the complementarity question.
+correlates with temperature substantially better than AE
+(Section~\ref{subsec:confound}), whereas both channels track speed well. The clustered SHAP results mirror this separation at the feature level, with the combined model retaining temperature-leaning US features while discarding US amplitude features whose speed information the AE features already provide (Section~\ref{subsec:shap}). The two channels are
+complementary and may be so because they encode partly distinct components of the
+operating point, providing a quantified answer to the complementarity question
+posed in Section~\ref{sec:background}.
 
-Which single channel is preferable proved to be model-family dependent: Elastic
-Net favours US while LightGBM favours AE, both significantly. A plausible
-explanation is that the temperature-mediated US structure is closer to linear
-and is captured well by a regularised linear model, whereas the speed-dependent
-AE structure is strongly non-linear and requires the tree ensemble. Channel
-rankings obtained under a single model family should therefore be treated with
-caution.
+Which single channel is preferable proved to be model-family dependent:
+Elastic Net favours US while LightGBM favours AE, both significantly. As shown
+in Section~\ref{subsec:sensor_comparison}, Elastic Net recovers a substantially
+larger share of the US channel's tree-model performance than of AE's. The AE
+feature--$\kappa$ mapping is markedly less accessible to a linear model,
+consistent with AE resolving $\kappa$ primarily through rotational speed,
+whose influence on $\kappa$ is structurally non-linear
+(Eq.~\eqref{eq:nu1}). Channel rankings obtained under a single model family
+should therefore be treated with caution.
 
 The comparison is further bounded by hardware. The AE sensor captures wideband
 content up to \SI{1}{MHz}, dominated by verified stress-wave emission, whereas
 the US probe down-mixes a narrow $\approx$38--40~kHz sensing band to an
 audio-frequency baseband, within which the
-10--20~kHz half carries the strongest correlations. The high-frequency
+10--20~kHz band carries the strongest correlations. The high-frequency
 transient signature of individual contact events is largely absent from this
 down-mixed envelope. Whether a wideband passive ultrasound sensor would supply
 more independent information and a larger fusion gain remains an open
@@ -51,28 +40,15 @@ question.
 
 \subsection{On the use of $\kappa$ as lubrication reference}
 \label{subsec:disc_kappa}
+The results indicate that the acoustic features are informative about lubrication conditions as quantified by $\kappa$. From a single externally mounted sensor, without tachometer or thermometer access, the models recover the bearing's nominal lubrication adequacy---a capability of direct value for retrofit monitoring. This claim is, however, subject to the limitations of $\kappa$ itself.
 
-The viscosity ratio is not measured but computed for each segment from the
-measured operating point via the ISO~281 relations and the ASTM~D341 Walther
-equation (Section~\ref{subsec:kappa}). It therefore inherits the assumptions of
-those relations, notably the use of housing temperature as a proxy for the
-elastohydrodynamic contact temperature and the assumption of nominally intact
-lubricant. A further assumption is that lubricant supply is sufficient for fully
-flooded inlet conditions: as noted in Section~\ref{subsec:kappa}, high rotational
-speeds can induce starvation that reduces the actual film below $\kappa$'s
-prediction even when the bulk lubricant is intact~\cite{poll_starved_2019}.
-Whether the staircase protocol's higher speed steps induced starvation, and
-whether the acoustic signals carry a starvation signature that the regression
-attributes to the operating point rather than the film state, has not been
-investigated. The sampled $\kappa$ distribution is also concentrated in the
-boundary and mixed regimes; extrapolation into the full-film range ($\kappa > 1$)
-should be treated with caution. More fundamentally, because the target is deterministic in the
-operating point, some degree of $\kappa$-regression success is guaranteed for
-any feature set that is informative about the operating point. The
-decomposition of Section~\ref{subsec:decomposition} quantifies this share
-rather than leaving it implicit. Breaking the circularity requires an independent reference---a
-film-thickness measurement~\cite{shang_comprehensive_2024}, electrical contact resistance, or an experiment in
-which the lubricant state is varied independently of the operating point.
+$\kappa$ is not measured but computed for each segment from the measured operating point via the ISO~281 relations and the ASTM~D341 Walther equation (Section~\ref{subsec:kappa}). It therefore inherits the assumptions of those relations, notably the use of housing temperature as a proxy for lubricant temperature and the assumption of nominally intact lubricant. A further assumption is that lubricant supply is sufficient for fully flooded conditions. As noted there, high rotational speeds can induce starvation that reduces the actual film below $\kappa$'s prediction even when the lubricant is intact. Whether the staircase protocol's higher speed steps induced starvation, and whether the acoustic signals carry a starvation signature that the regression attributes to the operating point rather than the film state, has not been investigated. The sampled $\kappa$ distribution is also concentrated in the boundary and mixed regimes; extrapolation into the full-film range ($\kappa > 1$) should be treated with caution.
+
+More fundamentally, because $\kappa$ is deterministic in the operating point, some degree of $\kappa$-regression success is guaranteed for any feature set that is informative about speed and temperature. The conditional correlation analysis and the clustered SHAP interpretation indicate that the models indeed draw primarily on operating-point-tracking features: in performance terms, the regression acts as an acoustic operating-point soft sensor combined with the ISO~281 mapping.
+
+In addition, since $\kappa$ encodes only lubrication changes caused by the operating point (Section~\ref{subsec:kappa}), sensitivity to degradation, contamination, or starvation is neither demonstrated nor ruled out in this study or in prior $\kappa$-estimation work such as that of Jakobsen et al. Probing lubrication information beyond the operating point requires an independent reference, e.g.\ a film-thickness measurement, electrical contact resistance, or an experiment in which the lubricant state is varied independently of the operating point.
+
+The complementarity conclusion is unaffected by these limitations since both channels are evaluated against the same target under identical protocols. The demonstrated gain from combining them reflects genuinely non-redundant information.
 
 \subsection{Evaluation protocol and comparability with prior work}
 \label{subsec:disc_protocol}
@@ -80,9 +56,9 @@ which the lubricant state is varied independently of the operating point.
 The acquisition-grouped, twin-merged evaluation removes the near-duplicate
 leakage admitted by random splits over short measurement segments, and the
 group-level DM tests avoid the potential significance inflation of segment-level testing. The reported figures are consequently not directly
-comparable to prior work evaluated under random splits, including
-Jakobsen et al.~\cite{jakobsen_detecting_2023}; they are intended as more
-conservative, deployment-representative estimates.
+comparable to prior work evaluated under random splits, including that of
+Jakobsen et al.; they are intended as more conservative,
+deployment-representative estimates.
 
 A caveat applies in the opposite direction as well. Because the
 (rotational speed, temperature) space is densely and smoothly sampled, every held-out group
