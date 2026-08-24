@@ -1,5 +1,5 @@
 model,contrast,A,B,n_windows,n_groups,mean_dMSE(A-B),dm_stat,p_group,p_window_naive,better
-ElasticNet,Combined vs AE,ElasticNet_Combined,ElasticNet_AE,4020,597,-0.00353,-14.396,0.0,0.0,ElasticNet_Combined
-ElasticNet,Combined vs US,ElasticNet_Combined,ElasticNet_US,4020,597,-0.00514,-14.355,0.0,0.0,ElasticNet_Combined
-LightGBM,Combined vs AE,LightGBM_Combined,LightGBM_AE,4020,597,-0.00039,-2.275,0.0233,0.04086,LightGBM_Combined
-LightGBM,Combined vs US,LightGBM_Combined,LightGBM_US,4020,597,-0.00276,-8.221,0.0,0.0,LightGBM_Combined
+ElasticNet,Combined vs AE,ElasticNet_Combined,ElasticNet_AE,3948,597,-0.00348,-14.673,0.0,0.0,ElasticNet_Combined
+ElasticNet,Combined vs US,ElasticNet_Combined,ElasticNet_US,3948,597,-0.00479,-14.752,0.0,0.0,ElasticNet_Combined
+LightGBM,Combined vs AE,LightGBM_Combined,LightGBM_AE,3948,597,-0.00075,-5.492,0.0,0.0,LightGBM_Combined
+LightGBM,Combined vs US,LightGBM_Combined,LightGBM_US,3948,597,-0.00294,-9.974,0.0,0.0,LightGBM_Combined

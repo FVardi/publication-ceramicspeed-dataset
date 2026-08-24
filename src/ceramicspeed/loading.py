@@ -76,6 +76,14 @@ _VISCOSITY_FALLBACK: dict[str, float] = {
 #: target up) — re-derive this constant before applying it to one of those.
 _CMD_HZ_TO_RPM: float = 59.5
 
+#: Confirmed externally (2026-08-20): at telem_rpm_target == 100, the bearing
+#: was not actually rotating, despite the VFD commanding a small but nonzero
+#: frequency (e.g. scope_20260817: cmd_hz~1.68 Hz, which the cmd_hz*_CMD_HZ_
+#: TO_RPM formula alone would misread as ~100 rpm of real rotation). These
+#: sweeps are forced to rpm=0 so the existing rpm_min filter drops them, the
+#: same mechanism already used for genuinely stationary (cmd_hz~0) segments.
+_NON_ROTATING_TARGET_RPM: float = 100.0
+
 
 def _normalize_sweep_params(params: dict) -> dict:
     """Map scope-format telemetry keys to the canonical column names.
@@ -91,6 +99,9 @@ def _normalize_sweep_params(params: dict) -> dict:
             out["rpm"] = float(out["telem_vfd_cmd_hz"]) * _CMD_HZ_TO_RPM
         elif "telem_rpm_meas" in out:
             out["rpm"] = out["telem_rpm_meas"]
+        if ("telem_rpm_target" in out
+                and float(out["telem_rpm_target"]) == _NON_ROTATING_TARGET_RPM):
+            out["rpm"] = 0.0
     if "temperature_c" not in out and "telem_omron_pv_c" in out:
         out["temperature_c"] = out["telem_omron_pv_c"]
     if "load_g" not in out and "telem_mass_g" in out:

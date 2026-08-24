@@ -36,6 +36,10 @@ _VISCOSITY_FALLBACK: dict[str, float] = {
 #: applying to an earlier, pre-August capture.
 _CMD_HZ_TO_RPM: float = 59.5
 
+#: See loading._NON_ROTATING_TARGET_RPM -- confirmed externally that the
+#: bearing wasn't rotating at telem_rpm_target == 100 despite nonzero cmd_hz.
+_NON_ROTATING_TARGET_RPM: float = 100.0
+
 _STAT_COLS: list[tuple[str, str]] = [
     ("rms",               "RMS [V]"),
     ("kurtosis",          "Kurtosis"),
@@ -56,6 +60,9 @@ def _normalize_sweep_params(params: dict) -> dict:
             out["rpm"] = float(out["telem_vfd_cmd_hz"]) * _CMD_HZ_TO_RPM
         elif "telem_rpm_meas" in out:
             out["rpm"] = out["telem_rpm_meas"]
+        if ("telem_rpm_target" in out
+                and float(out["telem_rpm_target"]) == _NON_ROTATING_TARGET_RPM):
+            out["rpm"] = 0.0
     if "temperature_c" not in out and "telem_omron_pv_c" in out:
         out["temperature_c"] = out["telem_omron_pv_c"]
     if "load_g" not in out and "telem_mass_g" in out:
