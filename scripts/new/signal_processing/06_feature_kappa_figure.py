@@ -42,15 +42,18 @@ SCRIPT_DIR = NEW_DIR / "feature_kappa_figure"
 SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
 PAPER_FIG_DIR = Path(__file__).resolve().parents[3] / "paper" / "figures"
 
-_BAND_ORDER = {"broadband": 0, "20-500kHz": 1, "500-1000kHz": 2,
-               "0-10kHz": 3, "10-20kHz": 4, "20-100kHz": 5}
+_BAND_ORDER = {"broadband": 0, "50-200kHz": 1, "200-600kHz": 2,
+               "0-16kHz": 3, "16-40kHz": 4}
 # Categorical band colours: fixed assignment, one hue per band (CVD-validated set)
-_BAND_COLOR = {"broadband": "#2a78d6", "20-500kHz": "#1baf7a",
-               "500-1000kHz": "#eda100", "0-10kHz": "#008300",
-               "10-20kHz": "#4a3aa7", "20-100kHz": "#e34948"}
-_BAND_LABEL = {"broadband": "Broadband", "20-500kHz": "20–500 kHz",
-               "500-1000kHz": "500–1000 kHz", "0-10kHz": "0–10 kHz",
-               "10-20kHz": "10–20 kHz", "20-100kHz": "20–100 kHz"}
+#: AE bands: 50-200kHz/200-600kHz (config.yaml frequency_bands.AE, set after
+#: the 2026-08-18 spectrogram inspection -- see config.yaml's AE comment).
+#: UL bands: 0-16kHz/16-40kHz (config.yaml frequency_bands.UL, same pass).
+_BAND_COLOR = {"broadband": "#2a78d6", "50-200kHz": "#1baf7a",
+               "200-600kHz": "#eda100", "0-16kHz": "#008300",
+               "16-40kHz": "#e34948"}
+_BAND_LABEL = {"broadband": "Broadband", "50-200kHz": "50–200 kHz",
+               "200-600kHz": "200–600 kHz", "0-16kHz": "0–16 kHz",
+               "16-40kHz": "16–40 kHz"}
 _INK = "#333333"
 PLOT_THRESHOLD = 0.4  # only features with |rho(kappa)| >= this are drawn
 

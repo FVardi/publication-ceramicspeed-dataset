@@ -24,6 +24,9 @@ lubrication regimes.
 
 White dashed lines mark the sub-band boundaries used in feature extraction.
 
+The default (welch) run's chronological figure is also copied to
+paper/figures/eda_spectrogram_chronological.png (the paper figure).
+
 Usage
 -----
     python dev/exploration/eda_spectrogram.py
@@ -39,6 +42,8 @@ Usage
 
 import argparse
 import pathlib
+import shutil
+from pathlib import Path
 
 import h5py
 import matplotlib.pyplot as plt
@@ -48,7 +53,7 @@ from scipy.signal import periodogram, welch
 
 from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.config import get_input_dir, get_output_dir, load_config
-from ceramicspeed.loading import discover_hdf5_files
+from ceramicspeed.loading import discover_hdf5_files, _normalize_sweep_params
 
 # %%
 # =============================================================================
@@ -78,6 +83,7 @@ OUTPUT_DIR = get_output_dir(cfg)
 INPUT_DIR  = get_input_dir(cfg)
 EDA_DIR    = OUTPUT_DIR / "eda"
 EDA_DIR.mkdir(parents=True, exist_ok=True)
+PAPER_FIG_DIR = Path(__file__).resolve().parents[2] / "paper" / "figures"
 
 CACHE_PATH = EDA_DIR / f"eda_spectrogram_cache_{METHOD}.npz"
 
@@ -151,9 +157,13 @@ else:
 
                 for sweep_name, sweep in sweeps_grp.items():
                     sweep_idx = int(sweep_name.split("_")[1])
-                    attrs  = dict(sweep.attrs)
-                    rpm    = float(attrs.get("telem_rpm_meas",    attrs.get("rpm",           np.nan)))
-                    temp_c = float(attrs.get("telem_omron_pv_c",  attrs.get("temperature_c", np.nan)))
+                    # telem_rpm_meas is unreliable (see dev/exploration/
+                    # eda_speed_calibration.py) -- reconstruct rpm from
+                    # telem_vfd_cmd_hz via the same normalization the main
+                    # pipeline uses, so this figure matches current results.
+                    attrs  = _normalize_sweep_params(dict(sweep.attrs))
+                    rpm    = float(attrs.get("rpm", np.nan))
+                    temp_c = float(attrs.get("temperature_c", np.nan))
 
                     if not (RPM_MIN <= rpm <= RPM_MAX):
                         n_skipped += 1
@@ -365,6 +375,17 @@ _render(
     f"Spectral heatmaps: PSD vs time (sweep number) ({_method_label})",
     f"eda_spectrogram_chronological_{METHOD}.png",
 )
+
+# Copy the chronological view into the paper so it compiles standalone (same
+# convention as scripts/new/signal_processing/06_feature_kappa_figure.py).
+# Only for the default "welch" method -- that's what the paper figure means
+# and what the main feature-extraction pipeline actually uses; a
+# --method periodogram/rawfft run shouldn't silently overwrite it.
+if METHOD == "welch":
+    PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+    _src = EDA_DIR / f"eda_spectrogram_chronological_{METHOD}.png"
+    shutil.copy2(_src, PAPER_FIG_DIR / "eda_spectrogram_chronological.png")
+    print(f"Copied -> {PAPER_FIG_DIR / 'eda_spectrogram_chronological.png'}")
 
 # %%
 if __name__ == "__main__":

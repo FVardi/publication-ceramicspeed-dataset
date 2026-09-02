@@ -9,10 +9,15 @@ Produces (outputs/14_new_method_figures/):
   comparison_table.png            rendered model x feature-set summary table
   holdout_r2_bars.png             holdout R2 bar chart (full vs selected)
   cv_vs_holdout_r2.png            CV(grouped) vs holdout R2, all configs
-  predvactual_<model>.png         2x3 predicted-vs-actual grids (rows full/
-                                  selected, cols AE/US/Combined), coloured by
-                                  RPM, over the pooled held-out predictions
+  predvactual_<model>.png         1x3 predicted-vs-actual grid per model
+                                  (cols AE/US/Combined), coloured by RPM,
+                                  over the pooled held-out predictions
+  predvactual_combined.png        2x3 grid (models x sensors), the paper's
+                                  Fig. pred_vs_actual -- also copied to
+                                  paper/figures/model_pred_vs_actual_holdout.png
   marginal_vs_conditional_full.png  paper-style 2-panel figure, ALL features
+                                  -- also copied to
+                                  paper/figures/marginal_vs_conditional.png
 
 Reads the DEFAULT (pooled GroupKFold, operating-point-merged) outputs of
 11_featureset_comparison.py. Run that (and 12_fullset_decomposition.py) first.
@@ -22,6 +27,7 @@ Usage
     python scripts/14_new_method_figures.py
 """
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -43,6 +49,7 @@ PRED_DIR = NEW_DIR / "regression" / "predictions"
 CM_PATH = NEW_DIR / "correlations" / "tables" / "cond_vs_marginal_full.csv"
 FIG_DIR = NEW_DIR / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
+PAPER_FIG_DIR = Path(__file__).resolve().parents[3] / "paper" / "figures"
 
 MODELS = ["ElasticNet", "LightGBM"]
 TARGETS = ["AE", "US", "Combined"]
@@ -181,6 +188,14 @@ def _pred_grid_combined():
     plt.close()
     print("Saved: predvactual_combined.png")
 
+    # Copy into the paper so it compiles standalone (same convention as
+    # scripts/new/signal_processing/06_feature_kappa_figure.py). This is
+    # "Fig. pred_vs_actual" in modelling.tex, filed there under its older name.
+    PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(FIG_DIR / "predvactual_combined.png",
+                 PAPER_FIG_DIR / "model_pred_vs_actual_holdout.png")
+    print(f"Copied -> {PAPER_FIG_DIR / 'model_pred_vs_actual_holdout.png'}")
+
 
 _pred_grid_combined()
 
@@ -261,6 +276,14 @@ fig.tight_layout()
 fig.savefig(FIG_DIR / "marginal_vs_conditional_full.png", dpi=DPI, bbox_inches="tight")
 plt.close()
 print("Saved: marginal_vs_conditional_full.png")
+
+# Copy into the paper so it compiles standalone (same convention as
+# scripts/new/signal_processing/06_feature_kappa_figure.py). This is
+# "Fig. marg_cond" in features.tex, filed there under its older name.
+PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+shutil.copy2(FIG_DIR / "marginal_vs_conditional_full.png",
+             PAPER_FIG_DIR / "marginal_vs_conditional.png")
+print(f"Copied -> {PAPER_FIG_DIR / 'marginal_vs_conditional.png'}")
 
 print(f"\nAll figures saved to {FIG_DIR}")
 

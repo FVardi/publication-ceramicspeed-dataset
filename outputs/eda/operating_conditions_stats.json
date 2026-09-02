@@ -1,0 +1,37 @@
+{
+  "dataset": {
+    "n_sweeps_raw": 3948,
+    "n_sweeps_removed": 0,
+    "n_sweeps_retained": 3948,
+    "rpm_max_filter": 3000.0
+  },
+  "acquisition": {
+    "waveform_duration_ms": 200.0,
+    "sample_rate_mhz": 2.5,
+    "n_samples_per_window": 499999,
+    "window_interval_s": 11.375,
+    "window_interval_std_s": 6.0859,
+    "window_rate_hz": 0.0879,
+    "ramp_dwell_windows_median": 6,
+    "ramp_dwell_windows_mean": 5.4,
+    "ramp_dwell_s_median": 68.2,
+    "ramp_dwell_s_mean": 61.6,
+    "peak_dwell_windows_mean": NaN,
+    "peak_dwell_min_mean": NaN
+  },
+  "operating_conditions": {
+    "rpm_min": 200.0,
+    "rpm_max": 3000.0,
+    "temperature_min": 40.0,
+    "temperature_max": 101.0,
+    "kappa_min": 0.0448,
+    "kappa_max": 1.6229,
+    "kappa_mean": 0.4815,
+    "kappa_std": 0.3215,
+    "kappa_regimes": {
+      "kappa_lt_0.5": 2524,
+      "kappa_0.5_to_1.0": 1072,
+      "kappa_gte_1.0": 352
+    }
+  }
+}

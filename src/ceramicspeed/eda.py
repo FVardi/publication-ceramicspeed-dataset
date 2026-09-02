@@ -364,6 +364,22 @@ def collect_psd_rows(sweeps: list[dict], sensors: tuple[str, ...]) -> list[dict]
 # Plot functions  (each returns the Figure; caller handles savefig / show)
 # ---------------------------------------------------------------------------
 
+#: Chart chrome shared across EDA figures (see dataviz skill / palette.md).
+#: Spine/grid color and style are set globally in plot_style.mplstyle
+#: (applied at package import, see __init__.py); these are just the values
+#: scripts need directly (e.g. for a reference line drawn in the axis color).
+_AXIS_COLOR   = "#c3c2b7"
+_SERIES_BLUE  = "#2a78d6"   # categorical slot 1 -- validated, matches ordinal kappa ramp
+_SERIES_RED   = "#e34948"   # categorical slot 8 -- validated, used for reference/threshold lines
+
+
+def _style_axes(ax: plt.Axes) -> None:
+    """Opt an axes into the shared gridline style (off by default; see
+    plot_style.mplstyle -- most figures here are spectrograms/waveforms/
+    images that shouldn't get gridlines automatically)."""
+    ax.grid(True)
+
+
 def plot_operating_conditions(
     stats_df: pd.DataFrame,
     kappa_bounds: list[float],
@@ -375,13 +391,14 @@ def plot_operating_conditions(
                          c=meta["kappa"], cmap="viridis", s=20, alpha=0.7, edgecolors="none")
     fig.colorbar(sc, ax=axes[0], label="κ")
     axes[0].set(xlabel="RPM", ylabel="Temperature [°C]", title="Operating conditions space")
-    axes[0].grid(ls=":", alpha=0.4)
+    _style_axes(axes[0])
 
-    axes[1].hist(meta["kappa"], bins=30, color="#1f77b4", edgecolor="white", linewidth=0.4)
+    axes[1].hist(meta["kappa"], bins=30, color=_SERIES_BLUE, edgecolor="white", linewidth=0.4)
     for b in kappa_bounds:
-        axes[1].axvline(b, color="red", ls="--", lw=1, alpha=0.8, label=f"κ = {b}")
+        axes[1].axvline(b, color=_SERIES_RED, ls="--", lw=1, alpha=0.8, label=f"κ = {b}")
     axes[1].set(xlabel="κ (lubrication ratio)", ylabel="Count (sweeps)", title="κ distribution")
-    axes[1].legend(fontsize=8)
+    axes[1].legend(fontsize=8, frameon=False)
+    _style_axes(axes[1])
 
     fig.tight_layout()
     return fig

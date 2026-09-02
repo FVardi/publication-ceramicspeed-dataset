@@ -1,10 +1,10 @@
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Fix these once paper is done}{6}{section*.4}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that this is correct}{8}{section*.6}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{9}{section*.6}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{9}{section*.7}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ How is it mounted?}{9}{section*.8}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ State the resonance frequency and heterodyne specification from the Ultra-Trak~750 datasheet.}{9}{section*.9}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that this is true after new dataset.}{9}{section*.10}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Include figure which illustrates the protocol for varying operating conditions and kappa once the speed issue has been settled.}{9}{section*.11}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ State the resonance frequency and heterodyne specification from the Ultra-Trak~750 datasheet.}{9}{section*.8}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that this is true after new dataset.}{9}{section*.9}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Include figure which illustrates the protocol for varying operating conditions and kappa once the speed issue has been settled.}{9}{section*.10}%
+\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Change this after final data decision}{9}{section*.11}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Check that retained data is desribed here. The 100rp sweeps should for example be excluded.}{10}{section*.12}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Change this depending on the data, the noise from the oscilloscope, and the final conclustion about speed reconstruction.}{11}{section*.15}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Select new files. The first file shows weird waveforms for both AE and US (clipping). Maybe same y-axis? Cut off at 1MHz and write oscilloscope noise reason.}{11}{section*.17}%
@@ -13,4 +13,3 @@
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Wire the feature--$\kappa $ correlation numbers (and the other hand-typed $\rho $ values in this section) as macros from a new-pipeline export step.}{14}{section*.23}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Author list is not final: add co-authors here and on the title page, and switch the singular declarations below to plural.}{23}{section*.32}%
 \contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ IFD?}{24}{section*.35}%
-\contentsline {todo}{\fcolorbox {black}{orange}{\textcolor {orange}{o}}\ Public release of the complete dataset (HDF5 signal files) is not yet decided---resolve with CeramicSpeed and choose: (a) full Zenodo deposit, (b) features + code only, or (c) available from the corresponding author on reasonable request. Align contribution~4 and this statement with the decision.}{24}{section*.37}%

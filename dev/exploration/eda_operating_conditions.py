@@ -7,6 +7,10 @@ and time-series of RPM, temperature, and κ over sweep index.
 Reads from outputs/sweep_conditions.csv (produced by operating_condition_mapping.py).
 Run that script first if the CSV does not exist yet.
 
+Both figures are also copied to paper/figures/ (same convention as
+scripts/new/signal_processing/06_feature_kappa_figure.py) so the paper
+compiles standalone.
+
 Usage
 -----
     python dev/exploration/eda_operating_conditions.py
@@ -21,6 +25,7 @@ Usage
 import argparse
 import json
 import pathlib
+import shutil
 
 import h5py
 import matplotlib.pyplot as plt
@@ -30,6 +35,7 @@ from matplotlib.patches import Patch
 
 from ceramicspeed import eda as _eda
 from ceramicspeed.config import get_input_dir, get_output_dir, load_config
+from ceramicspeed.loading import discover_hdf5_files
 
 # %%
 # =============================================================================
@@ -50,6 +56,7 @@ INPUT_DIR    = get_input_dir(cfg)
 OUTPUT_DIR   = get_output_dir(cfg)
 EDA_DIR      = OUTPUT_DIR / "eda"
 EDA_DIR.mkdir(parents=True, exist_ok=True)
+PAPER_FIG_DIR = pathlib.Path(__file__).resolve().parents[2] / "paper" / "figures"
 
 RPM_MAX: float = 3000.0  # filter out end-of-test high-RPM transients
 
@@ -79,12 +86,11 @@ print(f"Loaded {n_before} sweeps from {csv_path.name}; {n_before - len(df)} remo
 # =============================================================================
 
 # Window collection interval: derived from timestamps on the first few sweeps
-_file_patterns: list[str] = cfg.get("filters", {}).get("file_patterns", [])
-_all_hdf5 = sorted(pathlib.Path(INPUT_DIR).glob("*.hdf5"))
-_hdf5_files = [f for f in _all_hdf5 if any(p in f.stem for p in _file_patterns)] if _file_patterns else _all_hdf5
+_hdf5_files = discover_hdf5_files(INPUT_DIR, file_patterns=cfg.get("filters", {}).get("file_patterns"))
 
 _window_interval_s: float = float("nan")
 _waveform_ms: float = float("nan")
+_sample_rate_hz: float = float("nan")
 if _hdf5_files:
     with h5py.File(_hdf5_files[0], "r") as _hf:
         _sweeps_grp = _hf["sweeps"]
@@ -93,10 +99,13 @@ if _hdf5_files:
         _intervals = np.diff(_elapsed)
         _window_interval_s = float(np.mean(_intervals))
         _window_interval_std_s = float(np.std(_intervals))
-        # Waveform duration from time axis of first sweep
+        # Waveform duration and sample rate from the time axis of the first sweep
+        # (read directly, not hardcoded -- acquisition settings differ by file:
+        # 12.5 MHz/20ms in the earlier captures, 2.5 MHz/200ms from Aug 2026 on).
         _ae = _sweeps_grp[_names[0]]["AE"]
         _t = _ae["time"][()]
         _waveform_ms = (_t[-1] - _t[0]) * 1e3
+        _sample_rate_hz = 1.0 / float(np.mean(np.diff(_t)))
 
 # Operating condition dwell: run-length encode RPM setpoints
 _ts_sorted = df.copy()
@@ -120,7 +129,8 @@ _dwell_windows_mean   = float(np.mean(_runs_arr[~_peak_mask]))
 _peak_windows_mean    = float(np.mean(_runs_arr[_peak_mask])) if _peak_mask.any() else float("nan")
 
 print("\n--- Acquisition timing ---")
-print(f"  Waveform duration       : {_waveform_ms:.1f} ms  ({int(_waveform_ms/1e3 * 12_500_000):,} samples @ 12.5 MHz)")
+print(f"  Waveform duration       : {_waveform_ms:.1f} ms  "
+      f"({int(round(_waveform_ms / 1e3 * _sample_rate_hz)):,} samples @ {_sample_rate_hz / 1e6:.2f} MHz)")
 print(f"  Window collection interval: {_window_interval_s:.2f} s ± {_window_interval_std_s:.3f} s  (~{1/_window_interval_s:.3f} Hz)")
 print(f"  RPM setpoint dwell (ramp): median {_dwell_windows_median:.0f} windows  "
       f"({_dwell_windows_median * _window_interval_s:.0f} s), "
@@ -150,8 +160,8 @@ stats = {
     },
     "acquisition": {
         "waveform_duration_ms":      round(_waveform_ms, 2),
-        "sample_rate_mhz":           12.5,
-        "n_samples_per_window":      int(round(_waveform_ms / 1e3 * 12_500_000)),
+        "sample_rate_mhz":           round(_sample_rate_hz / 1e6, 4),
+        "n_samples_per_window":      int(round(_waveform_ms / 1e3 * _sample_rate_hz)),
         "window_interval_s":         round(_window_interval_s, 3),
         "window_interval_std_s":     round(_window_interval_std_s, 4),
         "window_rate_hz":            round(1.0 / _window_interval_s, 4),
@@ -191,6 +201,13 @@ plt.show()
 plt.close(fig)
 print("Saved: eda_operating_conditions.png")
 
+# Copy into the paper so it compiles standalone (same convention as
+# scripts/new/signal_processing/06_feature_kappa_figure.py).
+PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+shutil.copy2(EDA_DIR / "eda_operating_conditions.png",
+             PAPER_FIG_DIR / "eda_operating_conditions.png")
+print(f"Copied -> {PAPER_FIG_DIR / 'eda_operating_conditions.png'}")
+
 # %%
 # =============================================================================
 # Time-series: RPM, temperature, κ over sweep index
@@ -213,21 +230,21 @@ fig, axes = plt.subplots(3, 1, figsize=(14, 7), sharex=True)
 
 axes[0].scatter(ts["sweep_idx"], ts["rpm"], c=point_colors, s=4, alpha=0.6, linewidths=0)
 axes[0].set_ylabel("RPM")
-axes[0].grid(ls=":", alpha=0.4)
+_eda._style_axes(axes[0])
 
 axes[1].scatter(ts["sweep_idx"], ts["temperature_c"], c=point_colors, s=4, alpha=0.6, linewidths=0)
 axes[1].set_ylabel("Temperature [°C]")
-axes[1].grid(ls=":", alpha=0.4)
+_eda._style_axes(axes[1])
 
 axes[2].scatter(ts["sweep_idx"], ts["kappa"], c=point_colors, s=4, alpha=0.6, linewidths=0)
 for bound in KAPPA_BOUNDS:
-    axes[2].axhline(bound, color="k", ls="--", lw=0.8, alpha=0.5)
+    axes[2].axhline(bound, color=_eda._AXIS_COLOR, ls="--", lw=0.8, alpha=0.8)
 axes[2].set_ylabel("κ")
 axes[2].set_xlabel("Sweep index")
-axes[2].grid(ls=":", alpha=0.4)
+_eda._style_axes(axes[2])
 axes[2].legend(
     handles=[Patch(color=c, label=l) for c, l in zip(KAPPA_COLORS, KAPPA_LABELS)],
-    fontsize=8, loc="upper right",
+    fontsize=8, loc="upper right", frameon=False,
 )
 
 fig.suptitle("Operating conditions over time", fontsize=12)
@@ -236,6 +253,13 @@ fig.savefig(EDA_DIR / "eda_conditions_timeseries.png", dpi=150)
 plt.show()
 plt.close(fig)
 print("Saved: eda_conditions_timeseries.png")
+
+# Copy into the paper so it compiles standalone (same convention as
+# scripts/new/signal_processing/06_feature_kappa_figure.py).
+PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+shutil.copy2(EDA_DIR / "eda_conditions_timeseries.png",
+             PAPER_FIG_DIR / "eda_conditions_timeseries.png")
+print(f"Copied -> {PAPER_FIG_DIR / 'eda_conditions_timeseries.png'}")
 
 # =============================================================================
 # Entry point

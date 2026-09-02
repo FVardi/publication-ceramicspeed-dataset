@@ -1,0 +1,57 @@
+# plot_style.mplstyle
+# ====================
+# Shared matplotlib style for every figure in this project. Applied once at
+# package import time (see __init__.py) so changing text size, layout, or
+# chart chrome here updates every figure -- EDA scripts and the modelling
+# pipeline alike -- without touching individual plotting code.
+#
+# Color (categorical/sequential/ordinal palette) is a separate concern and
+# stays config-driven per figure (see config.yaml's kappa.colors and the
+# _SERIES_BLUE/_SERIES_RED constants in eda.py) -- this file only controls
+# typography, sizing, and chart chrome shared by every figure regardless of
+# what data it shows.
+
+# --- Typography ---------------------------------------------------------
+font.family:        sans-serif
+font.sans-serif:    DejaVu Sans, Arial, Helvetica, sans-serif
+font.size:          11
+axes.titlesize:     15
+axes.titleweight:   normal
+axes.labelsize:     14
+xtick.labelsize:    11
+ytick.labelsize:    11
+legend.fontsize:    11
+figure.titlesize:   16
+figure.titleweight: normal
+
+# --- Ink (text/label color) ---------------------------------------------
+text.color:         "#0b0b0b"
+axes.labelcolor:    "#0b0b0b"
+xtick.color:        "#52514e"
+ytick.color:        "#52514e"
+
+# --- Axes / chart chrome -------------------------------------------------
+# Recessive spines apply to every figure (safe default -- never clutters a
+# heatmap/waveform/image plot). Grid stays OFF by default (many figures in
+# this project are spectrograms/waveforms/images that shouldn't get
+# gridlines automatically) -- call ax.grid(True) to opt in, which then
+# picks up the hairline solid style below. See eda.py::_style_axes for the
+# one-line helper that does this consistently.
+axes.spines.top:    False
+axes.spines.right:  False
+axes.edgecolor:     "#c3c2b7"
+axes.linewidth:     0.8
+axes.axisbelow:     True
+grid.color:         "#e1e0d9"
+grid.linewidth:     0.6
+grid.linestyle:     -
+grid.alpha:         0.9
+
+# --- Legend ---------------------------------------------------------------
+legend.frameon:     False
+
+# --- Figure / output -------------------------------------------------------
+figure.facecolor:   white
+savefig.facecolor:  white
+savefig.dpi:        150
+savefig.bbox:       tight

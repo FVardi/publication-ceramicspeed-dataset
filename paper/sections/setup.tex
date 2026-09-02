@@ -13,19 +13,19 @@ The test rig is a custom-built bearing test stand at Aarhus University (Herning,
 \centering
 \begin{subfigure}[t]{0.32\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{figures/test_rig_overview.jpg}
+  \includegraphics[width=\textwidth]{figures/rig1.jpeg}
   \caption{}
   \label{fig:rig_overview}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.32\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{figures/test_rig_sensors.jpg}
+  \includegraphics[width=\textwidth]{figures/rig2.jpeg}
   \caption{}
   \label{fig:rig_sensors}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.32\textwidth}
   \centering
-  \includegraphics[width=\textwidth]{figures/test_rig_full_setup.jpg}
+  \includegraphics[width=\textwidth]{figures/rig3.jpeg}
   \caption{}
   \label{fig:rig_full_setup}
 \end{subfigure}
@@ -33,7 +33,7 @@ The test rig is a custom-built bearing test stand at Aarhus University (Herning,
 \label{fig:test_rig}
 \end{figure}
 
-The rig uses a deep-groove ball bearing of model SYJ25 with \SI{25}{mm} bore diameter, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, and dynamic load rating \SI{14000}{N}. The bearings are mounted using pillow blocks to allow mounting sensors as close as possible to the source of the signals. The bearing is driven by a Klee T712-2 \SI{0.55}{kW} variable-frequency electric motor through a variable-frequency drive (VFD) and a PID controller regulates the speed based on rotational-speed measurements from an OGT5000 diffuse-reflection sensor. Temperature is increased by a heating element mounted on the bearing pillow block, regulated by an Omron E5CC PID controller using a type~K sensor mounted on the outer ring of the bearing. A spring load applies a nominal radial load of \SI{60}{kg} and the load measured by an FN2114 pedal load cell is approximately \SI{61}{kg}. The bearing is lubricated with \SI{0.5}{ml} \todo{Check that this is correct} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$).
+The rig uses a deep-groove ball bearing of model SYJ25 with \SI{25}{mm} bore diameter, pitch diameter $d_{pw} = \SI{38.0}{mm}$, 9 steel rolling elements, and dynamic load rating \SI{14000}{N}. The bearings are mounted using pillow blocks to allow mounting sensors as close as possible to the source of the signals. The bearing is driven by a Klee T712-2 \SI{0.55}{kW} variable-frequency electric motor through a variable-frequency drive (VFD) and a PID controller regulates the speed based on rotational-speed measurements from an OGT5000 diffuse-reflection sensor. Temperature is increased by a heating element mounted on the bearing pillow block, regulated by an Omron E5CC PID controller using a type~K sensor mounted on the outer ring of the bearing. A spring load applies a nominal radial load of \SI{60}{kg} and the load measured by an FN2114 pedal load cell is approximately \SI{61}{kg}. The bearing is lubricated with \SI{0.5}{ml} of Keratech~22 oil (kinematic viscosity $\nu_{40} = \SI{22}{cSt}$, $\nu_{100} = \SI{4.1}{cSt}$).
 
 AE signals are collected by a Kistler Piezotron Type~8152C1 wideband piezoelectric sensor bonded to the bearing housing\todo{How is it mounted?}. Its output is conditioned by a Kistler Type~5125C AE Piezotron coupler, which applies a Butterworth band-pass filter from \SI{50}{kHz} to \SI{1}{MHz} to the raw AE signal before it is digitised. This band-pass sets the \SI{1}{MHz} upper analysis limit used throughout the paper.
 
@@ -56,7 +56,7 @@ assumptions underlying $\kappa$.
 
 \subsection{Acquisition segments and measured operating conditions}
 Data are acquired as short segments rather than continuously: every $\sim$\resWindowIntervalS~s the oscilloscope captures a \resWindowMs~ms segment
-($N \approx 2.5 \times 10^{5}$ samples per channel) containing time-synchronous AE and US waveforms, together with the rotational speed and housing temperature at the segment sampling time. Throughout this paper, one such segment serves as the unit of observation for all feature extraction, model training, and evaluation.
+($N \approx 2.5 \times 10^{5}$ samples per channel) \todo{Change this after final data decision} containing time-synchronous AE and US waveforms, together with the rotational speed and housing temperature at the segment sampling time. Throughout this paper, one such segment serves as the unit of observation for all feature extraction, model training, and evaluation.
 
 Since the operating conditions are maintained through a control loop, they vary from the nominal conditions specified by the protocol. The measured operating conditions span \resRpmMinMeas--\resRpmMaxMeas~rpm and \resTempMinMeas--\resTempMaxMeas~\si{\celsius}; the measured temperature range extends below the commanded \SI{40}{\celsius} floor (down to $\approx$\SI{33}{\celsius}), which is tentatively attributed to instability of the temperature control rather than to any commanded set-point. During the last temperature block, the speed recordings at the top of the speed staircase were corrupted and discarded.
 

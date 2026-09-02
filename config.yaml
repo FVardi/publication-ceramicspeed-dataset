@@ -119,20 +119,30 @@ validation_extra_bands:
 kappa:
   boundaries: [0.5, 1.0]
   labels:     ["κ < 0.5", "0.5 < κ < 1", "1 ≤ κ"]
-  colors:     ["#d62728", "#ff7f0e", "#2ca02c"]
+  # Single-hue ordinal ramp (dark = low kappa -> light = high kappa), matching
+  # the low=dark/high=light convention already used by the viridis scatter in
+  # plot_operating_conditions(). Replaces a red/orange/green traffic-light
+  # scheme that failed CVD validation (green vs orange ΔE=0.7 under
+  # protanopia -- see dataviz skill, scripts/validate_palette.js). This
+  # 3-step ramp passes all ordinal checks (--ordinal --pairs all).
+  colors:     ["#104281", "#2a78d6", "#86b6ef"]
 
 # =============================================================================
 # EDA — manual sweep selection  (eda_spectra.py)
 # =============================================================================
 
 # List specific sweep names to inspect. Omit or leave empty to use N_SWEEPS.
+# Re-picked 2026-08-25 for the current dataset (scope_20260817_114548.h5,
+# corrected cmd_hz-based speed, target=100 excluded) -- the previous
+# selection referenced sweep_8465, which doesn't exist in this smaller
+# (~4220-sweep) file, and kappa values computed on the old (April) dataset.
 sweep_selection:
-  # Low kappa (~0.22): very different RPM (295 vs 1285) and temperature (50 vs 95°C)
-  - sweep_1475
-  - sweep_8465
-  # High kappa (~0.86): very different RPM (912 vs 2977) and temperature (40 vs 58°C)
-  - sweep_136
-  - sweep_2449
+  # Low kappa (~0.05-0.19): very different RPM (200 vs 1100), similar temp (~100°C)
+  - sweep_4217
+  - sweep_3967
+  # High kappa (~1.13-1.62): very different RPM (1400 vs 2900), same temp (40°C)
+  - sweep_081
+  - sweep_173
 
 # =============================================================================
 # Feature analysis & selection

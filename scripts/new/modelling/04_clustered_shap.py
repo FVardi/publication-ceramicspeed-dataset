@@ -23,6 +23,7 @@ plot top clusters.
 
 Outputs (outputs/19_clustered_shap/)
   clustered_shap.png            top clusters per channel (bar = summed mean|SHAP|)
+                                 (also copied to paper/figures/)
   clustered_shap_<channel>.csv  cluster membership + importances
 
 Usage
@@ -32,7 +33,9 @@ Usage
 """
 
 import argparse
+import shutil
 import sys
+from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -63,6 +66,7 @@ OUTPUT_DIR = get_output_dir(cfg)
 NEW_DIR = OUTPUT_DIR / "new"
 SCRIPT_DIR = NEW_DIR / "clustered_shap"
 SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+PAPER_FIG_DIR = Path(__file__).resolve().parents[3] / "paper" / "figures"
 D_PW = cfg["bearing"]["d_pw_mm"]
 RPM_MAX = cfg["filters"]["rpm_max"]
 RPM_MIN = cfg["filters"].get("rpm_min", 0.0)  # drop startup/standstill transients
@@ -209,6 +213,12 @@ fig.tight_layout()
 fig.savefig(SCRIPT_DIR / "clustered_shap.png", dpi=DPI, bbox_inches="tight")
 plt.close()
 print(f"\nSaved: clustered_shap.png -> {SCRIPT_DIR}")
+
+# Copy into the paper so it compiles standalone (same convention as
+# scripts/new/signal_processing/06_feature_kappa_figure.py).
+PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+shutil.copy2(SCRIPT_DIR / "clustered_shap.png", PAPER_FIG_DIR / "clustered_shap.png")
+print(f"Copied -> {PAPER_FIG_DIR / 'clustered_shap.png'}")
 
 if __name__ == "__main__":
     print("\n19_clustered_shap complete.")

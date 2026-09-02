@@ -17,6 +17,8 @@ Usage
 
 import argparse
 import pathlib
+import shutil
+from pathlib import Path
 
 import h5py
 import matplotlib.pyplot as plt
@@ -24,6 +26,7 @@ import numpy as np
 
 from ceramicspeed.calculate_kappa import calculate_kappa
 from ceramicspeed.config import get_input_dir, get_output_dir, load_config
+from ceramicspeed.loading import _normalize_sweep_params
 
 # %%
 # =============================================================================
@@ -44,6 +47,7 @@ INPUT_DIR  = get_input_dir(cfg)
 OUTPUT_DIR = get_output_dir(cfg)
 EDA_DIR    = OUTPUT_DIR / "eda"
 EDA_DIR.mkdir(exist_ok=True)
+PAPER_FIG_DIR = Path(__file__).resolve().parents[2] / "paper" / "figures"
 
 WAVEFORM_MS: float = 10.0
 
@@ -84,15 +88,6 @@ for fp in hdf5_files:
 # Load selected sweeps
 # =============================================================================
 
-def _normalize_params(attrs: dict) -> dict:
-    out = dict(attrs)
-    if "rpm" not in out and "telem_rpm_meas" in out:
-        out["rpm"] = float(out["telem_rpm_meas"])
-    if "temperature_c" not in out and "telem_omron_pv_c" in out:
-        out["temperature_c"] = float(out["telem_omron_pv_c"])
-    return out
-
-
 records: list[dict] = []
 
 for fp in hdf5_files:
@@ -106,7 +101,7 @@ for fp in hdf5_files:
             if sweep_name not in sweeps_grp:
                 continue
             sweep = sweeps_grp[sweep_name]
-            tp = _normalize_params(dict(sweep.attrs))
+            tp = _normalize_sweep_params(dict(sweep.attrs))
             rpm  = float(tp.get("rpm", np.nan))
             temp = float(tp.get("temperature_c", np.nan))
             try:
@@ -216,6 +211,12 @@ out_path = EDA_DIR / "eda_waveforms.png"
 plt.savefig(out_path, dpi=150)
 print(f"Saved: {out_path}")
 plt.show()
+
+# Copy into the paper so it compiles standalone (same convention as
+# scripts/new/signal_processing/06_feature_kappa_figure.py).
+PAPER_FIG_DIR.mkdir(parents=True, exist_ok=True)
+shutil.copy2(out_path, PAPER_FIG_DIR / "eda_waveforms.png")
+print(f"Copied -> {PAPER_FIG_DIR / 'eda_waveforms.png'}")
 
 # =============================================================================
 # Entry point
